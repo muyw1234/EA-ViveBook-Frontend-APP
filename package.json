@@ -19,6 +19,7 @@
     "@react-navigation/native-stack": "^7.14.10",
     "axios": "^1.15.0",
     "expo": "~54.0.33",
+    "expo-linear-gradient": "~15.0.8",
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",
     "react-dom": "19.1.0",
