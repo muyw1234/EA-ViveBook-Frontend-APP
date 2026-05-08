@@ -38,7 +38,7 @@ export default function RegisterScreen() {
 
     return (
         <LinearGradient
-            colors={['#4f46e5', '#7c3aed']}
+            colors={['#F5E4F0', '#F5E4F0']}
             style={globalStyles.gradient}
         >
             <ScrollView contentContainerStyle={{ justifyContent: 'center', flexGrow: 1 }}>
@@ -50,7 +50,8 @@ export default function RegisterScreen() {
                         label="Nombre Completo"
                         value={name}
                         onChangeText={setName}
-                        mode="outlined"
+                        mode="flat"
+                        underlineColor="transparent"
                         style={globalStyles.input}
                         left={<TextInput.Icon icon="account" />}
                     />
@@ -59,7 +60,8 @@ export default function RegisterScreen() {
                         label="Email"
                         value={email}
                         onChangeText={setEmail}
-                        mode="outlined"
+                        mode="flat"
+                        underlineColor="transparent"
                         keyboardType="email-address"
                         autoCapitalize="none"
                         style={globalStyles.input}
@@ -70,7 +72,8 @@ export default function RegisterScreen() {
                         label="Contraseña"
                         value={password}
                         onChangeText={setPassword}
-                        mode="outlined"
+                        mode="flat"
+                        underlineColor="transparent"
                         secureTextEntry
                         style={globalStyles.input}
                         left={<TextInput.Icon icon="lock" />}
@@ -82,13 +85,14 @@ export default function RegisterScreen() {
                         loading={loading}
                         disabled={loading}
                         style={globalStyles.button}
+                        buttonColor="#D183BA"
                     >
                         Registrarme
                     </Button>
 
                     <Button 
                         onPress={() => navigation.navigate("Login" as never)}
-                        textColor="#4f46e5"
+                        textColor="#D183BA"
                     >
                         ¿Ya tienes cuenta? Inicia sesión
                     </Button>
