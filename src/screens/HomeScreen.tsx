@@ -10,7 +10,7 @@ export default function HomeScreen() {
 
   return (
     <LinearGradient
-      colors={['#4f46e5', '#7c3aed']}
+      colors={['#F5E4F0', '#F5E4F0']}
       style={globalStyles.gradient}
     >
       <View style={globalStyles.card}>
@@ -21,16 +21,15 @@ export default function HomeScreen() {
 
         <Button 
           mode="contained" 
-          style={[globalStyles.button, { backgroundColor: '#7c3aed' }]} 
+          style={[globalStyles.button, { backgroundColor: '#D183BA' }]} 
           onPress={() => navigation.navigate("Register" as never)}
         > 
           Crear Cuenta 
         </Button>
 
         <Button 
-          mode="outlined" 
-          style={[globalStyles.button, { marginTop: 15, borderColor: '#7c3aed' }]} 
-          textColor="#7c3aed"
+          mode="contained" 
+          style={[globalStyles.button, { marginTop: 15, backgroundColor: '#D183BA' }]} 
           onPress={() => navigation.navigate("Login" as never)}
         > 
           Iniciar Sesión 
