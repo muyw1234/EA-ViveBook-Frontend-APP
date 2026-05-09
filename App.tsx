@@ -10,6 +10,9 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import HomeScreen from "./src/screens/HomeScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
+import BooksForSaleScreen from "./src/screens/BooksForSaleScreen";
+import BooksForRentScreen from "./src/screens/BooksForRentScreen";
+import AddBookScreen from "./src/screens/AddBookScreen";
 import style from "./styles/default.old"
 
 import MainNavigator from "./src/navigation/MainNavigator";
@@ -27,6 +30,9 @@ export default function App() {
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Main" component={MainNavigator} options={{ headerShown: false }} />
+          <Stack.Screen name="BooksForSale" component={BooksForSaleScreen} options={{ title: 'Libros en Venta' }} />
+          <Stack.Screen name="BooksForRent" component={BooksForRentScreen} options={{ title: 'Libros en Alquiler' }} />
+          <Stack.Screen name="AddBook" component={AddBookScreen} options={{ title: 'Subir Libro' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </PaperProvider>
