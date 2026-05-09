@@ -22,7 +22,7 @@ export default function DashboardScreen() {
           <Text variant="bodyMedium">Explora el catálogo de libros a la venta.</Text>
         </Card.Content>
         <Card.Actions>
-          <Button mode="contained" buttonColor="#D183BA">Ver libros a la venta</Button>
+          <Button mode="contained" buttonColor="#D183BA" onPress={() => navigation.navigate("BooksForSale" as never)}>Ver libros a la venta</Button>
         </Card.Actions>
       </Card>
 
@@ -32,7 +32,7 @@ export default function DashboardScreen() {
           <Text variant="bodyMedium">Encuentra libros para alquilar por tiempo limitado.</Text>
         </Card.Content>
         <Card.Actions>
-          <Button mode="contained" buttonColor="#D183BA">Ver libros para alquilar</Button>
+          <Button mode="contained" buttonColor="#D183BA" onPress={() => navigation.navigate("BooksForRent" as never)}>Ver libros para alquilar</Button>
         </Card.Actions>
       </Card>
 
@@ -42,7 +42,7 @@ export default function DashboardScreen() {
           <Text variant="bodyMedium">Añade un libro para vender o alquilar.</Text>
         </Card.Content>
         <Card.Actions>
-          <Button mode="contained" buttonColor="#D183BA">Subir ahora</Button>
+          <Button mode="contained" buttonColor="#D183BA" onPress={() => navigation.navigate("AddBook" as never)}>Subir ahora</Button>
         </Card.Actions>
       </Card>
 
