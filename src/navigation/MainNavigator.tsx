@@ -4,6 +4,7 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import DashboardScreen from '../screens/DashboardScreen';
+import ChatRoomScreen from '../screens/ChatRoomScreen';
 import style from '../../styles/default.old';
 
 const Tab = createBottomTabNavigator();
@@ -24,6 +25,15 @@ export default function MainNavigator() {
         options={{
           title: 'Inicio',
           tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />
+        }} 
+      />
+      <Tab.Screen 
+        name="Chat" 
+        component={ChatRoomScreen} 
+        initialParams={{ chatId: '000000000000000000000001' }}
+        options={{
+          title: 'Chat Global',
+          tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles" size={size} color={color} />
         }} 
       />
       <Tab.Screen 
