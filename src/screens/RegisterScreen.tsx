@@ -13,26 +13,47 @@ export default function RegisterScreen() {
     
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
+    const [confirmEmail, setConfirmEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
     const [loading, setLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
 
     const handleRegister = async () => {
-        if (!name || !email || !password) {
-            Alert.alert(t("error"), t("err_missing_reg"));
+        setErrorMsg("");
+        
+        if (!name || !email || !confirmEmail || !password || !confirmPassword) {
+            setErrorMsg(t("err_missing_reg"));
+            return;
+        }
+
+        if (email !== confirmEmail) {
+            setErrorMsg(t("err_emails_dont_match"));
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setErrorMsg(t("err_passwords_dont_match"));
             return;
         }
 
         setLoading(true);
         try {
-            const response = await api.post("/auth/signup", { name, email, password });
+            const response = await api.post("/auth/signup", { 
+                name, 
+                email, 
+                confirmEmail,
+                password,
+                confirmPassword
+            });
 
             if (response.status === 201) {
                 Alert.alert(t("success"), t("msg_reg_success"));
                 navigation.navigate("Login" as never);
             }
         } catch (error: any) {
-            const message = error.response?.data?.message || t("error");
-            Alert.alert(t("error"), message);
+            const message = error.response?.data?.message || t("err_reg_problem");
+            setErrorMsg(message);
         } finally {
             setLoading(false);
         }
@@ -75,6 +96,18 @@ export default function RegisterScreen() {
                     />
 
                     <TextInput
+                        label={t("confirm_email_label")}
+                        value={confirmEmail}
+                        onChangeText={setConfirmEmail}
+                        mode="flat"
+                        underlineColor="transparent"
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        style={globalStyles.input}
+                        left={<TextInput.Icon icon="email-check" />}
+                    />
+
+                    <TextInput
                         label={t("password_label")}
                         value={password}
                         onChangeText={setPassword}
@@ -84,6 +117,23 @@ export default function RegisterScreen() {
                         style={globalStyles.input}
                         left={<TextInput.Icon icon="lock" />}
                     />
+
+                    <TextInput
+                        label={t("confirm_password_label")}
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
+                        mode="flat"
+                        underlineColor="transparent"
+                        secureTextEntry
+                        style={globalStyles.input}
+                        left={<TextInput.Icon icon="lock-check" />}
+                    />
+
+                    {errorMsg ? (
+                        <Text style={{ color: 'red', textAlign: 'center', marginBottom: 10 }}>
+                            {errorMsg}
+                        </Text>
+                    ) : null}
 
                     <Button 
                         mode="contained" 
