@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Alert, ScrollView } from "react-native";
 import { Text, TextInput, Button, Avatar, Card, ActivityIndicator } from "react-native-paper";
+import { useTranslation } from 'react-i18next';
 import api from "../services/api";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles as globalStyles } from "../../styles/default";
 
 export default function ProfileScreen() {
+    const { t } = useTranslation();
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
@@ -25,7 +27,7 @@ export default function ProfileScreen() {
             setEmail(response.data.email);
         } catch (error) {
             console.error("Error fetching profile:", error);
-            Alert.alert("Error", "No se pudo cargar el perfil");
+            Alert.alert(t('error'), t('profile_err_loading'));
         } finally {
             setLoading(false);
         }
@@ -33,7 +35,7 @@ export default function ProfileScreen() {
 
     const handleUpdate = async () => {
         if (!name || !email) {
-            Alert.alert("Error", "El nombre y el email son obligatorios");
+            Alert.alert(t('error'), t('profile_err_fields'));
             return;
         }
 
@@ -43,13 +45,12 @@ export default function ProfileScreen() {
             if (response.status === 200) {
                 setUser(response.data);
                 setIsEditing(false);
-                // Actualizar usuario en AsyncStorage también
                 await AsyncStorage.setItem('user', JSON.stringify(response.data));
-                Alert.alert("¡Éxito!", "Perfil actualizado correctamente");
+                Alert.alert(t('success'), t('profile_success_update'));
             }
         } catch (error) {
             console.error("Error updating profile:", error);
-            Alert.alert("Error", "No se pudo actualizar el perfil");
+            Alert.alert(t('error'), t('profile_err_update'));
         } finally {
             setUpdating(false);
         }
@@ -72,7 +73,7 @@ export default function ProfileScreen() {
                     style={{ backgroundColor: '#D183BA' }} 
                 />
                 <Text variant="headlineMedium" style={[globalStyles.title, { marginTop: 10 }]}>
-                    {isEditing ? "Editar Perfil" : name}
+                    {isEditing ? t('profile_title') : name}
                 </Text>
             </View>
 
@@ -81,7 +82,7 @@ export default function ProfileScreen() {
                     {isEditing ? (
                         <>
                             <TextInput
-                                label="Nombre"
+                                label={t('profile_name_label')}
                                 value={name}
                                 onChangeText={setName}
                                 mode="flat"
@@ -89,7 +90,7 @@ export default function ProfileScreen() {
                                 style={globalStyles.input}
                             />
                             <TextInput
-                                label="Email"
+                                label={t('profile_email_label')}
                                 value={email}
                                 onChangeText={setEmail}
                                 mode="flat"
@@ -106,7 +107,7 @@ export default function ProfileScreen() {
                                     buttonColor="#D183BA"
                                     style={{ flex: 1, marginRight: 5 }}
                                 >
-                                    Guardar
+                                    {t('save')}
                                 </Button>
                                 <Button 
                                     mode="outlined" 
@@ -118,18 +119,18 @@ export default function ProfileScreen() {
                                     textColor="#64748b"
                                     style={{ flex: 1, marginLeft: 5 }}
                                 >
-                                    Cancelar
+                                    {t('cancel')}
                                 </Button>
                             </View>
                         </>
                     ) : (
                         <>
                             <View style={styles.infoRow}>
-                                <Text variant="labelLarge" style={styles.label}>Nombre:</Text>
+                                <Text variant="labelLarge" style={styles.label}>{t('profile_name_label')}</Text>
                                 <Text variant="bodyLarge">{user.name}</Text>
                             </View>
                             <View style={styles.infoRow}>
-                                <Text variant="labelLarge" style={styles.label}>Email:</Text>
+                                <Text variant="labelLarge" style={styles.label}>{t('profile_email_label')}</Text>
                                 <Text variant="bodyLarge">{user.email}</Text>
                             </View>
                             <Button 
@@ -138,7 +139,7 @@ export default function ProfileScreen() {
                                 buttonColor="#D183BA"
                                 style={{ marginTop: 20 }}
                             >
-                                Editar
+                                {t('profile_edit_btn')}
                             </Button>
                         </>
                     )}
@@ -155,19 +156,23 @@ const styles = StyleSheet.create({
     },
     header: {
         alignItems: 'center',
-        marginTop: 40,
-        marginBottom: 20,
-    },
-    infoRow: {
-        marginBottom: 15,
-    },
-    label: {
-        color: '#64748b',
-        marginBottom: 2,
+        marginTop: 20,
     },
     buttonRow: {
         flexDirection: 'row',
-        marginTop: 10,
+        justifyContent: 'space-between',
+        marginTop: 15,
+    },
+    infoRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    label: {
+        fontWeight: 'bold',
+        color: '#666',
     }
 });
-

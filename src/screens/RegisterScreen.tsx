@@ -3,10 +3,12 @@ import { View, Alert, StyleSheet, ScrollView } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTranslation } from "react-i18next";
 import api from "../services/api";
 import { styles as globalStyles } from "../../styles/default";
 
 export default function RegisterScreen() {
+    const { t } = useTranslation();
     const navigation = useNavigation();
     
     const [name, setName] = useState("");
@@ -16,7 +18,7 @@ export default function RegisterScreen() {
 
     const handleRegister = async () => {
         if (!name || !email || !password) {
-            Alert.alert("Error", "Por favor, rellena todos los campos");
+            Alert.alert(t("error"), t("err_missing_reg"));
             return;
         }
 
@@ -25,12 +27,12 @@ export default function RegisterScreen() {
             const response = await api.post("/auth/signup", { name, email, password });
 
             if (response.status === 201) {
-                Alert.alert("¡Éxito!", "Usuario registrado correctamente");
+                Alert.alert(t("success"), t("msg_reg_success"));
                 navigation.navigate("Login" as never);
             }
         } catch (error: any) {
-            const message = error.response?.data?.message || "Hubo un problema al registrarte";
-            Alert.alert("Error de registro", message);
+            const message = error.response?.data?.message || t("error");
+            Alert.alert(t("error"), message);
         } finally {
             setLoading(false);
         }
@@ -43,11 +45,15 @@ export default function RegisterScreen() {
         >
             <ScrollView contentContainerStyle={{ justifyContent: 'center', flexGrow: 1 }}>
                 <View style={globalStyles.card}>
-                    <Text variant="headlineLarge" style={globalStyles.title}>Registro</Text>
-                    <Text variant="bodyMedium" style={globalStyles.subtitle}>Crea tu cuenta en ViveBook</Text>
+                    <Text variant="headlineLarge" style={globalStyles.title}>
+                        {t("register_title")}
+                    </Text>
+                    <Text variant="bodyMedium" style={globalStyles.subtitle}>
+                        {t("register_subtitle")}
+                    </Text>
                     
                     <TextInput
-                        label="Nombre Completo"
+                        label={t("name_label")}
                         value={name}
                         onChangeText={setName}
                         mode="flat"
@@ -57,7 +63,7 @@ export default function RegisterScreen() {
                     />
 
                     <TextInput
-                        label="Email"
+                        label={t("email_label")}
                         value={email}
                         onChangeText={setEmail}
                         mode="flat"
@@ -69,7 +75,7 @@ export default function RegisterScreen() {
                     />
 
                     <TextInput
-                        label="Contraseña"
+                        label={t("password_label")}
                         value={password}
                         onChangeText={setPassword}
                         mode="flat"
@@ -87,14 +93,14 @@ export default function RegisterScreen() {
                         style={globalStyles.button}
                         buttonColor="#D183BA"
                     >
-                        Registrarme
+                        {t("btn_create_account")}
                     </Button>
 
                     <Button 
                         onPress={() => navigation.navigate("Login" as never)}
                         textColor="#D183BA"
                     >
-                        ¿Ya tienes cuenta? Inicia sesión
+                        {t("no_account_link")}
                     </Button>
                 </View>
             </ScrollView>

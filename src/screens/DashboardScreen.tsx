@@ -2,9 +2,11 @@ import React from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text, Button, Card } from 'react-native-paper';
 import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function DashboardScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
 
   const handleLogout = async () => {
@@ -14,35 +16,41 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text variant="headlineMedium" style={styles.header}>Inicio</Text>
+      <Text variant="headlineMedium" style={styles.header}>{t('dash_header')}</Text>
 
       <Card style={styles.card}>
         <Card.Content>
-          <Text variant="titleLarge">Libros en venta</Text>
-          <Text variant="bodyMedium">Explora el catálogo de libros a la venta.</Text>
+          <Text variant="titleLarge">{t('dash_sales_title')}</Text>
+          <Text variant="bodyMedium">{t('dash_sales_desc')}</Text>
         </Card.Content>
         <Card.Actions>
-          <Button mode="contained" buttonColor="#D183BA" onPress={() => navigation.navigate("BooksForSale" as never)}>Ver libros a la venta</Button>
+          <Button mode="contained" buttonColor="#D183BA" onPress={() => navigation.navigate("BooksForSale" as never)}>
+            {t('dash_sales_btn')}
+          </Button>
         </Card.Actions>
       </Card>
 
       <Card style={styles.card}>
         <Card.Content>
-          <Text variant="titleLarge">Libros disponibles para alquilar</Text>
-          <Text variant="bodyMedium">Encuentra libros para alquilar por tiempo limitado.</Text>
+          <Text variant="titleLarge">{t('dash_rent_title')}</Text>
+          <Text variant="bodyMedium">{t('dash_rent_desc')}</Text>
         </Card.Content>
         <Card.Actions>
-          <Button mode="contained" buttonColor="#D183BA" onPress={() => navigation.navigate("BooksForRent" as never)}>Ver libros para alquilar</Button>
+          <Button mode="contained" buttonColor="#D183BA" onPress={() => navigation.navigate("BooksForRent" as never)}>
+            {t('dash_rent_btn')}
+          </Button>
         </Card.Actions>
       </Card>
 
       <Card style={styles.card}>
         <Card.Content>
-          <Text variant="titleLarge">Subir libro</Text>
-          <Text variant="bodyMedium">Añade un libro para vender o alquilar.</Text>
+          <Text variant="titleLarge">{t('dash_add_title')}</Text>
+          <Text variant="bodyMedium">{t('dash_add_desc')}</Text>
         </Card.Content>
         <Card.Actions>
-          <Button mode="contained" buttonColor="#D183BA" onPress={() => navigation.navigate("AddBook" as never)}>Subir ahora</Button>
+          <Button mode="contained" buttonColor="#D183BA" onPress={() => navigation.navigate("AddBook" as never)}>
+            {t('dash_add_btn')}
+          </Button>
         </Card.Actions>
       </Card>
 
@@ -52,7 +60,7 @@ export default function DashboardScreen() {
         style={{ marginTop: 20, marginBottom: 40, borderColor: '#ef4444' }}
         textColor="#ef4444"
       >
-        Cerrar Sesión
+        {t('logout')}
       </Button>
     </ScrollView>
   );

@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Text, TextInput, Button, SegmentedButtons, Card } from 'react-native-paper';
 import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import { styles as globalStyles } from '../../styles/default';
 
 export default function AddBookScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [isbn, setIsbn] = useState('');
   const [title, setTitle] = useState('');
@@ -16,7 +18,7 @@ export default function AddBookScreen() {
 
   const handleAddBook = async () => {
     if (!isbn || !title || !precio || !estado) {
-      Alert.alert("Error", "Todos los campos son obligatorios");
+      Alert.alert(t('error'), t('err_missing_fields'));
       return;
     }
 
@@ -31,12 +33,12 @@ export default function AddBookScreen() {
       });
 
       if (response.status === 201) {
-        Alert.alert("Éxito", "Libro subido correctamente");
+        Alert.alert(t('success'), t('msg_add_success'));
         navigation.goBack();
       }
     } catch (error: any) {
       console.error("Error adding book:", error);
-      Alert.alert("Error", "No se pudo subir el libro");
+      Alert.alert(t('error'), t('msg_add_error'));
     } finally {
       setLoading(false);
     }
@@ -46,10 +48,10 @@ export default function AddBookScreen() {
     <ScrollView style={styles.container}>
       <Card style={styles.card}>
         <Card.Content>
-          <Text variant="headlineSmall" style={styles.title}>Subir Nuevo Libro</Text>
+          <Text variant="headlineSmall" style={styles.title}>{t('add_book_title')}</Text>
           
           <TextInput
-            label="ISBN"
+            label={t('isbn_label')}
             value={isbn}
             onChangeText={setIsbn}
             style={styles.input}
@@ -57,26 +59,26 @@ export default function AddBookScreen() {
           />
           
           <TextInput
-            label="Título"
+            label={t('title_label')}
             value={title}
             onChangeText={setTitle}
             style={styles.input}
             mode="outlined"
           />
 
-          <Text style={styles.label}>Tipo:</Text>
+          <Text style={styles.label}>{t('type_label')}:</Text>
           <SegmentedButtons
             value={type}
             onValueChange={setType}
             buttons={[
-              { value: 'VENTA', label: 'Venta' },
-              { value: 'ALQUILER', label: 'Alquiler' },
+              { value: 'VENTA', label: t('buy_action') },
+              { value: 'ALQUILER', label: t('rent_action') },
             ]}
             style={styles.segmented}
           />
 
           <TextInput
-            label="Precio"
+            label={t('price_label')}
             value={precio}
             onChangeText={setPrecio}
             keyboardType="numeric"
@@ -85,7 +87,7 @@ export default function AddBookScreen() {
           />
 
           <TextInput
-            label="Estado (ej. Nuevo, Usado)"
+            label={t('state_label')}
             value={estado}
             onChangeText={setEstado}
             style={styles.input}
@@ -99,7 +101,7 @@ export default function AddBookScreen() {
             style={styles.button}
             buttonColor="#D183BA"
           >
-            Subir ahora
+            {t('btn_submit_now')}
           </Button>
         </Card.Content>
       </Card>
