@@ -4,8 +4,10 @@ import { List, Avatar, Text, FAB } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import api from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 
 export default function ChatListScreen() {
+    const { t } = useTranslation();
     const [chats, setChats] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigation = useNavigation();
@@ -24,7 +26,7 @@ export default function ChatListScreen() {
             const response = await api.get(`/chats/usuario/${user._id}`);
             setChats(response.data);
         } catch (error) {
-            console.error('Error fetching chats:', error);
+            console.error(t('chat_error_fetch'), error);
         } finally {
             setLoading(false);
         }
@@ -32,8 +34,8 @@ export default function ChatListScreen() {
 
     const renderItem = ({ item }: any) => (
         <List.Item
-            title={item.libro ? `Libro: ${item.libro.titulo}` : 'Chat Directo'}
-            description="Toca para abrir el chat"
+            title={item.libro ? `Libro: ${item.libro.titulo}` : t('chat_header')}
+            description={t('chat_open_message')}
             left={props => <Avatar.Icon {...props} icon="chat" />}
             onPress={() => navigation.navigate('ChatRoom', { chatId: item._id })}
         />
@@ -47,7 +49,7 @@ export default function ChatListScreen() {
                 renderItem={renderItem}
                 onRefresh={fetchChats}
                 refreshing={loading}
-                ListEmptyComponent={<Text style={styles.empty}>No tienes chats activos</Text>}
+                ListEmptyComponent={<Text style={styles.empty}>{t('chat_empty')}</Text>}
             />
         </View>
     );

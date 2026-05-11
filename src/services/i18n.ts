@@ -31,6 +31,13 @@ const resources = {
       no_books: "No hay libros disponibles en este momento.",
       rent_action: "Alquilar",
       buy_action: "Comprar",
+      //Chat
+      chat_header: "Chat",
+      chat_placeholder: "Escribe tu mensaje...",
+      chat_open_message: "Toca para abrir el chat",
+      chat_empty: "No tienes chats activos",
+      chat_error_load: "No se han podido cargar los mensajes",
+      chat_error_fetch: "Error al obtener los chats",
       // Dashboard
       dash_header: "Inicio",
       dash_sales_title: "Libros en venta",
@@ -105,6 +112,13 @@ const resources = {
       no_books: "No hi ha llibres disponibles en aquest moment.",
       rent_action: "Llogar",
       buy_action: "Comprar",
+      //Chat
+        chat_header: "Xat",
+        chat_placeholder: "Escriu el teu missatge...",
+        chat_open_message: "Tocar per obrir el xat",
+        chat_empty: "No tens xats actius",
+        chat_error_load: "No s'han pogut cargar los mensajes",
+        chat_error_fetch: "Error fetching chats",
       // Dashboard
       dash_header: "Inici",
       dash_sales_title: "Llibres a la venda",
@@ -179,6 +193,13 @@ const resources = {
       no_books: "There are no books available at this moment.",
       rent_action: "Rent",
       buy_action: "Buy",
+      //Chat
+      chat_header: "Chat",
+      chat_placeholder: "Type your message...",
+      chat_open_message: "Tap to open the chat",
+      chat_empty: "You have no active chats",
+      chat_error_load: "Could not load messages",
+      chat_error_fetch: "Error fetching chats",
       // Dashboard
       dash_header: "Home",
       dash_sales_title: "Books for sale",
@@ -262,7 +283,7 @@ i18n
       escapeValue: false,
     },
   });
-  
+
 export const changeLanguage = async (lng: 'es' | 'ca' | 'en') => {
   try {
     await AsyncStorage.setItem(LANGUAGE_KEY, lng);

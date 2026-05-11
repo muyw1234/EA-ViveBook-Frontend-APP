@@ -5,8 +5,10 @@ import { useRoute } from '@react-navigation/native';
 import socket from '../services/socket';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
+import { useTranslation } from 'react-i18next';
 
 export default function ChatRoomScreen() {
+    const { t } = useTranslation();
     const route = useRoute();
     const { chatId } = route.params as { chatId: string };
     const [messages, setMessages] = useState<any[]>([]);
@@ -31,7 +33,7 @@ export default function ChatRoomScreen() {
                     const response = await api.get(`/mensajes/chat/${chatId}`);
                     setMessages(response.data);
                 } catch (error) {
-                    console.error('Error cargando mensajes:', error);
+                    console.error(t('chat_error_load'));
                 }
             }
         };
@@ -94,7 +96,7 @@ export default function ChatRoomScreen() {
                 <TextInput
                     value={newMessage}
                     onChangeText={setNewMessage}
-                    placeholder="Escribe un mensaje..."
+                    placeholder={t('chat_placeholder')}
                     mode="outlined"
                     style={styles.input}
                     dense
