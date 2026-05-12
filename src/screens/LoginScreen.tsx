@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Alert, StyleSheet } from "react-native";
+import { View, Alert, StyleSheet, Image } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -51,6 +51,12 @@ export default function LoginScreen() {
             style={globalStyles.gradient}
         >
             <View style={globalStyles.card}>
+                <View style={{ alignItems: 'center', marginBottom: 10 }}>
+                    <Image 
+                        source={require('../../assets/libro_inicio.webp')} 
+                        style={{ width: 120, height: 120, resizeMode: 'contain' }} 
+                    />
+                </View>
                 <Text variant="headlineLarge" style={globalStyles.title}>{t('login_title')}</Text>
                 <Text variant="bodyMedium" style={globalStyles.subtitle}>{t('login_subtitle')}</Text>
                 
