@@ -16,6 +16,8 @@ export default function RegisterScreen() {
     const [confirmEmail, setConfirmEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
 
@@ -113,9 +115,15 @@ export default function RegisterScreen() {
                         onChangeText={setPassword}
                         mode="flat"
                         underlineColor="transparent"
-                        secureTextEntry
+                        secureTextEntry={!showPassword}
                         style={globalStyles.input}
                         left={<TextInput.Icon icon="lock" />}
+                        right={
+                            <TextInput.Icon 
+                                icon={showPassword ? "eye-off" : "eye"} 
+                                onPress={() => setShowPassword(!showPassword)} 
+                            />
+                        }
                     />
 
                     <TextInput
@@ -124,9 +132,15 @@ export default function RegisterScreen() {
                         onChangeText={setConfirmPassword}
                         mode="flat"
                         underlineColor="transparent"
-                        secureTextEntry
+                        secureTextEntry={!showConfirmPassword}
                         style={globalStyles.input}
                         left={<TextInput.Icon icon="lock-check" />}
+                        right={
+                            <TextInput.Icon 
+                                icon={showConfirmPassword ? "eye-off" : "eye"} 
+                                onPress={() => setShowConfirmPassword(!showConfirmPassword)} 
+                            />
+                        }
                     />
 
                     {errorMsg ? (
@@ -150,7 +164,7 @@ export default function RegisterScreen() {
                         onPress={() => navigation.navigate("Login" as never)}
                         textColor="#D183BA"
                     >
-                        {t("no_account_link")}
+                        {t("already_have_account_link")}
                     </Button>
                 </View>
             </ScrollView>

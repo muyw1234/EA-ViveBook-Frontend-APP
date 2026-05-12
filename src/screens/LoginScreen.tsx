@@ -14,6 +14,7 @@ export default function LoginScreen() {
     
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const handleLogin = async () => {
@@ -78,9 +79,15 @@ export default function LoginScreen() {
                     onChangeText={setPassword}
                     mode="flat"
                     underlineColor="transparent"
-                    secureTextEntry
+                    secureTextEntry={!showPassword}
                     style={globalStyles.input}
                     left={<TextInput.Icon icon="lock" />}
+                    right={
+                        <TextInput.Icon 
+                            icon={showPassword ? "eye-off" : "eye"} 
+                            onPress={() => setShowPassword(!showPassword)} 
+                        />
+                    }
                 />
 
                 <Button 

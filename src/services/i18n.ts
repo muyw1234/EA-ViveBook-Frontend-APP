@@ -61,6 +61,7 @@ const resources = {
       password_label: "Contraseña",
       btn_enter: "Entrar",
       no_account_link: "¿No tienes cuenta? Regístrate",
+      already_have_account_link: "¿Ya tienes cuenta? Inicia sesión",
       err_credentials: "Por favor, introduce tus credenciales",
       err_login_failed: "Email o contraseña incorrectos",
       // RegisterScreen
@@ -147,6 +148,7 @@ const resources = {
       password_label: "Contrasenya",
       btn_enter: "Entrar",
       no_account_link: "No tens compte? Registra't",
+      already_have_account_link: "Ja tens compte? Inicia sessió",
       err_credentials: "Per favor, introdueix les teves credencials",
       err_login_failed: "Email o contrasenya incorrectes",
       // RegisterScreen
@@ -233,6 +235,7 @@ const resources = {
       password_label: "Password",
       btn_enter: "Enter",
       no_account_link: "Don't have an account? Sign up",
+      already_have_account_link: "Already have an account? Log in",
       err_credentials: "Please enter your credentials",
       err_login_failed: "Incorrect email or password",
       // RegisterScreen
