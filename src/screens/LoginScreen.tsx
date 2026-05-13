@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Alert, StyleSheet, Image } from "react-native";
+import { View, Alert, StyleSheet, Image, Text as RNText } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -70,7 +70,7 @@ export default function LoginScreen() {
                     keyboardType="email-address"
                     autoCapitalize="none"
                     style={globalStyles.input}
-                    left={<TextInput.Icon icon="email" />}
+                    left={<TextInput.Icon icon={() => <RNText style={{ fontSize: 20 }}>✉️</RNText>} />}
                 />
 
                 <TextInput
@@ -81,10 +81,10 @@ export default function LoginScreen() {
                     underlineColor="transparent"
                     secureTextEntry={!showPassword}
                     style={globalStyles.input}
-                    left={<TextInput.Icon icon="lock" />}
+                    left={<TextInput.Icon icon={() => <RNText style={{ fontSize: 20 }}>🔒</RNText>} />}
                     right={
                         <TextInput.Icon 
-                            icon={showPassword ? "eye-off" : "eye"} 
+                            icon={() => <RNText style={{ fontSize: 20 }}>{showPassword ? "👁️" : "👀"}</RNText>} 
                             onPress={() => setShowPassword(!showPassword)} 
                         />
                     }

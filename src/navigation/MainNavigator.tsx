@@ -1,4 +1,5 @@
 import React from 'react';
+import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import ProfileScreen from '../screens/ProfileScreen';
@@ -28,7 +29,7 @@ export default function MainNavigator() {
         component={DashboardScreen} 
         options={{
           title: t('dash_header'),
-          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />
+          tabBarIcon: ({ size }) => <Text style={{ fontSize: size }}>🏠</Text>
         }} 
       />
       <Tab.Screen 
@@ -36,7 +37,7 @@ export default function MainNavigator() {
         component={MyBooksScreen} 
         options={{
           title: t('my_books'),
-          tabBarIcon: ({ color, size }) => <Ionicons name="book" size={size} color={color} />
+          tabBarIcon: ({ size }) => <Text style={{ fontSize: size }}>📚</Text>
         }} 
       />
       <Tab.Screen 
@@ -45,7 +46,7 @@ export default function MainNavigator() {
         initialParams={{ chatId: '000000000000000000000001' }}
         options={{
           title: 'Chat Global',
-          tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles" size={size} color={color} />
+          tabBarIcon: ({ size }) => <Text style={{ fontSize: size }}>💬</Text>
         }} 
       />
       <Tab.Screen 
@@ -53,7 +54,7 @@ export default function MainNavigator() {
         component={ProfileScreen} 
         options={{
           title: t('profile_title'),
-          tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />
+          tabBarIcon: ({ size }) => <Text style={{ fontSize: size }}>👤</Text>
         }} 
       />
       <Tab.Screen 
@@ -61,7 +62,7 @@ export default function MainNavigator() {
         component={SettingsScreen} 
         options={{
           title: t('accessibility_settings'),
-          tabBarIcon: ({ color, size }) => <Ionicons name="settings" size={size} color={color} />
+          tabBarIcon: ({ size }) => <Text style={{ fontSize: size }}>⚙️</Text>
         }} 
       />
     </Tab.Navigator>

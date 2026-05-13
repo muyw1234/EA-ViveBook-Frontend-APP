@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Alert, StyleSheet, ScrollView } from "react-native";
+import { View, Alert, StyleSheet, ScrollView, Text as RNText } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -82,7 +82,7 @@ export default function RegisterScreen() {
                         mode="flat"
                         underlineColor="transparent"
                         style={globalStyles.input}
-                        left={<TextInput.Icon icon="account" />}
+                        left={<TextInput.Icon icon={() => <RNText style={{ fontSize: 20 }}>👤</RNText>} />}
                     />
 
                     <TextInput
@@ -94,7 +94,7 @@ export default function RegisterScreen() {
                         keyboardType="email-address"
                         autoCapitalize="none"
                         style={globalStyles.input}
-                        left={<TextInput.Icon icon="email" />}
+                        left={<TextInput.Icon icon={() => <RNText style={{ fontSize: 20 }}>✉️</RNText>} />}
                     />
 
                     <TextInput
@@ -106,7 +106,7 @@ export default function RegisterScreen() {
                         keyboardType="email-address"
                         autoCapitalize="none"
                         style={globalStyles.input}
-                        left={<TextInput.Icon icon="email-check" />}
+                        left={<TextInput.Icon icon={() => <RNText style={{ fontSize: 20 }}>✉️</RNText>} />}
                     />
 
                     <TextInput
@@ -117,10 +117,10 @@ export default function RegisterScreen() {
                         underlineColor="transparent"
                         secureTextEntry={!showPassword}
                         style={globalStyles.input}
-                        left={<TextInput.Icon icon="lock" />}
+                        left={<TextInput.Icon icon={() => <RNText style={{ fontSize: 20 }}>🔒</RNText>} />}
                         right={
                             <TextInput.Icon 
-                                icon={showPassword ? "eye-off" : "eye"} 
+                                icon={() => <RNText style={{ fontSize: 20 }}>{showPassword ? "👁️" : "👀"}</RNText>} 
                                 onPress={() => setShowPassword(!showPassword)} 
                             />
                         }
@@ -134,10 +134,10 @@ export default function RegisterScreen() {
                         underlineColor="transparent"
                         secureTextEntry={!showConfirmPassword}
                         style={globalStyles.input}
-                        left={<TextInput.Icon icon="lock-check" />}
+                        left={<TextInput.Icon icon={() => <RNText style={{ fontSize: 20 }}>🔒</RNText>} />}
                         right={
                             <TextInput.Icon 
-                                icon={showConfirmPassword ? "eye-off" : "eye"} 
+                                icon={() => <RNText style={{ fontSize: 20 }}>{showConfirmPassword ? "👁️" : "👀"}</RNText>} 
                                 onPress={() => setShowConfirmPassword(!showConfirmPassword)} 
                             />
                         }
