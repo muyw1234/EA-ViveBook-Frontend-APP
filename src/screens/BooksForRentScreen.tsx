@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, ActivityIndicator, Alert, FlatList, Dimensions } from 'react-native';
+import { View, ScrollView, StyleSheet, ActivityIndicator, Alert, FlatList, Dimensions, Text as RNText } from 'react-native';
 import { Text, Card, Button, Menu, Divider, IconButton } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
@@ -75,9 +75,17 @@ export default function BooksForRentScreen() {
           }
           contentStyle={{ backgroundColor: 'white' }}
         >
-          <Menu.Item onPress={() => handleTalkToSeller(book)} title={t('talk_to_seller')} leadingIcon="chat" />
+          <Menu.Item 
+            onPress={() => handleTalkToSeller(book)} 
+            title={t('talk_to_seller')} 
+            leadingIcon={() => <RNText style={{ fontSize: 18 }}>💬</RNText>}
+          />
           <Divider />
-          <Menu.Item onPress={() => handleRentDirectly(book)} title={t('rent_directly')} leadingIcon="calendar-clock" />
+          <Menu.Item 
+            onPress={() => handleRentDirectly(book)} 
+            title={t('rent_directly')} 
+            leadingIcon={() => <RNText style={{ fontSize: 18 }}>💰</RNText>}
+          />
         </Menu>
       </Card.Actions>
     </Card>
