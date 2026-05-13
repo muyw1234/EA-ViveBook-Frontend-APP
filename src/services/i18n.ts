@@ -14,17 +14,20 @@ const resources = {
       close: "Cerrar",
       back: "Volver",
       logout: "Cerrar Sesión",
+      edit: "Editar",
+      save_changes: "Guardar Cambios",
       // AddBookScreen
       add_book_title: "Subir Nuevo Libro",
       isbn_label: "ISBN",
       title_label: "Título",
       type_label: "Tipo",
       price_label: "Precio",
-      state_label: "Estado (ej. Nuevo, Usado)",
+      state_label: "Estado",
       btn_submit_now: "Subir ahora",
       err_missing_fields: "Todos los campos son obligatorios",
       msg_add_success: "Libro subido correctamente",
       msg_add_error: "No se pudo subir el libro",
+      edit_book_title: "Editar Libro",
       // Books Rent / Sale
       rent_header: "Libros en Alquiler",
       sale_header: "Libros en Venta",
@@ -87,7 +90,14 @@ const resources = {
       // Accessibility Menu
       accessibility_settings: "Ajustes de Accesibilidad",
       high_contrast: "Alto Contraste",
-      lang_label: "Idioma / Language"
+      lang_label: "Idioma / Language",
+      my_books: "Mis Libros",
+      uploaded: "Subidos",
+      bought: "Comprados",
+      rented: "Alquilados",
+      talk_to_seller: "Hablar con el vendedor",
+      buy_directly: "Comprar directamente",
+      rent_directly: "Alquilar directamente"
     }
   },
   ca: {
@@ -101,17 +111,20 @@ const resources = {
       close: "Tancar",
       back: "Tornar",
       logout: "Tancar Sessió",
+      edit: "Editar",
+      save_changes: "Guardar Canvis",
       // AddBookScreen
       add_book_title: "Penjar Nou Llibre",
       isbn_label: "ISBN",
       title_label: "Títol",
       type_label: "Tipus",
       price_label: "Preu",
-      state_label: "Estat (ex. Nou, Usat)",
+      state_label: "Estat",
       btn_submit_now: "Penjar ara",
       err_missing_fields: "Tots els camps són obligatoris",
       msg_add_success: "Llibre penjat correctament",
       msg_add_error: "No s'ha pogut penjar el llibre",
+      edit_book_title: "Editar Llibre",
       // Books Rent / Sale
       rent_header: "Llibres en Lloguer",
       sale_header: "Llibres a la Venda",
@@ -174,7 +187,14 @@ const resources = {
       // Accessibility Menu
       accessibility_settings: "Ajustos d'Accessibilitat",
       high_contrast: "Alt Contrast",
-      lang_label: "Idioma / Language"
+      lang_label: "Idioma / Language",
+      my_books: "Els meus llibres",
+      uploaded: "Penjats",
+      bought: "Comprats",
+      rented: "Llogats",
+      talk_to_seller: "Parlar amb el venedor",
+      buy_directly: "Comprar directament",
+      rent_directly: "Llogar directament"
     }
   },
   en: {
@@ -188,17 +208,20 @@ const resources = {
       close: "Close",
       back: "Back",
       logout: "Log Out",
+      edit: "Edit",
+      save_changes: "Save Changes",
       // AddBookScreen
       add_book_title: "Upload New Book",
       isbn_label: "ISBN",
       title_label: "Title",
       type_label: "Type",
       price_label: "Price",
-      state_label: "Condition (e.g. New, Used)",
+      state_label: "Condition",
       btn_submit_now: "Upload now",
       err_missing_fields: "All fields are required",
       msg_add_success: "Book uploaded successfully",
       msg_add_error: "Could not upload the book",
+      edit_book_title: "Edit Book",
       // Books Rent / Sale
       rent_header: "Books for Rent",
       sale_header: "Books for Sale",
@@ -261,7 +284,14 @@ const resources = {
       // Accessibility Menu
       accessibility_settings: "Accessibility Settings",
       high_contrast: "High Contrast",
-      lang_label: "Idioma / Language"
+      lang_label: "Idioma / Language",
+      my_books: "My Books",
+      uploaded: "Uploaded",
+      bought: "Bought",
+      rented: "Rented",
+      talk_to_seller: "Talk to seller",
+      buy_directly: "Buy directly",
+      rent_directly: "Rent directly"
     }
   }
 };
