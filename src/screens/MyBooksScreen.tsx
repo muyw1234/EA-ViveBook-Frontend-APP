@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert, Text as RNText, Platform } from 'react-native';
-import { Text, Card, Button, Avatar, SegmentedButtons, Portal, Modal, TextInput } from 'react-native-paper';
+import { Text, Card, Button, Avatar, SegmentedButtons, Portal, Modal, TextInput, ProgressBar } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../services/api';
@@ -123,6 +123,41 @@ export default function MyBooksScreen() {
     }
   };
 
+  const renderRentalStatus = (book: any) => {
+    if (!book.rentalStartDate || !book.rentalEndDate) return null;
+
+    const start = new Date(book.rentalStartDate).getTime();
+    const end = new Date(book.rentalEndDate).getTime();
+    const now = new Date().getTime();
+
+    let progress = 0;
+    let statusText = "";
+
+    if (now < start) {
+      progress = 0;
+      statusText = t('rental_not_started') || "El alquiler todavía no ha empezado";
+    } else if (now > end) {
+      progress = 1;
+      statusText = t('rental_finished') || "Alquiler finalizado";
+    } else {
+      const total = end - start;
+      const elapsed = now - start;
+      progress = elapsed / total;
+      const daysRemaining = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+      statusText = (t('rental_days_remaining') || "Quedan X días de alquiler").replace('X', daysRemaining.toString());
+    }
+
+    return (
+      <View style={styles.rentalStatusContainer}>
+        <Text variant="bodySmall" style={styles.rentalDates}>
+          {new Date(book.rentalStartDate).toLocaleDateString()} - {new Date(book.rentalEndDate).toLocaleDateString()}
+        </Text>
+        <ProgressBar progress={progress} color="#D183BA" style={styles.progressBar} />
+        <Text variant="labelMedium" style={styles.statusText}>{statusText}</Text>
+      </View>
+    );
+  };
+
   const renderContent = () => {
     let currentBooks = [];
     if (category === 'uploaded') currentBooks = uploadedBooks;
@@ -153,6 +188,8 @@ export default function MyBooksScreen() {
             </View>
           </View>
           <Text variant="titleMedium" style={styles.price}>{t('price_label')}: {book.precio}€</Text>
+          
+          {category === 'rented' && renderRentalStatus(book)}
         </Card.Content>
         {category === 'uploaded' && (
           <Card.Actions>

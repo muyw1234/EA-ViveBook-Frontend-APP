@@ -28,6 +28,8 @@ const resources = {
       msg_add_success: "Libro subido correctamente",
       msg_add_error: "No se pudo subir el libro",
       edit_book_title: "Editar Libro",
+      rental_start_label: "Fecha de inicio del alquiler",
+      rental_end_label: "Fecha de fin del alquiler",
       // Books Rent / Sale
       rent_header: "Libros en Alquiler",
       sale_header: "Libros en Venta",
@@ -125,6 +127,8 @@ const resources = {
       msg_add_success: "Llibre penjat correctament",
       msg_add_error: "No s'ha pogut penjar el llibre",
       edit_book_title: "Editar Llibre",
+      rental_start_label: "Data d'inici del lloguer",
+      rental_end_label: "Data de fi del lloguer",
       // Books Rent / Sale
       rent_header: "Llibres en Lloguer",
       sale_header: "Llibres a la Venda",
@@ -222,6 +226,8 @@ const resources = {
       msg_add_success: "Book uploaded successfully",
       msg_add_error: "Could not upload the book",
       edit_book_title: "Edit Book",
+      rental_start_label: "Rental start date",
+      rental_end_label: "Rental end date",
       // Books Rent / Sale
       rent_header: "Books for Rent",
       sale_header: "Books for Sale",
