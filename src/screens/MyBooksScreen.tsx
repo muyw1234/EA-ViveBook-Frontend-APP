@@ -7,7 +7,9 @@ import api from '../services/api';
 
 export default function MyBooksScreen() {
   const { t } = useTranslation();
-  const [books, setBooks] = useState<any[]>([]);
+  const [uploadedBooks, setUploadedBooks] = useState<any[]>([]);
+  const [boughtBooks, setBoughtBooks] = useState<any[]>([]);
+  const [rentedBooks, setRentedBooks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [category, setCategory] = useState('uploaded');
@@ -24,8 +26,10 @@ export default function MyBooksScreen() {
   const fetchMyBooks = async () => {
     try {
       const response = await api.get('/auth/profile');
-      if (response.data && response.data.libros) {
-        setBooks(response.data.libros);
+      if (response.data) {
+        setUploadedBooks(response.data.libros || []);
+        setBoughtBooks(response.data.boughtLibros || []);
+        setRentedBooks(response.data.rentedLibros || []);
       }
     } catch (error) {
       console.error('Error fetching my books:', error);
@@ -120,52 +124,51 @@ export default function MyBooksScreen() {
   };
 
   const renderContent = () => {
-    if (category === 'uploaded') {
-      return books.length === 0 ? (
+    let currentBooks = [];
+    if (category === 'uploaded') currentBooks = uploadedBooks;
+    else if (category === 'bought') currentBooks = boughtBooks;
+    else if (category === 'rented') currentBooks = rentedBooks;
+
+    if (currentBooks.length === 0) {
+      return (
         <Card style={styles.emptyCard}>
           <Card.Content>
             <Text variant="bodyLarge" style={styles.emptyText}>{t('no_books')}</Text>
           </Card.Content>
         </Card>
-      ) : (
-        books.map((book: any) => (
-          <Card key={book._id} style={styles.card}>
-            <Card.Content>
-              <View style={styles.row}>
-                <View style={{ flex: 1 }}>
-                  <Text variant="titleLarge" style={styles.bookTitle}>{book.title}</Text>
-                  <Text variant="bodyMedium" style={styles.bookDetails}>{t('isbn_label')}: {book.isbn}</Text>
-                  <Text variant="bodyMedium" style={styles.bookDetails}>{t('state_label')}: {book.estado}</Text>
-                </View>
-                <View style={styles.typeBadge}>
-                  <Text style={styles.typeText}>{book.type}</Text>
-                </View>
-              </View>
-              <Text variant="titleMedium" style={styles.price}>{t('price_label')}: {book.precio}€</Text>
-            </Card.Content>
-            <Card.Actions>
-              <Button 
-                icon={() => <RNText style={{ fontSize: 16 }}>✏️</RNText>}
-                mode="outlined" 
-                onPress={() => handleEditPress(book)}
-                style={styles.editButton}
-                textColor="#D183BA"
-              >
-                {t('edit')}
-              </Button>
-            </Card.Actions>
-          </Card>
-        ))
       );
     }
 
-    return (
-      <Card style={styles.emptyCard}>
+    return currentBooks.map((book: any) => (
+      <Card key={book._id} style={styles.card}>
         <Card.Content>
-          <Text variant="bodyLarge" style={styles.emptyText}>{t('no_books')}</Text>
+          <View style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <Text variant="titleLarge" style={styles.bookTitle}>{book.title}</Text>
+              <Text variant="bodyMedium" style={styles.bookDetails}>{t('isbn_label')}: {book.isbn}</Text>
+              <Text variant="bodyMedium" style={styles.bookDetails}>{t('state_label')}: {book.estado}</Text>
+            </View>
+            <View style={styles.typeBadge}>
+              <Text style={styles.typeText}>{book.type}</Text>
+            </View>
+          </View>
+          <Text variant="titleMedium" style={styles.price}>{t('price_label')}: {book.precio}€</Text>
         </Card.Content>
+        {category === 'uploaded' && (
+          <Card.Actions>
+            <Button 
+              icon={() => <RNText style={{ fontSize: 16 }}>✏️</RNText>}
+              mode="outlined" 
+              onPress={() => handleEditPress(book)}
+              style={styles.editButton}
+              textColor="#D183BA"
+            >
+              {t('edit')}
+            </Button>
+          </Card.Actions>
+        )}
       </Card>
-    );
+    ));
   };
 
   if (loading && !refreshing) {

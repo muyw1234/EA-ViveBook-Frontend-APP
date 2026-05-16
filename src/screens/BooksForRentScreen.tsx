@@ -39,9 +39,18 @@ export default function BooksForRentScreen() {
     Alert.alert(t('talk_to_seller'), `${t('chat_header')} ${book.title}`);
   };
 
-  const handleRentDirectly = (book: any) => {
+  const handleRentDirectly = async (book: any) => {
     closeMenu();
-    Alert.alert(t('rent_directly'), `${t('rent_action')}: ${book.title}`);
+    try {
+      await api.post(`/libros/rent/${book._id}`);
+      Alert.alert(t('success'), `${t('rent_action')}: ${book.title}`);
+      // Refresh the list
+      const response = await api.get('/libros/type/ALQUILER');
+      setBooks(response.data);
+    } catch (error) {
+      console.error('Error renting book:', error);
+      Alert.alert(t('error'), t('rent_err') || 'No se pudo completar el alquiler');
+    }
   };
 
   const renderBookItem = ({ item: book }: { item: any }) => (
