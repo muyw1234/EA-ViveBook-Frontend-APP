@@ -39,9 +39,18 @@ export default function BooksForSaleScreen() {
     Alert.alert(t('talk_to_seller'), `${t('chat_header')} ${book.title}`);
   };
 
-  const handleBuyDirectly = (book: any) => {
+  const handleBuyDirectly = async (book: any) => {
     closeMenu();
-    Alert.alert(t('buy_directly'), `${t('buy_action')}: ${book.title}`);
+    try {
+      await api.post(`/libros/buy/${book._id}`);
+      Alert.alert(t('success'), `${t('buy_action')}: ${book.title}`);
+      // Refresh the list
+      const response = await api.get('/libros/type/VENTA');
+      setBooks(response.data);
+    } catch (error) {
+      console.error('Error buying book:', error);
+      Alert.alert(t('error'), t('buy_err') || 'No se pudo completar la compra');
+    }
   };
 
   const renderBookItem = ({ item: book }: { item: any }) => (

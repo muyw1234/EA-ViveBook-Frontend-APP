@@ -14,6 +14,8 @@ export default function AddBookScreen() {
   const [type, setType] = useState('VENTA');
   const [precio, setPrecio] = useState('');
   const [estado, setEstado] = useState('');
+  const [rentalStartDate, setRentalStartDate] = useState('');
+  const [rentalEndDate, setRentalEndDate] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleAddBook = async () => {
@@ -24,13 +26,30 @@ export default function AddBookScreen() {
 
     setLoading(true);
     try {
-      const response = await api.post('/libros', {
+      const bookData: any = {
         isbn,
         title,
         type,
         precio: parseFloat(precio),
         estado
-      });
+      };
+
+      if (type === 'ALQUILER') {
+        if (!rentalStartDate || !rentalEndDate) {
+          Alert.alert(t('error'), t('err_missing_dates') || 'Faltan las fechas de alquiler');
+          setLoading(false);
+          return;
+        }
+        if (new Date(rentalEndDate) < new Date(rentalStartDate)) {
+          Alert.alert(t('error'), t('err_invalid_dates') || 'La fecha de fin no puede ser anterior a la de inicio');
+          setLoading(false);
+          return;
+        }
+        bookData.rentalStartDate = rentalStartDate;
+        bookData.rentalEndDate = rentalEndDate;
+      }
+
+      const response = await api.post('/libros', bookData);
 
       if (response.status === 201) {
         Alert.alert(t('success'), t('msg_add_success'));
@@ -93,6 +112,27 @@ export default function AddBookScreen() {
             style={styles.input}
             mode="outlined"
           />
+
+          {type === 'ALQUILER' && (
+            <>
+              <TextInput
+                label={t('rental_start_label')}
+                value={rentalStartDate}
+                onChangeText={setRentalStartDate}
+                style={styles.input}
+                mode="outlined"
+                placeholder="YYYY-MM-DD"
+              />
+              <TextInput
+                label={t('rental_end_label')}
+                value={rentalEndDate}
+                onChangeText={setRentalEndDate}
+                style={styles.input}
+                mode="outlined"
+                placeholder="YYYY-MM-DD"
+              />
+            </>
+          )}
 
           <Button 
             mode="contained" 

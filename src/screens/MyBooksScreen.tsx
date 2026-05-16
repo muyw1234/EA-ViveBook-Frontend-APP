@@ -1,13 +1,15 @@
 import React, { useState, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert, Text as RNText, Platform } from 'react-native';
-import { Text, Card, Button, Avatar, SegmentedButtons, Portal, Modal, TextInput } from 'react-native-paper';
+import { Text, Card, Button, Avatar, SegmentedButtons, Portal, Modal, TextInput, ProgressBar } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../services/api';
 
 export default function MyBooksScreen() {
   const { t } = useTranslation();
-  const [books, setBooks] = useState<any[]>([]);
+  const [uploadedBooks, setUploadedBooks] = useState<any[]>([]);
+  const [boughtBooks, setBoughtBooks] = useState<any[]>([]);
+  const [rentedBooks, setRentedBooks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [category, setCategory] = useState('uploaded');
@@ -24,8 +26,10 @@ export default function MyBooksScreen() {
   const fetchMyBooks = async () => {
     try {
       const response = await api.get('/auth/profile');
-      if (response.data && response.data.libros) {
-        setBooks(response.data.libros);
+      if (response.data) {
+        setUploadedBooks(response.data.libros || []);
+        setBoughtBooks(response.data.boughtLibros || []);
+        setRentedBooks(response.data.rentedLibros || []);
       }
     } catch (error) {
       console.error('Error fetching my books:', error);
@@ -119,53 +123,89 @@ export default function MyBooksScreen() {
     }
   };
 
+  const renderRentalStatus = (book: any) => {
+    if (!book.rentalStartDate || !book.rentalEndDate) return null;
+
+    const start = new Date(book.rentalStartDate).getTime();
+    const end = new Date(book.rentalEndDate).getTime();
+    const now = new Date().getTime();
+
+    let progress = 0;
+    let statusText = "";
+
+    if (now < start) {
+      progress = 0;
+      statusText = t('rental_not_started') || "El alquiler todavía no ha empezado";
+    } else if (now > end) {
+      progress = 1;
+      statusText = t('rental_finished') || "Alquiler finalizado";
+    } else {
+      const total = end - start;
+      const elapsed = now - start;
+      progress = elapsed / total;
+      const daysRemaining = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+      statusText = (t('rental_days_remaining') || "Quedan X días de alquiler").replace('X', daysRemaining.toString());
+    }
+
+    return (
+      <View style={styles.rentalStatusContainer}>
+        <Text variant="bodySmall" style={styles.rentalDates}>
+          {new Date(book.rentalStartDate).toLocaleDateString()} - {new Date(book.rentalEndDate).toLocaleDateString()}
+        </Text>
+        <ProgressBar progress={progress} color="#D183BA" style={styles.progressBar} />
+        <Text variant="labelMedium" style={styles.statusText}>{statusText}</Text>
+      </View>
+    );
+  };
+
   const renderContent = () => {
-    if (category === 'uploaded') {
-      return books.length === 0 ? (
+    let currentBooks = [];
+    if (category === 'uploaded') currentBooks = uploadedBooks;
+    else if (category === 'bought') currentBooks = boughtBooks;
+    else if (category === 'rented') currentBooks = rentedBooks;
+
+    if (currentBooks.length === 0) {
+      return (
         <Card style={styles.emptyCard}>
           <Card.Content>
             <Text variant="bodyLarge" style={styles.emptyText}>{t('no_books')}</Text>
           </Card.Content>
         </Card>
-      ) : (
-        books.map((book: any) => (
-          <Card key={book._id} style={styles.card}>
-            <Card.Content>
-              <View style={styles.row}>
-                <View style={{ flex: 1 }}>
-                  <Text variant="titleLarge" style={styles.bookTitle}>{book.title}</Text>
-                  <Text variant="bodyMedium" style={styles.bookDetails}>{t('isbn_label')}: {book.isbn}</Text>
-                  <Text variant="bodyMedium" style={styles.bookDetails}>{t('state_label')}: {book.estado}</Text>
-                </View>
-                <View style={styles.typeBadge}>
-                  <Text style={styles.typeText}>{book.type}</Text>
-                </View>
-              </View>
-              <Text variant="titleMedium" style={styles.price}>{t('price_label')}: {book.precio}€</Text>
-            </Card.Content>
-            <Card.Actions>
-              <Button 
-                icon={() => <RNText style={{ fontSize: 16 }}>✏️</RNText>}
-                mode="outlined" 
-                onPress={() => handleEditPress(book)}
-                style={styles.editButton}
-                textColor="#D183BA"
-              >
-                {t('edit')}
-              </Button>
-            </Card.Actions>
-          </Card>
-        ))
       );
     }
 
-    return (
-      <Card style={styles.emptyCard}>
+    return currentBooks.map((book: any) => (
+      <Card key={book._id} style={styles.card}>
         <Card.Content>
-          <Text variant="bodyLarge" style={styles.emptyText}>{t('no_books')}</Text>
+          <View style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <Text variant="titleLarge" style={styles.bookTitle}>{book.title}</Text>
+              <Text variant="bodyMedium" style={styles.bookDetails}>{t('isbn_label')}: {book.isbn}</Text>
+              <Text variant="bodyMedium" style={styles.bookDetails}>{t('state_label')}: {book.estado}</Text>
+            </View>
+            <View style={styles.typeBadge}>
+              <Text style={styles.typeText}>{book.type}</Text>
+            </View>
+          </View>
+          <Text variant="titleMedium" style={styles.price}>{t('price_label')}: {book.precio}€</Text>
+          
+          {category === 'rented' && renderRentalStatus(book)}
         </Card.Content>
+        {category === 'uploaded' && (
+          <Card.Actions>
+            <Button 
+              icon={() => <RNText style={{ fontSize: 16 }}>✏️</RNText>}
+              mode="outlined" 
+              onPress={() => handleEditPress(book)}
+              style={styles.editButton}
+              textColor="#D183BA"
+            >
+              {t('edit')}
+            </Button>
+          </Card.Actions>
+        )}
       </Card>
-    );
+    ));
   };
 
   if (loading && !refreshing) {
