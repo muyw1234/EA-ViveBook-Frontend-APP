@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert } from 'react-native';
+import { View, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert, Text as RNText, Platform } from 'react-native';
 import { Text, Card, Button, Avatar, SegmentedButtons, Portal, Modal, TextInput } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from '@react-navigation/native';
@@ -55,6 +55,44 @@ export default function MyBooksScreen() {
     setEditModalVisible(true);
   };
 
+  const performDelete = async () => {
+    setUpdating(true);
+    try {
+      await api.delete(`/libros/${editingBook._id}`);
+      setEditModalVisible(false);
+      fetchMyBooks();
+    } catch (error) {
+      console.error('Error deleting book:', error);
+      Alert.alert(t('error'), t('profile_err_update') || 'No se pudo eliminar el libro.');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleDeleteBook = () => {
+    const isWeb = Platform.OS === 'web';
+    const message = t('delete_book_confirm') || '¿Seguro que quieres eliminar este libro? Esta acción no se puede deshacer.';
+
+    if (isWeb) {
+      if (window.confirm(message)) {
+        performDelete();
+      }
+    } else {
+      Alert.alert(
+        t('delete_book') || 'Eliminar libro',
+        message,
+        [
+          { text: t('cancel') || 'Cancelar', style: 'cancel' },
+          {
+            text: t('delete') || 'Eliminar',
+            style: 'destructive',
+            onPress: performDelete,
+          },
+        ]
+      );
+    }
+  };
+
   const handleUpdateBook = async () => {
     if (!editTitle || !editIsbn || !editPrice || !editState) {
       Alert.alert(t('error'), t('err_missing_fields'));
@@ -107,7 +145,7 @@ export default function MyBooksScreen() {
             </Card.Content>
             <Card.Actions>
               <Button 
-                icon="pencil" 
+                icon={() => <RNText style={{ fontSize: 16 }}>✏️</RNText>}
                 mode="outlined" 
                 onPress={() => handleEditPress(book)}
                 style={styles.editButton}
@@ -224,6 +262,14 @@ export default function MyBooksScreen() {
               textColor="#666"
             >
               {t('cancel')}
+            </Button>
+            <Button 
+              mode="contained" 
+              onPress={handleDeleteBook}
+              disabled={updating}
+              buttonColor="#e53935"
+            >
+              Eliminar
             </Button>
             <Button 
               mode="contained" 
