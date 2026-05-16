@@ -18,20 +18,8 @@ export default function BooksForSaleScreen() {
     useCallback(() => {
       const fetchBooks = async () => {
         try {
-          const [booksResponse, profileResponse] = await Promise.all([
-            api.get('/libros/type/VENTA'),
-            api.get('/auth/profile'),
-          ]);
-
-          const myBookIds: string[] = (profileResponse.data?.libros ?? []).map(
-            (b: any) => (typeof b === 'string' ? b : b._id?.toString())
-          );
-
-          const filtered = booksResponse.data.filter(
-            (book: any) => !myBookIds.includes(book._id?.toString())
-          );
-
-          setBooks(filtered);
+          const response = await api.get('/libros/type/VENTA');
+          setBooks(response.data);
         } catch (error) {
           console.error('Error fetching books:', error);
         } finally {
