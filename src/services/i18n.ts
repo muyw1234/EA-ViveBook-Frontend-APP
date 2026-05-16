@@ -14,6 +14,7 @@ const resources = {
       close: "Cerrar",
       back: "Volver",
       logout: "Cerrar Sesión",
+      retry: "Reintentar",
       edit: "Editar",
       save_changes: "Guardar Cambios",
       // AddBookScreen
@@ -99,7 +100,19 @@ const resources = {
       rented: "Alquilados",
       talk_to_seller: "Hablar con el vendedor",
       buy_directly: "Comprar directamente",
-      rent_directly: "Alquilar directamente"
+      rent_directly: "Alquilar directamente",
+      about_me_label: "Sobre mí",
+      uploaded_by: "Subido por: ",
+      view_profile: "Ver perfil",
+      rating_title: "Valorar vendedor",
+      rating_label: "Puntuación",
+      rating_comment_placeholder: "Escribe un comentario sobre tu experiencia...",
+      rating_success: "Valoración enviada correctamente",
+      rating_error: "No se pudo enviar la valoración",
+      reviews_header: "Valoraciones recibidas",
+      no_reviews: "Aún no tiene valoraciones",
+      avg_rating: "Valoración media",
+      btn_publish: "Publicar"
     }
   },
   ca: {
@@ -113,6 +126,7 @@ const resources = {
       close: "Tancar",
       back: "Tornar",
       logout: "Tancar Sessió",
+      retry: "Reintentar",
       edit: "Editar",
       save_changes: "Guardar Canvis",
       // AddBookScreen
@@ -198,7 +212,19 @@ const resources = {
       rented: "Llogats",
       talk_to_seller: "Parlar amb el venedor",
       buy_directly: "Comprar directament",
-      rent_directly: "Llogar directament"
+      rent_directly: "Llogar directament",
+      about_me_label: "Sobre mi",
+      uploaded_by: "Penjat per: ",
+      view_profile: "Veure perfil",
+      rating_title: "Valorar venedor",
+      rating_label: "Puntuació",
+      rating_comment_placeholder: "Escriu un comentari sobre la teva experiència...",
+      rating_success: "Valoració enviada correctament",
+      rating_error: "No s'ha pogut enviar la valoració",
+      reviews_header: "Valoracions rebudes",
+      no_reviews: "Encara no té valoracions",
+      avg_rating: "Valoració mitjana",
+      btn_publish: "Publicar"
     }
   },
   en: {
@@ -212,6 +238,7 @@ const resources = {
       close: "Close",
       back: "Back",
       logout: "Log Out",
+      retry: "Retry",
       edit: "Edit",
       save_changes: "Save Changes",
       // AddBookScreen
@@ -297,7 +324,19 @@ const resources = {
       rented: "Rented",
       talk_to_seller: "Talk to seller",
       buy_directly: "Buy directly",
-      rent_directly: "Rent directly"
+      rent_directly: "Rent directly",
+      about_me_label: "About me",
+      uploaded_by: "Uploaded by: ",
+      view_profile: "View profile",
+      rating_title: "Rate Seller",
+      rating_label: "Rating",
+      rating_comment_placeholder: "Write a comment about your experience...",
+      rating_success: "Rating submitted successfully",
+      rating_error: "Could not submit rating",
+      reviews_header: "Received Reviews",
+      no_reviews: "No reviews yet",
+      avg_rating: "Average Rating",
+      btn_publish: "Publish"
     }
   }
 };

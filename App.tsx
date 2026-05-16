@@ -13,6 +13,7 @@ import RegisterScreen from "./src/screens/RegisterScreen";
 import BooksForSaleScreen from "./src/screens/BooksForSaleScreen";
 import BooksForRentScreen from "./src/screens/BooksForRentScreen";
 import AddBookScreen from "./src/screens/AddBookScreen";
+import ProfileScreen from "./src/screens/ProfileScreen";
 import style from "./styles/default.old"
 
 import MainNavigator from "./src/navigation/MainNavigator";
@@ -33,6 +34,7 @@ export default function App() {
           <Stack.Screen name="BooksForSale" component={BooksForSaleScreen} options={{ title: 'Libros en Venta' }} />
           <Stack.Screen name="BooksForRent" component={BooksForRentScreen} options={{ title: 'Libros en Alquiler' }} />
           <Stack.Screen name="AddBook" component={AddBookScreen} options={{ title: 'Subir Libro' }} />
+          <Stack.Screen name="UserProfile" component={ProfileScreen} options={{ title: 'Perfil de Usuario' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </PaperProvider>

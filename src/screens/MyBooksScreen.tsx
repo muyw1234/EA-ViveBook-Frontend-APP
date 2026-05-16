@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert, Text as RNText, Platform } from 'react-native';
-import { Text, Card, Button, Avatar, SegmentedButtons, Portal, Modal, TextInput, ProgressBar } from 'react-native-paper';
+import { View, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert, Text as RNText, Platform, TouchableOpacity } from 'react-native';
+import { Text, Card, Button, Avatar, SegmentedButtons, Portal, Modal, TextInput, ProgressBar, IconButton } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../services/api';
@@ -22,6 +22,13 @@ export default function MyBooksScreen() {
   const [editPrice, setEditPrice] = useState('');
   const [editState, setEditState] = useState('');
   const [updating, setUpdating] = useState(false);
+  
+  // Rating Modal State
+  const [ratingModalVisible, setRatingModalVisible] = useState(false);
+  const [ratingValue, setRatingValue] = useState(5);
+  const [ratingComment, setRatingComment] = useState('');
+  const [targetBook, setTargetBook] = useState<any>(null);
+  const [submittingRating, setSubmittingRating] = useState(false);
 
   const fetchMyBooks = async () => {
     try {
@@ -158,6 +165,53 @@ export default function MyBooksScreen() {
     );
   };
 
+  const handleRateSeller = (book: any) => {
+    setTargetBook(book);
+    setRatingValue(5);
+    setRatingComment('');
+    setRatingModalVisible(true);
+  };
+
+  const submitRating = async () => {
+    if (!targetBook || (!targetBook.owner && typeof targetBook.owner !== 'string')) {
+      Alert.alert(t('error'), 'No se pudo identificar al vendedor');
+      return;
+    }
+
+    if (ratingValue < 1 || ratingValue > 5) {
+      Alert.alert(t('error'), t('rating_error'));
+      return;
+    }
+
+    setSubmittingRating(true);
+    try {
+      const ownerId = typeof targetBook.owner === 'object' ? targetBook.owner._id : targetBook.owner;
+      
+      const payload = {
+        usuarioValorado: ownerId,
+        libro: targetBook._id,
+        tipoOperacion: targetBook.type, // Should be VENTA or ALQUILER
+        puntuacion: ratingValue,
+        comentario: ratingComment
+      };
+
+      console.log('Sending rating payload:', payload);
+      
+      const response = await api.post('/valoraciones', payload);
+      console.log('Rating response:', response.data);
+      
+      Alert.alert(t('success'), t('rating_success'));
+      setRatingModalVisible(false);
+      // Refresh to show stars in profile if we are viewing it
+    } catch (error: any) {
+      console.error('Error submitting rating:', error);
+      const msg = error.response?.data?.message || error.message || t('rating_error');
+      Alert.alert(t('error'), msg);
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
+
   const renderContent = () => {
     let currentBooks = [];
     if (category === 'uploaded') currentBooks = uploadedBooks;
@@ -182,6 +236,11 @@ export default function MyBooksScreen() {
               <Text variant="titleLarge" style={styles.bookTitle}>{book.title}</Text>
               <Text variant="bodyMedium" style={styles.bookDetails}>{t('isbn_label')}: {book.isbn}</Text>
               <Text variant="bodyMedium" style={styles.bookDetails}>{t('state_label')}: {book.estado}</Text>
+              {(category === 'bought' || category === 'rented') && book.owner && (
+                <Text variant="bodySmall" style={{ color: '#888', marginTop: 4 }}>
+                  {t('uploaded_by')} {book.owner.name}
+                </Text>
+              )}
             </View>
             <View style={styles.typeBadge}>
               <Text style={styles.typeText}>{book.type}</Text>
@@ -191,8 +250,8 @@ export default function MyBooksScreen() {
           
           {category === 'rented' && renderRentalStatus(book)}
         </Card.Content>
-        {category === 'uploaded' && (
-          <Card.Actions>
+        <Card.Actions>
+          {category === 'uploaded' ? (
             <Button 
               icon={() => <RNText style={{ fontSize: 16 }}>✏️</RNText>}
               mode="outlined" 
@@ -202,8 +261,17 @@ export default function MyBooksScreen() {
             >
               {t('edit')}
             </Button>
-          </Card.Actions>
-        )}
+          ) : (
+            <Button 
+              icon={() => <RNText style={{ fontSize: 16 }}>⭐</RNText>}
+              mode="contained" 
+              onPress={() => handleRateSeller(book)}
+              style={{ backgroundColor: '#f59e0b' }}
+            >
+              {t('rating_title')}
+            </Button>
+          )}
+        </Card.Actions>
       </Card>
     ));
   };
@@ -319,6 +387,65 @@ export default function MyBooksScreen() {
               buttonColor="#D183BA"
             >
               {t('save_changes')}
+            </Button>
+          </View>
+        </Modal>
+        
+        {/* Rating Modal */}
+        <Modal
+          visible={ratingModalVisible}
+          onDismiss={() => !submittingRating && setRatingModalVisible(false)}
+          contentContainerStyle={styles.modalContent}
+        >
+          <Text variant="headlineSmall" style={styles.modalTitle}>{t('rating_title')}</Text>
+          {targetBook && (
+            <Text variant="bodyMedium" style={{ textAlign: 'center', marginBottom: 15 }}>
+              {targetBook.title} - {targetBook.owner?.name}
+            </Text>
+          )}
+
+          <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 20 }}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <TouchableOpacity
+                key={star}
+                onPress={() => setRatingValue(star)}
+                style={{ padding: 5 }}
+              >
+                <RNText style={{ fontSize: 32, color: star <= ratingValue ? '#f59e0b' : '#cbd5e1' }}>
+                  {star <= ratingValue ? '★' : '☆'}
+                </RNText>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TextInput
+            label={t('rating_comment_placeholder')}
+            value={ratingComment}
+            onChangeText={setRatingComment}
+            mode="outlined"
+            multiline
+            numberOfLines={4}
+            style={[styles.modalInput, { height: 100 }]}
+            outlineColor="#D183BA"
+            activeOutlineColor="#D183BA"
+          />
+
+          <View style={styles.modalActions}>
+            <Button 
+              onPress={() => setRatingModalVisible(false)} 
+              disabled={submittingRating}
+              textColor="#666"
+            >
+              {t('cancel')}
+            </Button>
+            <Button 
+              mode="contained" 
+              onPress={submitRating} 
+              loading={submittingRating}
+              disabled={submittingRating}
+              buttonColor="#D183BA"
+            >
+              {t('btn_publish')}
             </Button>
           </View>
         </Modal>
