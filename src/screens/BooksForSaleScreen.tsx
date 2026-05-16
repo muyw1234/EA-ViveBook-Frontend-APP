@@ -5,10 +5,13 @@ import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import { useFocusEffect } from '@react-navigation/native';
 
+import { useNavigation } from '@react-navigation/native';
+
 const { width } = Dimensions.get('window');
 
 export default function BooksForSaleScreen() {
   const { t } = useTranslation();
+  const navigation = useNavigation<any>();
   const [books, setBooks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [menuVisible, setMenuVisible] = useState<string | null>(null);
@@ -65,6 +68,20 @@ export default function BooksForSaleScreen() {
             <Text variant="bodyMedium">{t('state_label')}: {book.estado}</Text>
           </>
         )}
+        
+        {/* Attribution Section */}
+        <View style={styles.uploaderSection}>
+          <Text variant="bodySmall" style={styles.uploaderLabel}>
+            {t('uploaded_by')}
+          </Text>
+          <RNText 
+            style={styles.uploaderName}
+            onPress={() => navigation.navigate('UserProfile', { userId: book.owner?._id })}
+          >
+            {book.owner?.name || t('unknown')}
+          </RNText>
+        </View>
+
         <Text variant="titleMedium" style={styles.price}>
           {book.precio}€
         </Text>
@@ -200,5 +217,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
     color: '#666',
+  },
+  uploaderSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  uploaderLabel: {
+    color: '#777',
+  },
+  uploaderName: {
+    color: '#D183BA',
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
+    fontSize: 12,
   }
 });
