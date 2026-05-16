@@ -44,9 +44,7 @@ export default function RegisterScreen() {
             const response = await api.post("/auth/signup", { 
                 name, 
                 email, 
-                confirmEmail,
-                password,
-                confirmPassword
+                password
             });
 
             if (response.status === 201) {

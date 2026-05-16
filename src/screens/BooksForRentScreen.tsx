@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, ActivityIndicator, Alert, FlatList, Dimensions, Text as RNText } from 'react-native';
 import { Text, Card, Button, Menu, Divider, IconButton } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
+import { useFocusEffect } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
@@ -13,20 +14,34 @@ export default function BooksForRentScreen() {
   const [menuVisible, setMenuVisible] = useState<string | null>(null);
   const [isGridView, setIsGridView] = useState(false);
 
-  useEffect(() => {
-    const fetchBooks = async () => {
-      try {
-        const response = await api.get('/libros/type/ALQUILER');
-        setBooks(response.data);
-      } catch (error) {
-        console.error('Error fetching books:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  useFocusEffect(
+    useCallback(() => {
+      const fetchBooks = async () => {
+        try {
+          const [booksResponse, profileResponse] = await Promise.all([
+            api.get('/libros/type/ALQUILER'),
+            api.get('/auth/profile'),
+          ]);
 
-    fetchBooks();
-  }, []);
+          const myBookIds: string[] = (profileResponse.data?.libros ?? []).map(
+            (b: any) => (typeof b === 'string' ? b : b._id?.toString())
+          );
+
+          const filtered = booksResponse.data.filter(
+            (book: any) => !myBookIds.includes(book._id?.toString())
+          );
+
+          setBooks(filtered);
+        } catch (error) {
+          console.error('Error fetching books:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchBooks();
+    }, [])
+  );
 
   const openMenu = (id: string) => setMenuVisible(id);
   const closeMenu = () => setMenuVisible(null);
