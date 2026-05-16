@@ -48,7 +48,7 @@ export default function LoginScreen() {
 
     return (
         <LinearGradient
-            colors={['#F5E4F0', '#F5E4F0']}
+            colors={['#F5EBF4', '#F5EBF4']}
             style={globalStyles.gradient}
         >
             <View style={globalStyles.card}>

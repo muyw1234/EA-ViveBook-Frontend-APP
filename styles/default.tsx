@@ -1,13 +1,32 @@
-import { MD3LightTheme as DefaultTheme } from 'react-native-paper';
-import { StyleSheet } from 'react-native';
+import { MD3LightTheme as DefaultTheme, configureFonts } from 'react-native-paper';
+import { StyleSheet, Platform } from 'react-native';
+
+const fontConfig = {
+  displayLarge: { fontFamily: 'Outfit_700Bold' },
+  displayMedium: { fontFamily: 'Outfit_700Bold' },
+  displaySmall: { fontFamily: 'Outfit_700Bold' },
+  headlineLarge: { fontFamily: 'Outfit_700Bold' },
+  headlineMedium: { fontFamily: 'Outfit_700Bold' },
+  headlineSmall: { fontFamily: 'Outfit_700Bold' },
+  titleLarge: { fontFamily: 'Outfit_500Medium' },
+  titleMedium: { fontFamily: 'Outfit_500Medium' },
+  titleSmall: { fontFamily: 'Outfit_500Medium' },
+  labelLarge: { fontFamily: 'Outfit_500Medium' },
+  labelMedium: { fontFamily: 'Outfit_500Medium' },
+  labelSmall: { fontFamily: 'Outfit_500Medium' },
+  bodyLarge: { fontFamily: 'Outfit_400Regular' },
+  bodyMedium: { fontFamily: 'Outfit_400Regular' },
+  bodySmall: { fontFamily: 'Outfit_400Regular' },
+};
 
 export const theme = {
   ...DefaultTheme,
+  fonts: configureFonts({ config: fontConfig }),
   colors: {
     ...DefaultTheme.colors,
-    primary: '#7c3aed',
+    primary: '#D6AED2',
     secondary: '#4f46e5',
-    background: '#f8fafc',
+    background: '#F5EBF4',
     surface: '#ffffff',
     error: '#ef4444',
     outline: '#e2e8f0',
@@ -18,7 +37,7 @@ export const theme = {
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#F5EBF4',
   },
   card: {
     backgroundColor: 'white',
@@ -34,17 +53,19 @@ export const styles = StyleSheet.create({
     elevation: 10,
   },
   title: {
+    fontFamily: 'Outfit_700Bold',
     color: '#1e1b4b',
     fontWeight: '700',
     textAlign: 'center',
   },
   subtitle: {
+    fontFamily: 'Outfit_400Regular',
     color: '#64748b',
     textAlign: 'center',
     marginBottom: 20,
   },
   input: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#F5EBF4',
     marginBottom: 16,
   },
   button: {

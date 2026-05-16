@@ -285,7 +285,7 @@ export default function MyBooksScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f8f9fa' }}>
+    <View style={{ flex: 1, backgroundColor: '#F5EBF4' }}>
       <ScrollView 
         style={styles.container}
         refreshControl={
@@ -293,7 +293,7 @@ export default function MyBooksScreen() {
         }
       >
         <View style={styles.headerContainer}>
-          <Avatar.Icon size={48} icon="book-multiple" style={{ backgroundColor: '#D183BA' }} />
+          <RNText style={{ fontSize: 32 }}>📚</RNText>
           <Text variant="headlineMedium" style={styles.header}>{t('my_books')}</Text>
         </View>
 
@@ -306,7 +306,7 @@ export default function MyBooksScreen() {
             { value: 'rented', label: t('rented') },
           ]}
           style={styles.segmented}
-          theme={{ colors: { secondaryContainer: '#F5E4F0', onSecondaryContainer: '#D183BA' } }}
+          theme={{ colors: { secondaryContainer: '#ffffff', onSecondaryContainer: '#D6AED2' } }}
         />
 
         {renderContent()}

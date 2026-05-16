@@ -14,13 +14,26 @@ import BooksForSaleScreen from "./src/screens/BooksForSaleScreen";
 import BooksForRentScreen from "./src/screens/BooksForRentScreen";
 import AddBookScreen from "./src/screens/AddBookScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
+import SearchScreen from "./src/screens/SearchScreen";
 import style from "./styles/default.old"
+
+import { useFonts, Outfit_400Regular, Outfit_700Bold, Outfit_500Medium } from '@expo-google-fonts/outfit';
 
 import MainNavigator from "./src/navigation/MainNavigator";
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Outfit_400Regular,
+    Outfit_500Medium,
+    Outfit_700Bold,
+  });
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
     <PaperProvider theme={theme}>
       <NavigationContainer>
@@ -35,6 +48,7 @@ export default function App() {
           <Stack.Screen name="BooksForRent" component={BooksForRentScreen} options={{ title: 'Libros en Alquiler' }} />
           <Stack.Screen name="AddBook" component={AddBookScreen} options={{ title: 'Subir Libro' }} />
           <Stack.Screen name="UserProfile" component={ProfileScreen} options={{ title: 'Perfil de Usuario' }} />
+          <Stack.Screen name="Search" component={SearchScreen} options={{ title: 'Búsqueda de Libros' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </PaperProvider>

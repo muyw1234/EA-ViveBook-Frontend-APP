@@ -7,6 +7,6 @@ export default StyleSheet.create({
     },
 
     screen: {
-        backgroundColor: "#f9f5e9"
+        backgroundColor: "#F5EBF4"
     }
 });

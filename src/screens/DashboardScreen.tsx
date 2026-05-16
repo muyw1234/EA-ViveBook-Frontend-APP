@@ -1,22 +1,39 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Button, Card } from 'react-native-paper';
+import { Text, Button, Card, Searchbar } from 'react-native-paper';
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function DashboardScreen() {
   const { t } = useTranslation();
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
+  const [searchQuery, setSearchQuery] = React.useState('');
 
   const handleLogout = async () => {
     await AsyncStorage.clear();
     navigation.navigate("Home" as never);
   };
 
+  const onSearch = () => {
+    if (searchQuery.trim()) {
+      navigation.navigate("Search", { query: searchQuery });
+      setSearchQuery('');
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       <Text variant="headlineMedium" style={styles.header}>{t('dash_header')}</Text>
+
+      <Searchbar
+        placeholder={t('search_placeholder')}
+        onChangeText={setSearchQuery}
+        value={searchQuery}
+        onSubmitEditing={onSearch}
+        style={styles.searchBar}
+        icon={() => <Text style={{ fontSize: 20 }}>🔍</Text>}
+      />
 
       <Card style={styles.card}>
         <Card.Content>
@@ -70,14 +87,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F5EBF4',
   },
   header: {
     marginBottom: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#D6AED2',
   },
   card: {
     marginBottom: 16,
+    backgroundColor: '#ffffff',
+  },
+  searchBar: {
+    marginBottom: 20,
+    elevation: 4,
+    backgroundColor: '#fff',
+    borderRadius: 30,
   }
 });

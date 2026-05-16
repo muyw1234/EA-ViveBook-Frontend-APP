@@ -64,15 +64,16 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 16,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#F5EBF4',
     },
     header: {
         marginBottom: 20,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#D6AED2',
     },
     card: {
         padding: 8,
+        backgroundColor: '#ffffff',
     },
     sectionLabel: {
         fontWeight: '600',

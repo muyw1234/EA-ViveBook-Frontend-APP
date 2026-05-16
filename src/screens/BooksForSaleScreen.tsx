@@ -157,7 +157,7 @@ export default function BooksForSaleScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F5EBF4',
   },
   center: {
     flex: 1,

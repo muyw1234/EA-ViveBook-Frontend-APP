@@ -20,7 +20,7 @@ export default function MainNavigator() {
       initialRouteName="Dashboard"
       screenOptions={{
         tabBarActiveTintColor: "#000080",
-        headerStyle: { backgroundColor: '#F5E4F0' },
+        headerStyle: { backgroundColor: '#D6AED2' },
         sceneStyle: style.screen
       }}
     >
