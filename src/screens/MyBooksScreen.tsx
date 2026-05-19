@@ -18,6 +18,7 @@ export default function MyBooksScreen() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingBook, setEditingBook] = useState<any>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [editAutor, setEditAutor] = useState('');
   const [editIsbn, setEditIsbn] = useState('');
   const [editPrice, setEditPrice] = useState('');
   const [editState, setEditState] = useState('');
@@ -60,6 +61,7 @@ export default function MyBooksScreen() {
   const handleEditPress = (book: any) => {
     setEditingBook(book);
     setEditTitle(book.title);
+    setEditAutor(book.autor || '');
     setEditIsbn(book.isbn);
     setEditPrice(book.precio.toString());
     setEditState(book.estado);
@@ -114,6 +116,7 @@ export default function MyBooksScreen() {
     try {
       await api.put(`/libros/${editingBook._id}`, {
         title: editTitle,
+        autor: editAutor,
         isbn: editIsbn,
         precio: parseFloat(editPrice),
         estado: editState,
@@ -234,6 +237,7 @@ export default function MyBooksScreen() {
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
               <Text variant="titleLarge" style={styles.bookTitle}>{book.title}</Text>
+              {book.autor ? <Text variant="bodyMedium" style={styles.bookDetails}>{t('author_label')}: {book.autor}</Text> : null}
               <Text variant="bodyMedium" style={styles.bookDetails}>{t('isbn_label')}: {book.isbn}</Text>
               <Text variant="bodyMedium" style={styles.bookDetails}>{t('state_label')}: {book.estado}</Text>
               {(category === 'bought' || category === 'rented') && book.owner && (
@@ -326,6 +330,16 @@ export default function MyBooksScreen() {
             label={t('title_label')}
             value={editTitle}
             onChangeText={setEditTitle}
+            mode="outlined"
+            style={styles.modalInput}
+            outlineColor="#D183BA"
+            activeOutlineColor="#D183BA"
+          />
+
+          <TextInput
+            label={t('author_label')}
+            value={editAutor}
+            onChangeText={setEditAutor}
             mode="outlined"
             style={styles.modalInput}
             outlineColor="#D183BA"

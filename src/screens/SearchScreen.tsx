@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, ActivityIndicator, Alert, ScrollView } from 'react-native';
-import { Text, Searchbar, Card, Button, Avatar, Divider } from 'react-native-paper';
+import { Text, Searchbar, Card, Button, Avatar, Divider, IconButton, Portal, Modal, TextInput, SegmentedButtons } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import { useNavigation } from '@react-navigation/native';
@@ -15,11 +15,20 @@ export default function SearchScreen({ route }: any) {
   const [userResults, setUserResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Filters State
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+  const [filterAutor, setFilterAutor] = useState('');
+  const [filterMaxPrice, setFilterMaxPrice] = useState('');
+  const [filterType, setFilterType] = useState('');
+
   useEffect(() => {
     if (initialQuery) {
       handleSearch(initialQuery);
     }
-  }, [initialQuery]);
+    if (route?.params?.openFilters) {
+      setIsFilterModalVisible(true);
+    }
+  }, [initialQuery, route?.params?.openFilters]);
 
   const handleSearch = async (query: string) => {
     if (!query.trim()) return;
@@ -62,6 +71,7 @@ export default function SearchScreen({ route }: any) {
           </View>
           <Text variant="titleMedium" style={styles.priceText}>{book.precio}€</Text>
         </View>
+        {book.autor ? <Text variant="bodySmall">{t('author_label')}: {book.autor}</Text> : null}
         <Text variant="bodySmall">{t('isbn_label')}: {book.isbn}</Text>
         <Text variant="bodySmall">{t('state_label')}: {book.estado}</Text>
       </Card.Content>
@@ -95,6 +105,13 @@ export default function SearchScreen({ route }: any) {
     </Card>
   );
 
+  const filteredBooks = bookResults.filter((book) => {
+    if (filterType && book.type !== filterType) return false;
+    if (filterAutor && (!book.autor || !book.autor.toLowerCase().includes(filterAutor.toLowerCase()))) return false;
+    if (filterMaxPrice && !isNaN(parseFloat(filterMaxPrice)) && book.precio > parseFloat(filterMaxPrice)) return false;
+    return true;
+  });
+
   return (
     <View style={styles.container}>
       <Searchbar
@@ -104,6 +121,15 @@ export default function SearchScreen({ route }: any) {
         onSubmitEditing={() => handleSearch(searchQuery)}
         style={styles.searchBar}
         icon={() => <Text style={{ fontSize: 20 }}>🔍</Text>}
+        right={(props) => (
+          <IconButton
+            {...props}
+            icon="tune"
+            iconColor="#D183BA"
+            size={24}
+            onPress={() => setIsFilterModalVisible(true)}
+          />
+        )}
       />
 
       {loading ? (
@@ -122,10 +148,10 @@ export default function SearchScreen({ route }: any) {
             </View>
           )}
 
-          {bookResults.length > 0 && (
+          {filteredBooks.length > 0 && (
             <View style={styles.section}>
               <Text variant="titleLarge" style={styles.sectionTitle}>Libros</Text>
-              {bookResults.map(book => (
+              {filteredBooks.map(book => (
                 <View key={book._id}>
                   {renderBookItem({ item: book })}
                 </View>
@@ -133,11 +159,63 @@ export default function SearchScreen({ route }: any) {
             </View>
           )}
 
-          {searchQuery && bookResults.length === 0 && userResults.length === 0 && (
+          {searchQuery && filteredBooks.length === 0 && userResults.length === 0 && (
             <Text style={styles.emptyText}>{t('search_no_results', { query: searchQuery })}</Text>
           )}
         </ScrollView>
       )}
+
+      <Portal>
+        <Modal
+          visible={isFilterModalVisible}
+          onDismiss={() => setIsFilterModalVisible(false)}
+          contentContainerStyle={styles.modalContent}
+        >
+          <Text variant="titleLarge" style={styles.modalTitle}>Filtros</Text>
+          
+          <TextInput
+            label="Autor"
+            value={filterAutor}
+            onChangeText={setFilterAutor}
+            mode="outlined"
+            style={styles.modalInput}
+            outlineColor="#D183BA"
+            activeOutlineColor="#D183BA"
+          />
+
+          <TextInput
+            label="Precio Máximo (€)"
+            value={filterMaxPrice}
+            onChangeText={setFilterMaxPrice}
+            keyboardType="numeric"
+            mode="outlined"
+            style={styles.modalInput}
+            outlineColor="#D183BA"
+            activeOutlineColor="#D183BA"
+          />
+
+          <Text style={styles.labelModal}>Tipo:</Text>
+          <SegmentedButtons
+            value={filterType}
+            onValueChange={setFilterType}
+            buttons={[
+              { value: '', label: 'Todos' },
+              { value: 'VENTA', label: 'Venta' },
+              { value: 'ALQUILER', label: 'Alquiler' },
+            ]}
+            style={styles.segmented}
+          />
+
+          <Button 
+            mode="contained" 
+            onPress={() => setIsFilterModalVisible(false)}
+            buttonColor="#D183BA"
+            style={{ marginTop: 16 }}
+          >
+            Aplicar Filtros
+          </Button>
+        </Modal>
+      </Portal>
     </View>
   );
 }
@@ -206,5 +284,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 40,
     color: '#666',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 24,
+    margin: 20,
+    borderRadius: 16,
+  },
+  modalTitle: {
+    marginBottom: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#333',
+  },
+  modalInput: {
+    marginBottom: 16,
+    backgroundColor: 'white',
+  },
+  labelModal: {
+    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  segmented: {
+    marginBottom: 16,
   },
 });

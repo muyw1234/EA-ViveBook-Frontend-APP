@@ -65,6 +65,8 @@ export default function BooksForSaleScreen() {
         {!isGridView && (
           <>
             <Text variant="bodyMedium">{t('isbn_label')}: {book.isbn}</Text>
+            {book.autor ? <Text variant="bodyMedium">{t('author_label')}: {book.autor}</Text> : null}
+            {book.categoria ? <Text variant="bodyMedium">Categoría: {book.categoria}</Text> : null}
             <Text variant="bodyMedium">{t('state_label')}: {book.estado}</Text>
           </>
         )}

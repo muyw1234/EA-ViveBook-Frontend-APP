@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Button, Card, Searchbar } from 'react-native-paper';
+import { Text, Button, Card, Searchbar, IconButton } from 'react-native-paper';
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -33,6 +33,15 @@ export default function DashboardScreen() {
         onSubmitEditing={onSearch}
         style={styles.searchBar}
         icon={() => <Text style={{ fontSize: 20 }}>🔍</Text>}
+        right={(props) => (
+          <IconButton
+            {...props}
+            icon="tune"
+            iconColor="#D183BA"
+            size={24}
+            onPress={() => navigation.navigate("Search", { openFilters: true })}
+          />
+        )}
       />
 
       <Card style={styles.card}>
