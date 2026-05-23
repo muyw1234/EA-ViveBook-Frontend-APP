@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { View, Alert, StyleSheet, ScrollView, Text as RNText } from "react-native";
-import { Text, TextInput, Button } from "react-native-paper";
+import { TextInput, Button } from "react-native-paper";
+import { AppText as Text } from '../components/AppText';
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
 import api from "../services/api";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles as globalStyles } from "../../styles/default";
 
 export default function RegisterScreen() {
@@ -48,8 +50,18 @@ export default function RegisterScreen() {
             });
 
             if (response.status === 201) {
-                Alert.alert(t("success"), t("msg_reg_success"));
-                navigation.navigate("Login" as never);
+                const { token, user } = response.data;
+                
+                // Si el backend devuelve token y usuario, iniciamos sesión automáticamente
+                if (token && user) {
+                    await AsyncStorage.setItem('token', token);
+                    await AsyncStorage.setItem('user', JSON.stringify(user));
+                    Alert.alert(t("success"), t("msg_reg_success"));
+                    navigation.navigate("Discover" as never);
+                } else {
+                    Alert.alert(t("success"), t("msg_reg_success"));
+                    navigation.navigate("Login" as never);
+                }
             }
         } catch (error: any) {
             const message = error.response?.data?.message || t("err_reg_problem");

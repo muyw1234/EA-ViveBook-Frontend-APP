@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { Text, Button } from "react-native-paper";
+import { Button } from "react-native-paper";
+import { AppText as Text } from '../components/AppText';
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from 'react-i18next';

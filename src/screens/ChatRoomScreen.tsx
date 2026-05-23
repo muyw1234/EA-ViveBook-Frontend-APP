@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, FlatList, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, IconButton, Text, Surface } from 'react-native-paper';
+import { TextInput, IconButton, Surface } from 'react-native-paper';
+import { AppText as Text } from '../components/AppText';
 import { useRoute } from '@react-navigation/native';
 import socket from '../services/socket';
 import AsyncStorage from '@react-native-async-storage/async-storage';

@@ -7,6 +7,7 @@ import SettingsScreen from '../screens/SettingsScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import ChatRoomScreen from '../screens/ChatRoomScreen';
 import MyBooksScreen from '../screens/MyBooksScreen';
+import DiscoverScreen from '../screens/DiscoverScreen';
 import style from '../../styles/default.old';
 import { useTranslation } from 'react-i18next';
 
@@ -20,7 +21,7 @@ export default function MainNavigator() {
       initialRouteName="Dashboard"
       screenOptions={{
         tabBarActiveTintColor: "#000080",
-        headerStyle: { backgroundColor: '#F5E4F0' },
+        headerStyle: { backgroundColor: '#D6AED2' },
         sceneStyle: style.screen
       }}
     >
@@ -38,6 +39,14 @@ export default function MainNavigator() {
         options={{
           title: t('my_books'),
           tabBarIcon: ({ size }) => <Text style={{ fontSize: size }}>📚</Text>
+        }} 
+      />
+      <Tab.Screen 
+        name="Discover" 
+        component={DiscoverScreen} 
+        options={{
+          title: t('discover_title', { defaultValue: 'Descubrir' }),
+          tabBarIcon: ({ size }) => <Text style={{ fontSize: size }}>🧭</Text>
         }} 
       />
       <Tab.Screen 

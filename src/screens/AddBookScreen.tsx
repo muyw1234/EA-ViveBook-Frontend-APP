@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, TextInput, Button, SegmentedButtons, Card } from 'react-native-paper';
+import { TextInput, Button, SegmentedButtons, Card, Menu, TouchableRipple } from 'react-native-paper';
+import { AppText as Text } from '../components/AppText';
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
@@ -11,6 +12,10 @@ export default function AddBookScreen() {
   const navigation = useNavigation();
   const [isbn, setIsbn] = useState('');
   const [title, setTitle] = useState('');
+  const [autor, setAutor] = useState('');
+  const [categoria, setCategoria] = useState('');
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [estadoMenuVisible, setEstadoMenuVisible] = useState(false);
   const [type, setType] = useState('VENTA');
   const [precio, setPrecio] = useState('');
   const [estado, setEstado] = useState('');
@@ -29,6 +34,8 @@ export default function AddBookScreen() {
       const bookData: any = {
         isbn,
         title,
+        autor,
+        categoria,
         type,
         precio: parseFloat(precio),
         estado
@@ -85,6 +92,43 @@ export default function AddBookScreen() {
             mode="outlined"
           />
 
+          <TextInput
+            label={t('author_label')}
+            value={autor}
+            onChangeText={setAutor}
+            style={styles.input}
+            mode="outlined"
+          />
+
+          <Menu
+            visible={menuVisible}
+            onDismiss={() => setMenuVisible(false)}
+            anchor={
+              <TouchableRipple onPress={() => setMenuVisible(true)}>
+                <View pointerEvents="none">
+                  <TextInput
+                    label="Categoría"
+                    value={categoria}
+                    style={styles.input}
+                    mode="outlined"
+                    right={<TextInput.Icon icon="menu-down" />}
+                  />
+                </View>
+              </TouchableRipple>
+            }
+          >
+            {['Terror', 'Misterio', 'Aventura', 'Juvenil', 'Policíaco', 'Infantil', 'Autoayuda', 'Novela', 'Biografías', 'Cómics', 'Otros'].map((cat) => (
+              <Menu.Item
+                key={cat}
+                onPress={() => {
+                  setCategoria(cat);
+                  setMenuVisible(false);
+                }}
+                title={cat}
+              />
+            ))}
+          </Menu>
+
           <Text style={styles.label}>{t('type_label')}:</Text>
           <SegmentedButtons
             value={type}
@@ -105,13 +149,34 @@ export default function AddBookScreen() {
             mode="outlined"
           />
 
-          <TextInput
-            label={t('state_label')}
-            value={estado}
-            onChangeText={setEstado}
-            style={styles.input}
-            mode="outlined"
-          />
+          <Menu
+            visible={estadoMenuVisible}
+            onDismiss={() => setEstadoMenuVisible(false)}
+            anchor={
+              <TouchableRipple onPress={() => setEstadoMenuVisible(true)}>
+                <View pointerEvents="none">
+                  <TextInput
+                    label={t('state_label')}
+                    value={estado}
+                    style={styles.input}
+                    mode="outlined"
+                    right={<TextInput.Icon icon="menu-down" />}
+                  />
+                </View>
+              </TouchableRipple>
+            }
+          >
+            {['Nuevo', 'Como nuevo', 'Bien', 'Aceptable', 'Usado', 'Usado con marcas'].map((est) => (
+              <Menu.Item
+                key={est}
+                onPress={() => {
+                  setEstado(est);
+                  setEstadoMenuVisible(false);
+                }}
+                title={est}
+              />
+            ))}
+          </Menu>
 
           {type === 'ALQUILER' && (
             <>
@@ -153,7 +218,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F5EBF4',
   },
   card: {
     padding: 8,

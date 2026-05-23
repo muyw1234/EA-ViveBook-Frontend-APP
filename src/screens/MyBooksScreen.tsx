@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert, Text as RNText, Platform, TouchableOpacity } from 'react-native';
-import { Text, Card, Button, Avatar, SegmentedButtons, Portal, Modal, TextInput, ProgressBar, IconButton } from 'react-native-paper';
+import { Card, Button, Avatar, SegmentedButtons, Portal, Modal, TextInput, ProgressBar, IconButton } from 'react-native-paper';
+import { AppText as Text } from '../components/AppText';
 import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../services/api';
@@ -13,11 +14,18 @@ export default function MyBooksScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [category, setCategory] = useState('uploaded');
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [category]);
   
   // Edit Modal State
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingBook, setEditingBook] = useState<any>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [editAutor, setEditAutor] = useState('');
   const [editIsbn, setEditIsbn] = useState('');
   const [editPrice, setEditPrice] = useState('');
   const [editState, setEditState] = useState('');
@@ -60,6 +68,7 @@ export default function MyBooksScreen() {
   const handleEditPress = (book: any) => {
     setEditingBook(book);
     setEditTitle(book.title);
+    setEditAutor(book.autor || '');
     setEditIsbn(book.isbn);
     setEditPrice(book.precio.toString());
     setEditState(book.estado);
@@ -114,6 +123,7 @@ export default function MyBooksScreen() {
     try {
       await api.put(`/libros/${editingBook._id}`, {
         title: editTitle,
+        autor: editAutor,
         isbn: editIsbn,
         precio: parseFloat(editPrice),
         estado: editState,
@@ -205,18 +215,28 @@ export default function MyBooksScreen() {
       // Refresh to show stars in profile if we are viewing it
     } catch (error: any) {
       console.error('Error submitting rating:', error);
-      const msg = error.response?.data?.message || error.message || t('rating_error');
+      let msg = error.response?.data?.message || error.message || t('rating_error');
+      
+      // Handle MongoDB Duplicate Key Error (11000) or generic backend string errors that indicate duplicates
+      if (msg.includes('11000') || msg.toLowerCase().includes('duplicate') || error.response?.data?.error?.code === 11000) {
+        msg = 'Ya has valorado a este usuario por este libro.';
+      }
+      
       Alert.alert(t('error'), msg);
     } finally {
       setSubmittingRating(false);
     }
   };
 
+  const getBooksByCategory = () => {
+    if (category === 'uploaded') return uploadedBooks;
+    if (category === 'bought') return boughtBooks;
+    if (category === 'rented') return rentedBooks;
+    return [];
+  };
+
   const renderContent = () => {
-    let currentBooks = [];
-    if (category === 'uploaded') currentBooks = uploadedBooks;
-    else if (category === 'bought') currentBooks = boughtBooks;
-    else if (category === 'rented') currentBooks = rentedBooks;
+    const currentBooks = getBooksByCategory();
 
     if (currentBooks.length === 0) {
       return (
@@ -228,12 +248,15 @@ export default function MyBooksScreen() {
       );
     }
 
-    return currentBooks.map((book: any) => (
+    const paginatedBooks = currentBooks.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+    return paginatedBooks.map((book: any) => (
       <Card key={book._id} style={styles.card}>
         <Card.Content>
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
               <Text variant="titleLarge" style={styles.bookTitle}>{book.title}</Text>
+              {book.autor ? <Text variant="bodyMedium" style={styles.bookDetails}>{t('author_label')}: {book.autor}</Text> : null}
               <Text variant="bodyMedium" style={styles.bookDetails}>{t('isbn_label')}: {book.isbn}</Text>
               <Text variant="bodyMedium" style={styles.bookDetails}>{t('state_label')}: {book.estado}</Text>
               {(category === 'bought' || category === 'rented') && book.owner && (
@@ -276,6 +299,31 @@ export default function MyBooksScreen() {
     ));
   };
 
+  const renderFooter = () => {
+    const currentBooks = getBooksByCategory();
+    if (currentBooks.length <= ITEMS_PER_PAGE) return null;
+    
+    const totalPages = Math.ceil(currentBooks.length / ITEMS_PER_PAGE);
+
+    return (
+      <View style={styles.paginationContainer}>
+        <Button 
+          disabled={page === 1} 
+          onPress={() => setPage(page - 1)}
+        >
+          Anterior
+        </Button>
+        <RNText style={styles.pageText}>Página {page} de {totalPages}</RNText>
+        <Button 
+          disabled={page === totalPages} 
+          onPress={() => setPage(page + 1)}
+        >
+          Siguiente
+        </Button>
+      </View>
+    );
+  };
+
   if (loading && !refreshing) {
     return (
       <View style={styles.center}>
@@ -285,7 +333,7 @@ export default function MyBooksScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f8f9fa' }}>
+    <View style={{ flex: 1, backgroundColor: '#F5EBF4' }}>
       <ScrollView 
         style={styles.container}
         refreshControl={
@@ -293,7 +341,7 @@ export default function MyBooksScreen() {
         }
       >
         <View style={styles.headerContainer}>
-          <Avatar.Icon size={48} icon="book-multiple" style={{ backgroundColor: '#D183BA' }} />
+          <RNText style={{ fontSize: 32 }}>📚</RNText>
           <Text variant="headlineMedium" style={styles.header}>{t('my_books')}</Text>
         </View>
 
@@ -306,10 +354,11 @@ export default function MyBooksScreen() {
             { value: 'rented', label: t('rented') },
           ]}
           style={styles.segmented}
-          theme={{ colors: { secondaryContainer: '#F5E4F0', onSecondaryContainer: '#D183BA' } }}
+          theme={{ colors: { secondaryContainer: '#ffffff', onSecondaryContainer: '#D6AED2' } }}
         />
 
         {renderContent()}
+        {renderFooter()}
         
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -326,6 +375,16 @@ export default function MyBooksScreen() {
             label={t('title_label')}
             value={editTitle}
             onChangeText={setEditTitle}
+            mode="outlined"
+            style={styles.modalInput}
+            outlineColor="#D183BA"
+            activeOutlineColor="#D183BA"
+          />
+
+          <TextInput
+            label={t('author_label')}
+            value={editAutor}
+            onChangeText={setEditAutor}
             mode="outlined"
             style={styles.modalInput}
             outlineColor="#D183BA"
@@ -547,5 +606,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     marginTop: 16,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  pageText: {
+    marginHorizontal: 15,
+    fontWeight: 'bold',
+    color: '#555',
+  },
+  rentalStatusContainer: {
+    marginTop: 12,
+    padding: 10,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 8,
+  },
+  rentalDates: {
+    color: '#666',
+    marginBottom: 6,
+  },
+  progressBar: {
+    height: 6,
+    borderRadius: 3,
+    marginBottom: 6,
+  },
+  statusText: {
+    color: '#333',
+    fontWeight: 'bold',
   }
 });
