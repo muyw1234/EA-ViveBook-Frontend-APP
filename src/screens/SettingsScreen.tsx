@@ -1,11 +1,14 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { Text, Button, Card, Divider } from "react-native-paper";
 import { useTranslation } from 'react-i18next';
-import { changeLanguage } from '../services/i18n'; 
+import { changeLanguage } from '../services/i18n';
+import { Switch, Button, Card, Divider } from 'react-native-paper';
+import { useAccessibility } from '../context/AccessibilityContext';
+import { AppText as Text } from '../components/AppText'; 
 
 export default function SettingsScreen() {
     const { t, i18n } = useTranslation();
+    const { isFocusModeEnabled, toggleFocusMode } = useAccessibility();
 
     // Helper to see which language is currently active
     const currentLanguage = i18n.language;
@@ -56,6 +59,26 @@ export default function SettingsScreen() {
                     </View>
                 </Card.Content>
             </Card>
+
+            <Card style={styles.card}>
+                <Card.Content>
+                    <View style={styles.switchRow}>
+                        <View style={{ flex: 1, paddingRight: 15 }}>
+                            <Text variant="titleMedium" style={styles.sectionLabel}>
+                                {t('focus_mode_title')}
+                            </Text>
+                            <Text variant="bodySmall" style={{ color: '#666' }}>
+                                {t('focus_mode_desc')}
+                            </Text>
+                        </View>
+                        <Switch 
+                            value={isFocusModeEnabled} 
+                            onValueChange={toggleFocusMode} 
+                            color="#D183BA" 
+                        />
+                    </View>
+                </Card.Content>
+            </Card>
         </View>
     );
 }
@@ -87,5 +110,10 @@ const styles = StyleSheet.create({
     },
     langButton: {
         borderRadius: 8,
+    },
+    switchRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     }
 });

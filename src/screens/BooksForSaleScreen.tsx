@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, ActivityIndicator, Alert, FlatList, Dimensions, Text as RNText } from 'react-native';
-import { Text, Card, Button, Menu, Divider, IconButton } from 'react-native-paper';
+import { Card, Button, Menu, Divider, IconButton } from 'react-native-paper';
+import { AppText as Text } from '../components/AppText';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import { useFocusEffect } from '@react-navigation/native';
@@ -16,6 +17,8 @@ export default function BooksForSaleScreen() {
   const [loading, setLoading] = useState(true);
   const [menuVisible, setMenuVisible] = useState<string | null>(null);
   const [isGridView, setIsGridView] = useState(false);
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
 
   useFocusEffect(
     useCallback(() => {
@@ -23,6 +26,7 @@ export default function BooksForSaleScreen() {
         try {
           const response = await api.get('/libros/type/VENTA');
           setBooks(response.data);
+          setPage(1);
         } catch (error) {
           console.error('Error fetching books:', error);
         } finally {
@@ -122,6 +126,30 @@ export default function BooksForSaleScreen() {
     </Card>
   );
 
+  const totalPages = Math.ceil(books.length / ITEMS_PER_PAGE);
+  const paginatedBooks = books.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+  const renderFooter = () => {
+    if (books.length <= ITEMS_PER_PAGE) return null;
+    return (
+      <View style={styles.paginationContainer}>
+        <Button 
+          disabled={page === 1} 
+          onPress={() => setPage(page - 1)}
+        >
+          Anterior
+        </Button>
+        <RNText style={styles.pageText}>Página {page} de {totalPages}</RNText>
+        <Button 
+          disabled={page === totalPages} 
+          onPress={() => setPage(page + 1)}
+        >
+          Siguiente
+        </Button>
+      </View>
+    );
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -144,13 +172,14 @@ export default function BooksForSaleScreen() {
 
       <FlatList
         key={isGridView ? 'grid' : 'list'}
-        data={books}
+        data={paginatedBooks}
         renderItem={renderBookItem}
         keyExtractor={(item) => item._id}
         numColumns={isGridView ? 2 : 1}
         columnWrapperStyle={isGridView ? styles.columnWrapper : undefined}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={<Text style={styles.emptyText}>{t('no_books')}</Text>}
+        ListFooterComponent={renderFooter}
       />
     </View>
   );
@@ -233,5 +262,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textDecorationLine: 'underline',
     fontSize: 12,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  pageText: {
+    marginHorizontal: 15,
+    fontWeight: 'bold',
+    color: '#555',
   }
 });

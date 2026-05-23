@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, TextInput, Button, SegmentedButtons, Card, Menu, TouchableRipple } from 'react-native-paper';
+import { TextInput, Button, SegmentedButtons, Card, Menu, TouchableRipple } from 'react-native-paper';
+import { AppText as Text } from '../components/AppText';
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';

@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert, Text as RNText, Platform, TouchableOpacity } from 'react-native';
-import { Text, Card, Button, Avatar, SegmentedButtons, Portal, Modal, TextInput, ProgressBar, IconButton } from 'react-native-paper';
+import { Card, Button, Avatar, SegmentedButtons, Portal, Modal, TextInput, ProgressBar, IconButton } from 'react-native-paper';
+import { AppText as Text } from '../components/AppText';
 import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../services/api';
@@ -13,6 +14,12 @@ export default function MyBooksScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [category, setCategory] = useState('uploaded');
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [category]);
   
   // Edit Modal State
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -208,18 +215,28 @@ export default function MyBooksScreen() {
       // Refresh to show stars in profile if we are viewing it
     } catch (error: any) {
       console.error('Error submitting rating:', error);
-      const msg = error.response?.data?.message || error.message || t('rating_error');
+      let msg = error.response?.data?.message || error.message || t('rating_error');
+      
+      // Handle MongoDB Duplicate Key Error (11000) or generic backend string errors that indicate duplicates
+      if (msg.includes('11000') || msg.toLowerCase().includes('duplicate') || error.response?.data?.error?.code === 11000) {
+        msg = 'Ya has valorado a este usuario por este libro.';
+      }
+      
       Alert.alert(t('error'), msg);
     } finally {
       setSubmittingRating(false);
     }
   };
 
+  const getBooksByCategory = () => {
+    if (category === 'uploaded') return uploadedBooks;
+    if (category === 'bought') return boughtBooks;
+    if (category === 'rented') return rentedBooks;
+    return [];
+  };
+
   const renderContent = () => {
-    let currentBooks = [];
-    if (category === 'uploaded') currentBooks = uploadedBooks;
-    else if (category === 'bought') currentBooks = boughtBooks;
-    else if (category === 'rented') currentBooks = rentedBooks;
+    const currentBooks = getBooksByCategory();
 
     if (currentBooks.length === 0) {
       return (
@@ -231,7 +248,9 @@ export default function MyBooksScreen() {
       );
     }
 
-    return currentBooks.map((book: any) => (
+    const paginatedBooks = currentBooks.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+    return paginatedBooks.map((book: any) => (
       <Card key={book._id} style={styles.card}>
         <Card.Content>
           <View style={styles.row}>
@@ -280,6 +299,31 @@ export default function MyBooksScreen() {
     ));
   };
 
+  const renderFooter = () => {
+    const currentBooks = getBooksByCategory();
+    if (currentBooks.length <= ITEMS_PER_PAGE) return null;
+    
+    const totalPages = Math.ceil(currentBooks.length / ITEMS_PER_PAGE);
+
+    return (
+      <View style={styles.paginationContainer}>
+        <Button 
+          disabled={page === 1} 
+          onPress={() => setPage(page - 1)}
+        >
+          Anterior
+        </Button>
+        <RNText style={styles.pageText}>Página {page} de {totalPages}</RNText>
+        <Button 
+          disabled={page === totalPages} 
+          onPress={() => setPage(page + 1)}
+        >
+          Siguiente
+        </Button>
+      </View>
+    );
+  };
+
   if (loading && !refreshing) {
     return (
       <View style={styles.center}>
@@ -314,6 +358,7 @@ export default function MyBooksScreen() {
         />
 
         {renderContent()}
+        {renderFooter()}
         
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -561,5 +606,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     marginTop: 16,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  pageText: {
+    marginHorizontal: 15,
+    fontWeight: 'bold',
+    color: '#555',
+  },
+  rentalStatusContainer: {
+    marginTop: 12,
+    padding: 10,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 8,
+  },
+  rentalDates: {
+    color: '#666',
+    marginBottom: 6,
+  },
+  progressBar: {
+    height: 6,
+    borderRadius: 3,
+    marginBottom: 6,
+  },
+  statusText: {
+    color: '#333',
+    fontWeight: 'bold',
   }
 });
