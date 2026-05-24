@@ -70,9 +70,9 @@ export default function ProfileScreen({ route }: any) {
             setDescription(response.data.description || "");
             
             // Set favorites
-            setFavoriteAuthors(response.data.favoriteAuthors || []);
-            setFavoriteBooks(response.data.favoriteBooks || []);
-            setFavoriteCategories(response.data.favoriteCategories || []);
+            setFavoriteAuthors(Array.isArray(response.data.favoriteAuthors) ? response.data.favoriteAuthors : []);
+            setFavoriteBooks(Array.isArray(response.data.favoriteBooks) ? response.data.favoriteBooks : []);
+            setFavoriteCategories(Array.isArray(response.data.favoriteCategories) ? response.data.favoriteCategories : []);
 
             const targetId = userId || response.data._id || currentUserId;
             if (targetId && typeof targetId === 'string' && targetId.length === 24) {
@@ -81,9 +81,9 @@ export default function ProfileScreen({ route }: any) {
                         api.get(`/valoraciones/received/${targetId}`),
                         api.get(`/usuarios/${targetId}/followers`)
                     ]);
-                    setReviews(reviewsResponse.data.valoraciones || []);
+                    setReviews(Array.isArray(reviewsResponse.data.valoraciones) ? reviewsResponse.data.valoraciones : []);
                     setStats(reviewsResponse.data.stats || { averageRating: 0, totalReviews: 0 });
-                    setFollowers(followersResponse.data || []);
+                    setFollowers(Array.isArray(followersResponse.data) ? followersResponse.data : []);
                 } catch (revError) {
                     console.error("Error fetching extra profile data:", revError);
                     // Don't fail the whole profile load if only reviews fail
@@ -144,8 +144,10 @@ export default function ProfileScreen({ route }: any) {
             await api.delete(`/usuarios/${user._id}`);
             Alert.alert(t('success'), t('delete_success'));
             logout();
-        } catch (error) {
-            Alert.alert(t('error'), t('error'));
+        } catch (error: any) {
+            console.error("Error deleting profile (soft):", error);
+            const msg = error.response?.data?.message || error.message || t('error');
+            Alert.alert(t('error'), msg);
         } finally {
             setDeleting(false);
             setDeleteModalVisible(false);
@@ -159,8 +161,10 @@ export default function ProfileScreen({ route }: any) {
             await api.delete(`/usuarios/permanent/${user._id}`);
             Alert.alert(t('success'), t('delete_success'));
             logout();
-        } catch (error) {
-            Alert.alert(t('error'), t('error'));
+        } catch (error: any) {
+            console.error("Error deleting profile (permanent):", error);
+            const msg = error.response?.data?.message || error.message || t('error');
+            Alert.alert(t('error'), msg);
         } finally {
             setDeleting(false);
             setDeleteModalVisible(false);
@@ -374,17 +378,6 @@ export default function ProfileScreen({ route }: any) {
                                 <Button 
                                     mode="outlined" 
                                     onPress={() => {
-                                        const hasActiveRent = user.rentedLibros?.length > 0;
-                                        const hasRentedOutBooks = user.libros?.some((libro: any) => libro.type === 'ALQUILER' && libro.IsDeleted === true);
-                                        
-                                        if (hasActiveRent || hasRentedOutBooks) {
-                                            Alert.alert(
-                                                t('error'), 
-                                                t('err_delete_rent')
-                                            );
-                                            return;
-                                        }
-
                                         setDeleteStep('menu');
                                         setDeleteModalVisible(true);
                                     }}
@@ -412,25 +405,25 @@ export default function ProfileScreen({ route }: any) {
                                 </Text>
                             </View>
 
-                            {(user.favoriteAuthors?.length > 0 || user.favoriteBooks?.length > 0 || user.favoriteCategories?.length > 0) && (
+                            {((Array.isArray(user.favoriteAuthors) && user.favoriteAuthors.length > 0) || (Array.isArray(user.favoriteBooks) && user.favoriteBooks.length > 0) || (Array.isArray(user.favoriteCategories) && user.favoriteCategories.length > 0)) && (
                                 <View style={{ marginTop: 20 }}>
                                     <Text variant="titleMedium" style={{ color: '#D183BA', fontWeight: 'bold', marginBottom: 10 }}>Favoritos</Text>
                                     
-                                    {user.favoriteAuthors?.length > 0 && (
+                                    {Array.isArray(user.favoriteAuthors) && user.favoriteAuthors.length > 0 && (
                                         <View style={{ marginBottom: 10 }}>
                                             <Text variant="labelLarge" style={styles.label}>{t('fav_authors')}</Text>
                                             <Text variant="bodyMedium">{user.favoriteAuthors.join(', ')}</Text>
                                         </View>
                                     )}
 
-                                    {user.favoriteBooks?.length > 0 && (
+                                    {Array.isArray(user.favoriteBooks) && user.favoriteBooks.length > 0 && (
                                         <View style={{ marginBottom: 10 }}>
                                             <Text variant="labelLarge" style={styles.label}>{t('fav_books')}</Text>
                                             <Text variant="bodyMedium">{user.favoriteBooks.join(', ')}</Text>
                                         </View>
                                     )}
 
-                                    {user.favoriteCategories?.length > 0 && (
+                                    {Array.isArray(user.favoriteCategories) && user.favoriteCategories.length > 0 && (
                                         <View style={{ marginBottom: 10 }}>
                                             <Text variant="labelLarge" style={styles.label}>{t('fav_categories')}</Text>
                                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 5 }}>
@@ -474,7 +467,7 @@ export default function ProfileScreen({ route }: any) {
                                     <Text variant="labelMedium" style={{ color: '#f59e0b' }}>{"★".repeat(Math.max(0, rev.puntuacion || 0))}{"☆".repeat(Math.max(0, 5 - (rev.puntuacion || 0)))}</Text>
                                 </View>
                                 <Text variant="bodySmall" style={{ color: '#999', marginBottom: 5 }}>
-                                    {rev.libro?.title} ({rev.tipoOperacion.toLowerCase()})
+                                    {rev.libro?.title || ''}{rev.tipoOperacion ? ` (${rev.tipoOperacion.toLowerCase()})` : ''}
                                 </Text>
                                 {rev.comentario ? (
                                     <Text variant="bodyMedium">{rev.comentario}</Text>

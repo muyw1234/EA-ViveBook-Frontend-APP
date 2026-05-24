@@ -152,16 +152,19 @@ export default function MyBooksScreen() {
 
     if (now < start) {
       progress = 0;
-      statusText = t('rental_not_started') || "El alquiler todavía no ha empezado";
+      const notStartedTrans = t('rental_not_started');
+      statusText = notStartedTrans && notStartedTrans !== 'rental_not_started' ? notStartedTrans : "El alquiler todavía no ha empezado";
     } else if (now > end) {
       progress = 1;
-      statusText = t('rental_finished') || "Alquiler finalizado";
+      const finishedTrans = t('rental_finished');
+      statusText = finishedTrans && finishedTrans !== 'rental_finished' ? finishedTrans : "Alquiler finalizado";
     } else {
       const total = end - start;
       const elapsed = now - start;
       progress = elapsed / total;
       const daysRemaining = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
-      statusText = (t('rental_days_remaining') || "Quedan X días de alquiler").replace('X', daysRemaining.toString());
+      const remainingTrans = t('rental_days_remaining');
+      statusText = (remainingTrans && remainingTrans !== 'rental_days_remaining' ? remainingTrans : "Quedan X días de alquiler").replace('X', daysRemaining.toString());
     }
 
     return (
