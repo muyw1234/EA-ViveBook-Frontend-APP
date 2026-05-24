@@ -25,6 +25,8 @@ import MainNavigator from "./src/navigation/MainNavigator";
 
 const Stack = createNativeStackNavigator();
 
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 export default function App() {
   const [fontsLoaded] = useFonts({
     Outfit_400Regular,
@@ -33,30 +35,36 @@ export default function App() {
   });
 
   if (!fontsLoaded) {
-    return null;
+    return (
+      <View style={styles.container}>
+        <Text>Cargando fuentes...</Text>
+      </View>
+    );
   }
 
   return (
-    <AccessibilityProvider>
-      <PaperProvider theme={theme}>
-        <NavigationContainer>
-        <Stack.Navigator initialRouteName="Home" screenOptions={{
-          contentStyle: style.screen
-        }}>
-          <Stack.Screen name="Home" component={HomeScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Main" component={MainNavigator} options={{ headerShown: false }} />
-          <Stack.Screen name="BooksForSale" component={BooksForSaleScreen} options={{ title: 'Libros en Venta' }} />
-          <Stack.Screen name="BooksForRent" component={BooksForRentScreen} options={{ title: 'Libros en Alquiler' }} />
-          <Stack.Screen name="AddBook" component={AddBookScreen} options={{ title: 'Subir Libro' }} />
-          <Stack.Screen name="UserProfile" component={ProfileScreen} options={{ title: 'Perfil de Usuario', presentation: 'modal' }} />
-          <Stack.Screen name="Search" component={SearchScreen} options={{ title: 'Búsqueda de Libros' }} />
-          <Stack.Screen name="Discover" component={DiscoverScreen} options={{ headerShown: false }} />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </PaperProvider>
-    </AccessibilityProvider>
+    <SafeAreaProvider style={{ flex: 1 }}>
+      <AccessibilityProvider>
+        <PaperProvider theme={theme}>
+          <NavigationContainer>
+          <Stack.Navigator initialRouteName="Home" screenOptions={{
+            contentStyle: style.screen
+          }}>
+            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Main" component={MainNavigator} options={{ headerShown: false }} />
+            <Stack.Screen name="BooksForSale" component={BooksForSaleScreen} options={{ title: 'Libros en Venta' }} />
+            <Stack.Screen name="BooksForRent" component={BooksForRentScreen} options={{ title: 'Libros en Alquiler' }} />
+            <Stack.Screen name="AddBook" component={AddBookScreen} options={{ title: 'Subir Libro' }} />
+            <Stack.Screen name="UserProfile" component={ProfileScreen} options={{ title: 'Perfil de Usuario', presentation: 'modal' }} />
+            <Stack.Screen name="Search" component={SearchScreen} options={{ title: 'Búsqueda de Libros' }} />
+            <Stack.Screen name="Discover" component={DiscoverScreen} options={{ headerShown: false }} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </PaperProvider>
+      </AccessibilityProvider>
+    </SafeAreaProvider>
   );
 }
 
