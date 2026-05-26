@@ -29,8 +29,10 @@ export default function LoginScreen() {
             const response = await api.post("/auth/signin", { email, password });
 
             if (response.status === 200) {
-                const { token, user } = response.data;
-                console.log("Login successful. User:", user.name);
+                // const { token, user } = response.data;
+                const  token  = response.data.data.token;
+                const user = response.data.data.user;
+                console.log("Login successful. User:", JSON.stringify(user));
                 
                 await AsyncStorage.setItem('token', token);
                 await AsyncStorage.setItem('user', JSON.stringify(user));
