@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert, Text as RNText, Platform, TouchableOpacity } from 'react-native';
-import { Card, Button, Avatar, SegmentedButtons, Portal, Modal, TextInput, ProgressBar, IconButton, Menu } from 'react-native-paper';
+import { Card, Button, Avatar, SegmentedButtons, Portal, Modal, TextInput, ProgressBar, IconButton, Menu, Searchbar, TouchableRipple } from 'react-native-paper';
 import { AppText as Text } from '../components/AppText';
 import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from '@react-navigation/native';
@@ -20,6 +20,18 @@ export default function MyBooksScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
+
+  // Filters Modal Draft States
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+  const [filterCategoryType, setFilterCategoryType] = useState('uploaded'); // uploaded, bought, rented
+  const [filterBookCategory, setFilterBookCategory] = useState('all'); // all, Terror, Misterio, etc.
+  const [modalCategoryMenuVisible, setModalCategoryMenuVisible] = useState(false);
+
+  const handleApplyFilters = () => {
+    setCategory(filterCategoryType);
+    setSelectedCategory(filterBookCategory);
+    setIsFilterModalVisible(false);
+  };
 
   React.useEffect(() => {
     setPage(1);
@@ -372,74 +384,25 @@ export default function MyBooksScreen() {
           <Text variant="headlineMedium" style={styles.header}>{t('my_books')}</Text>
         </View>
 
-        <TextInput
-          placeholder="Buscar por título, autor o ISBN..."
-          value={searchQuery}
+        <Searchbar
+          placeholder={t('search_placeholder')}
           onChangeText={setSearchQuery}
-          mode="outlined"
+          value={searchQuery}
           style={styles.searchBar}
-          outlineColor="#D183BA"
-          activeOutlineColor="#D183BA"
-          left={<TextInput.Icon icon={() => <RNText style={{ fontSize: 18 }}>🔍</RNText>} />}
-          right={
-            searchQuery ? (
-              <TextInput.Icon 
-                icon={() => <RNText style={{ fontSize: 16 }}>✕</RNText>} 
-                onPress={() => setSearchQuery('')} 
-              />
-            ) : null
-          }
-        />
-
-        <View style={styles.filterRow}>
-          <Menu
-            visible={categoryMenuVisible}
-            onDismiss={() => setCategoryMenuVisible(false)}
-            anchor={
-              <Button
-                mode="outlined"
-                onPress={() => setCategoryMenuVisible(true)}
-                style={styles.categoryDropdown}
-                textColor="#D183BA"
-                icon={() => <RNText style={{ fontSize: 16 }}>▼</RNText>}
-                contentStyle={{ flexDirection: 'row-reverse', justifyContent: 'space-between' }}
-              >
-                {selectedCategory === 'all' 
-                  ? "Todas las categorías" 
-                  : selectedCategory}
-              </Button>
-            }
-          >
-            <Menu.Item 
+          icon={() => <RNText style={{ fontSize: 20 }}>🔍</RNText>}
+          right={(props) => (
+            <IconButton
+              {...props}
+              icon="tune"
+              iconColor="#D183BA"
+              size={24}
               onPress={() => {
-                setSelectedCategory('all');
-                setCategoryMenuVisible(false);
+                setFilterCategoryType(category);
+                setFilterBookCategory(selectedCategory);
+                setIsFilterModalVisible(true);
               }}
-              title="Todas las categorías"
             />
-            {['Terror', 'Misterio', 'Aventura', 'Juvenil', 'Policíaco', 'Infantil', 'Autoayuda', 'Novela', 'Biografías', 'Cómics', 'Otros'].map((cat) => (
-              <Menu.Item
-                key={cat}
-                onPress={() => {
-                  setSelectedCategory(cat);
-                  setCategoryMenuVisible(false);
-                }}
-                title={cat}
-              />
-            ))}
-          </Menu>
-        </View>
-
-        <SegmentedButtons
-          value={category}
-          onValueChange={setCategory}
-          buttons={[
-            { value: 'uploaded', label: t('uploaded') },
-            { value: 'bought', label: t('bought') },
-            { value: 'rented', label: t('rented') },
-          ]}
-          style={styles.segmented}
-          theme={{ colors: { secondaryContainer: '#ffffff', onSecondaryContainer: '#D6AED2' } }}
+          )}
         />
 
         {renderContent()}
@@ -449,6 +412,76 @@ export default function MyBooksScreen() {
       </ScrollView>
 
       <Portal>
+        {/* Filter Modal */}
+        <Modal
+          visible={isFilterModalVisible}
+          onDismiss={() => setIsFilterModalVisible(false)}
+          contentContainerStyle={styles.modalContent}
+        >
+          <Text variant="titleLarge" style={styles.modalTitle}>Filtros</Text>
+          
+          <Text style={styles.labelModal}>Ver libros:</Text>
+          <SegmentedButtons
+            value={filterCategoryType}
+            onValueChange={setFilterCategoryType}
+            buttons={[
+              { value: 'uploaded', label: t('uploaded') },
+              { value: 'bought', label: t('bought') },
+              { value: 'rented', label: t('rented') },
+            ]}
+            style={styles.segmented}
+            theme={{ colors: { secondaryContainer: '#ffffff', onSecondaryContainer: '#D6AED2' } }}
+          />
+
+          <Text style={styles.labelModal}>Categoría:</Text>
+          <Menu
+            visible={modalCategoryMenuVisible}
+            onDismiss={() => setModalCategoryMenuVisible(false)}
+            anchor={
+              <TouchableRipple onPress={() => setModalCategoryMenuVisible(true)}>
+                <View pointerEvents="none">
+                  <TextInput
+                    label="Categoría"
+                    value={filterBookCategory === 'all' ? 'Todas' : filterBookCategory}
+                    style={styles.modalInput}
+                    mode="outlined"
+                    right={<TextInput.Icon icon="menu-down" />}
+                    outlineColor="#D183BA"
+                    activeOutlineColor="#D183BA"
+                  />
+                </View>
+              </TouchableRipple>
+            }
+          >
+            <Menu.Item
+              onPress={() => {
+                setFilterBookCategory('all');
+                setModalCategoryMenuVisible(false);
+              }}
+              title="Todas"
+            />
+            {['Terror', 'Misterio', 'Aventura', 'Juvenil', 'Policíaco', 'Infantil', 'Autoayuda', 'Novela', 'Biografías', 'Cómics', 'Otros'].map((cat) => (
+              <Menu.Item
+                key={cat}
+                onPress={() => {
+                  setFilterBookCategory(cat);
+                  setModalCategoryMenuVisible(false);
+                }}
+                title={cat}
+              />
+            ))}
+          </Menu>
+
+          <Button 
+            mode="contained" 
+            onPress={handleApplyFilters}
+            buttonColor="#D183BA"
+            style={{ marginTop: 24 }}
+          >
+            Aplicar Filtros
+          </Button>
+        </Modal>
+
         <Modal
           visible={editModalVisible}
           onDismiss={() => !updating && setEditModalVisible(false)}
@@ -723,17 +756,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   searchBar: {
-    marginBottom: 12,
-    backgroundColor: '#ffffff',
-  },
-  filterRow: {
-    flexDirection: 'row',
     marginBottom: 16,
-  },
-  categoryDropdown: {
-    flex: 1,
-    borderColor: '#D183BA',
-    borderRadius: 12,
+    elevation: 2,
     backgroundColor: '#ffffff',
+    borderRadius: 30,
+  },
+  labelModal: {
+    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+    marginTop: 12,
   }
 });
