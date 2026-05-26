@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert, Text as RNText, Platform, TouchableOpacity } from 'react-native';
-import { Card, Button, Avatar, SegmentedButtons, Portal, Modal, TextInput, ProgressBar, IconButton } from 'react-native-paper';
+import { Card, Button, Avatar, SegmentedButtons, Portal, Modal, TextInput, ProgressBar, IconButton, Menu } from 'react-native-paper';
 import { AppText as Text } from '../components/AppText';
 import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from '@react-navigation/native';
@@ -17,9 +17,13 @@ export default function MyBooksScreen() {
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
+
   React.useEffect(() => {
     setPage(1);
-  }, [category]);
+  }, [category, searchQuery, selectedCategory]);
   
   // Edit Modal State
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -231,15 +235,35 @@ export default function MyBooksScreen() {
     }
   };
 
-  const getBooksByCategory = () => {
-    if (category === 'uploaded') return uploadedBooks;
-    if (category === 'bought') return boughtBooks;
-    if (category === 'rented') return rentedBooks;
-    return [];
+  const getFilteredBooks = () => {
+    let baseBooks: any[] = [];
+    if (category === 'uploaded') baseBooks = uploadedBooks;
+    else if (category === 'bought') baseBooks = boughtBooks;
+    else if (category === 'rented') baseBooks = rentedBooks;
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      baseBooks = baseBooks.filter((book) => {
+        const titleMatch = book.title?.toLowerCase().includes(query);
+        const autorMatch = book.autor?.toLowerCase().includes(query);
+        const isbnMatch = book.isbn?.toLowerCase().includes(query);
+        return titleMatch || autorMatch || isbnMatch;
+      });
+    }
+
+    // Filter by category dropdown
+    if (selectedCategory && selectedCategory !== 'all') {
+      baseBooks = baseBooks.filter((book) => {
+        return book.categoria?.toLowerCase() === selectedCategory.toLowerCase();
+      });
+    }
+
+    return baseBooks;
   };
 
   const renderContent = () => {
-    const currentBooks = getBooksByCategory();
+    const currentBooks = getFilteredBooks();
 
     if (currentBooks.length === 0) {
       return (
@@ -303,7 +327,7 @@ export default function MyBooksScreen() {
   };
 
   const renderFooter = () => {
-    const currentBooks = getBooksByCategory();
+    const currentBooks = getFilteredBooks();
     if (currentBooks.length <= ITEMS_PER_PAGE) return null;
     
     const totalPages = Math.ceil(currentBooks.length / ITEMS_PER_PAGE);
@@ -346,6 +370,64 @@ export default function MyBooksScreen() {
         <View style={styles.headerContainer}>
           <RNText style={{ fontSize: 32 }}>📚</RNText>
           <Text variant="headlineMedium" style={styles.header}>{t('my_books')}</Text>
+        </View>
+
+        <TextInput
+          placeholder="Buscar por título, autor o ISBN..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          mode="outlined"
+          style={styles.searchBar}
+          outlineColor="#D183BA"
+          activeOutlineColor="#D183BA"
+          left={<TextInput.Icon icon={() => <RNText style={{ fontSize: 18 }}>🔍</RNText>} />}
+          right={
+            searchQuery ? (
+              <TextInput.Icon 
+                icon={() => <RNText style={{ fontSize: 16 }}>✕</RNText>} 
+                onPress={() => setSearchQuery('')} 
+              />
+            ) : null
+          }
+        />
+
+        <View style={styles.filterRow}>
+          <Menu
+            visible={categoryMenuVisible}
+            onDismiss={() => setCategoryMenuVisible(false)}
+            anchor={
+              <Button
+                mode="outlined"
+                onPress={() => setCategoryMenuVisible(true)}
+                style={styles.categoryDropdown}
+                textColor="#D183BA"
+                icon={() => <RNText style={{ fontSize: 16 }}>▼</RNText>}
+                contentStyle={{ flexDirection: 'row-reverse', justifyContent: 'space-between' }}
+              >
+                {selectedCategory === 'all' 
+                  ? "Todas las categorías" 
+                  : selectedCategory}
+              </Button>
+            }
+          >
+            <Menu.Item 
+              onPress={() => {
+                setSelectedCategory('all');
+                setCategoryMenuVisible(false);
+              }}
+              title="Todas las categorías"
+            />
+            {['Terror', 'Misterio', 'Aventura', 'Juvenil', 'Policíaco', 'Infantil', 'Autoayuda', 'Novela', 'Biografías', 'Cómics', 'Otros'].map((cat) => (
+              <Menu.Item
+                key={cat}
+                onPress={() => {
+                  setSelectedCategory(cat);
+                  setCategoryMenuVisible(false);
+                }}
+                title={cat}
+              />
+            ))}
+          </Menu>
         </View>
 
         <SegmentedButtons
@@ -639,5 +721,19 @@ const styles = StyleSheet.create({
   statusText: {
     color: '#333',
     fontWeight: 'bold',
+  },
+  searchBar: {
+    marginBottom: 12,
+    backgroundColor: '#ffffff',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  categoryDropdown: {
+    flex: 1,
+    borderColor: '#D183BA',
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
   }
 });
