@@ -17,9 +17,12 @@ export default function LoginScreen() {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
 
     const handleLogin = async () => {
+        setErrorMsg("");
         if (!email || !password) {
+            setErrorMsg(t('err_credentials'));
             Alert.alert(t('error'), t('err_credentials'));
             return;
         }
@@ -38,9 +41,31 @@ export default function LoginScreen() {
                 navigation.navigate("Main" as never);
             }
         } catch (error: any) {
-            const message = typeof error.response?.data === 'string' 
-                ? error.response.data 
-                : t('err_login_failed');
+            let message = t('err_login_failed');
+            
+            if (error.response) {
+                const status = error.response.status;
+                if (status >= 500) {
+                    message = `${t('err_server_error')} (Status: ${status})`;
+                } else {
+                    if (typeof error.response.data === 'string') {
+                        message = error.response.data;
+                    } else if (error.response.data && typeof error.response.data.message === 'string') {
+                        message = error.response.data.message;
+                    } else {
+                        message = t('err_login_failed');
+                    }
+                }
+            } else if (error.request) {
+                message = t('err_network_error');
+                if (error.message) {
+                    message += ` (${error.message})`;
+                }
+            } else {
+                message = error.message || t('err_login_failed');
+            }
+            
+            setErrorMsg(message);
             Alert.alert(t('error'), message);
         } finally {
             setLoading(false);
@@ -90,6 +115,12 @@ export default function LoginScreen() {
                         />
                     }
                 />
+
+                {errorMsg ? (
+                    <RNText style={{ color: 'red', textAlign: 'center', marginBottom: 10, fontFamily: 'Outfit_500Medium' }}>
+                        {errorMsg}
+                    </RNText>
+                ) : null}
 
                 <Button 
                     mode="contained" 

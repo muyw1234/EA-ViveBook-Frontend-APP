@@ -92,7 +92,30 @@ export default function RegisterScreen() {
                 }
             }
         } catch (error: any) {
-            const message = error.response?.data?.message || t("err_reg_problem");
+            let message = t("err_reg_problem");
+            
+            if (error.response) {
+                const status = error.response.status;
+                if (status >= 500) {
+                    message = `${t('err_server_error')} (Status: ${status})`;
+                } else {
+                    if (typeof error.response.data === 'string') {
+                        message = error.response.data;
+                    } else if (error.response.data && typeof error.response.data.message === 'string') {
+                        message = error.response.data.message;
+                    } else {
+                        message = t("err_reg_problem");
+                    }
+                }
+            } else if (error.request) {
+                message = t('err_network_error');
+                if (error.message) {
+                    message += ` (${error.message})`;
+                }
+            } else {
+                message = error.message || t("err_reg_problem");
+            }
+            
             setErrorMsg(message);
         } finally {
             setLoading(false);

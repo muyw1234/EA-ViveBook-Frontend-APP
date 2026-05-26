@@ -71,6 +71,8 @@ const resources = {
       already_have_account_link: "¿Ya tienes cuenta? Inicia sesión",
       err_credentials: "Por favor, introduce tus credenciales",
       err_login_failed: "Email o contraseña incorrectos",
+      err_server_error: "Error del servidor. Por favor, inténtalo más tarde.",
+      err_network_error: "Error de red. No se pudo conectar con el servidor.",
       // RegisterScreen
       register_title: "Registro",
       register_subtitle: "Crea tu cuenta en ViveBook",
@@ -224,6 +226,8 @@ const resources = {
       already_have_account_link: "Ja tens compte? Inicia sessió",
       err_credentials: "Per favor, introdueix les teves credencials",
       err_login_failed: "Email o contrasenya incorrectes",
+      err_server_error: "Error del servidor. Si us plau, intenta-ho més tard.",
+      err_network_error: "Error de xarxa. No s'ha pogut connectar amb el servidor.",
       // RegisterScreen
       register_title: "Registre",
       register_subtitle: "Crea el teu compte a ViveBook",
@@ -373,6 +377,8 @@ const resources = {
       already_have_account_link: "Already have an account? Log in",
       err_credentials: "Please enter your credentials",
       err_login_failed: "Incorrect email or password",
+      err_server_error: "Server error. Please try again later.",
+      err_network_error: "Network error. Could not connect to the server.",
       // RegisterScreen
       register_title: "Register",
       register_subtitle: "Create your ViveBook account",
