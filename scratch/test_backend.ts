@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:9000';
+const API_URL = 'http://localhost:1337';
 
 async function test() {
     try {
