@@ -23,6 +23,29 @@ export default function RegisterScreen() {
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
 
+    // Real-time password requirement checks
+    const hasMinLength = password.length >= 8;
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+
+    const metRequirementsCount = [hasMinLength, hasUppercase, hasNumber].filter(Boolean).length;
+    const strengthPercentage = password ? (metRequirementsCount / 3) * 100 : 0;
+
+    let strengthColor = "#cbd5e1";
+    let strengthText = "";
+    if (password) {
+        if (metRequirementsCount === 1) {
+            strengthColor = "#ef4444"; // red
+            strengthText = t("weak", "Débil");
+        } else if (metRequirementsCount === 2) {
+            strengthColor = "#f59e0b"; // yellow/orange
+            strengthText = t("medium", "Media");
+        } else if (metRequirementsCount === 3) {
+            strengthColor = "#10b981"; // green
+            strengthText = t("strong", "Fuerte");
+        }
+    }
+
     const handleRegister = async () => {
         setErrorMsg("");
         
@@ -38,6 +61,11 @@ export default function RegisterScreen() {
 
         if (password !== confirmPassword) {
             setErrorMsg(t("err_passwords_dont_match"));
+            return;
+        }
+
+        if (!hasMinLength || !hasUppercase || !hasNumber) {
+            setErrorMsg(t("err_pwd_requirements"));
             return;
         }
 
@@ -136,6 +164,69 @@ export default function RegisterScreen() {
                         }
                     />
 
+                    {password.length > 0 && (
+                        <View style={localStyles.strengthContainer}>
+                            <View style={localStyles.strengthLabelContainer}>
+                                <Text style={localStyles.strengthLabel}>{t("pwd_strength")}</Text>
+                                <Text style={[localStyles.strengthText, { color: strengthColor }]}>
+                                    {strengthText}
+                                </Text>
+                            </View>
+                            <View style={localStyles.strengthBarTrack}>
+                                <View 
+                                    style={[
+                                        localStyles.strengthBarFill, 
+                                        { 
+                                            width: `${strengthPercentage}%`, 
+                                            backgroundColor: strengthColor 
+                                        }
+                                    ]} 
+                                />
+                            </View>
+                            
+                            <View style={localStyles.requirementsContainer}>
+                                <View style={localStyles.requirementItem}>
+                                    <View style={[
+                                        localStyles.dotIndicator,
+                                        { backgroundColor: hasMinLength ? "#10b981" : "#cbd5e1" }
+                                    ]} />
+                                    <Text style={[
+                                        localStyles.requirementText, 
+                                        { color: hasMinLength ? "#0f172a" : "#64748b" }
+                                    ]}>
+                                        {t("pwd_req_min_chars")}
+                                    </Text>
+                                </View>
+                                
+                                <View style={localStyles.requirementItem}>
+                                    <View style={[
+                                        localStyles.dotIndicator,
+                                        { backgroundColor: hasUppercase ? "#10b981" : "#cbd5e1" }
+                                    ]} />
+                                    <Text style={[
+                                        localStyles.requirementText, 
+                                        { color: hasUppercase ? "#0f172a" : "#64748b" }
+                                    ]}>
+                                        {t("pwd_req_uppercase")}
+                                    </Text>
+                                </View>
+                                
+                                <View style={localStyles.requirementItem}>
+                                    <View style={[
+                                        localStyles.dotIndicator,
+                                        { backgroundColor: hasNumber ? "#10b981" : "#cbd5e1" }
+                                    ]} />
+                                    <Text style={[
+                                        localStyles.requirementText, 
+                                        { color: hasNumber ? "#0f172a" : "#64748b" }
+                                    ]}>
+                                        {t("pwd_req_number")}
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+                    )}
+
                     <TextInput
                         label={t("confirm_password_label")}
                         value={confirmPassword}
@@ -181,3 +272,55 @@ export default function RegisterScreen() {
         </LinearGradient>
     );
 }
+
+const localStyles = StyleSheet.create({
+    strengthContainer: {
+        marginBottom: 16,
+        marginTop: -8,
+        paddingHorizontal: 4,
+    },
+    strengthLabelContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 6,
+    },
+    strengthLabel: {
+        fontSize: 12,
+        fontFamily: 'Outfit_500Medium',
+        color: '#64748b',
+    },
+    strengthText: {
+        fontSize: 12,
+        fontFamily: 'Outfit_700Bold',
+    },
+    strengthBarTrack: {
+        height: 6,
+        backgroundColor: '#e2e8f0',
+        borderRadius: 3,
+        overflow: 'hidden',
+        marginBottom: 10,
+    },
+    strengthBarFill: {
+        height: '100%',
+        borderRadius: 3,
+    },
+    requirementsContainer: {
+        paddingHorizontal: 2,
+    },
+    requirementItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 6,
+    },
+    dotIndicator: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginRight: 10,
+    },
+    requirementText: {
+        fontSize: 13,
+        fontFamily: 'Outfit_400Regular',
+    },
+});
