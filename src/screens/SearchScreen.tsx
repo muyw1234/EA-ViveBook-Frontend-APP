@@ -69,18 +69,22 @@ export default function SearchScreen({ route }: any) {
     setLoading(true);
     try {
       // Parallel search for books and users
-      const [booksResponse, usersResponse] = await Promise.allSettled([
-        api.get(`/libros/search?term=${query}`),
-        api.get(`/usuarios/search?term=${query}`)
-      ]);
+      // const [booksResponse, usersResponse] = await Promise.allSettled([
+      //   api.get(`/libros/search?term=${query}`),
+      //   api.get(`/usuarios/search?term=${query}`)
+      // ]);
 
-      if (booksResponse.status === 'fulfilled') {
+      console.log(`Searching for book and user: ${query}`);
+      const booksResponse = (await api.get(`/libros/search?term=${query}&page=1&limit=10`)).data;
+      const usersResponse = (await  api.get(`/usuarios/search?term=${query}&page=1&limit=10`)).data;
+
+      if (booksResponse.status === 200) {
         setBookResults(booksResponse.value.data);
       } else {
         setBookResults([]);
       }
 
-      if (usersResponse.status === 'fulfilled') {
+      if (usersResponse.status === 200) {
         setUserResults(usersResponse.value.data);
       } else {
         setUserResults([]);
