@@ -16,6 +16,7 @@ import AddBookScreen from "./src/screens/AddBookScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import SearchScreen from "./src/screens/SearchScreen";
 import DiscoverScreen from "./src/screens/DiscoverScreen";
+import EventDetailScreen from "./src/screens/EventDetailScreen";
 import { AccessibilityProvider } from "./src/context/AccessibilityContext";
 import style from "./styles/default.old"
 
@@ -59,6 +60,7 @@ export default function App() {
             <Stack.Screen name="AddBook" component={AddBookScreen} options={{ title: 'Subir Libro' }} />
             <Stack.Screen name="UserProfile" component={ProfileScreen} options={{ title: 'Perfil de Usuario', presentation: 'modal' }} />
             <Stack.Screen name="Search" component={SearchScreen} options={{ title: 'Búsqueda de Libros' }} />
+            <Stack.Screen name="EventDetail" component={EventDetailScreen} options={{ title: 'Detalle de Evento' }} />
             <Stack.Screen name="Discover" component={DiscoverScreen} options={{ headerShown: false }} />
           </Stack.Navigator>
         </NavigationContainer>

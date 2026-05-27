@@ -19,17 +19,20 @@ export default function DashboardScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
-      fetchFollowing();
+      fetchDashboardData();
     }, [])
   );
 
-  const fetchFollowing = async () => {
+  const fetchDashboardData = async () => {
     try {
-      const response = await api.get('/auth/profile');
-      const user = response.data;
+      const profileRes = await api.get('/auth/profile');
+      const user = profileRes.data;
+
+      const eventsRes = await api.get('/eventos?limit=10');
+      
+      let items: any[] = [];
+      
       if (user) {
-        let items: any[] = [];
-        
         if (user.followingUsers) {
           items = items.concat(user.followingUsers.map((u: any) => ({ type: 'user', id: u._id || u, name: u.name || "Usuario", data: u })));
         }
@@ -39,12 +42,22 @@ export default function DashboardScreen() {
         if (user.favoriteCategories) {
           items = items.concat(user.favoriteCategories.map((c: string) => ({ type: 'category', id: c, name: c })));
         }
-
-        setFollowingItems(items);
         await AsyncStorage.setItem('user', JSON.stringify(user));
       }
+
+      if (eventsRes.data && eventsRes.data.data && eventsRes.data.data.data) {
+        const backendEvents = eventsRes.data.data.data;
+        items = items.concat(backendEvents.map((e: any) => ({
+          type: 'event',
+          id: e._id,
+          name: e.title,
+          direccion: e.direccionExacta
+        })));
+      }
+
+      setFollowingItems(items);
     } catch (error) {
-      console.error("Error fetching following data:", error);
+      console.error("Error fetching dashboard feed:", error);
     }
   };
 
@@ -82,6 +95,7 @@ export default function DashboardScreen() {
         )}
       />
 
+      {/* Tarjetas de Accesos Rápidos */}
       <Card style={styles.card}>
         <Card.Content>
           <Text variant="titleLarge">{t('dash_sales_title')}</Text>
@@ -118,20 +132,50 @@ export default function DashboardScreen() {
         </Card.Actions>
       </Card>
 
+      {/* Sección accesos directos de Eventos Literarios */}
+      <Card style={[styles.card, { borderLeftWidth: 4, borderLeftColor: '#7c3aed' }]}>
+        <Card.Content>
+          <Text variant="titleLarge" style={{ color: '#7c3aed', fontWeight: 'bold' }}>
+             🎉 {t('dash_events_title', { defaultValue: 'Clubes y Eventos' })}
+          </Text>
+          <Text variant="bodyMedium">
+            {t('dash_events_desc', { defaultValue: 'Encuentra lecturas conjuntas y reuniones cerca de tu ubicación.' })}
+          </Text>
+        </Card.Content>
+        <Card.Actions>
+          <Button mode="contained" buttonColor="#7c3aed" onPress={() => navigation.navigate("Discover" as never)}>
+            {t('dash_events_btn', { defaultValue: 'Explorar Eventos' })}
+          </Button>
+        </Card.Actions>
+      </Card>
+
+      {/* Feed dinámico inferior */}
       <Text variant="titleLarge" style={[styles.header, { marginTop: 10 }]}>{t('following_title')}</Text>
       <Card style={[styles.card, { padding: 10 }]}>
         {followingItems.length === 0 ? (
           <Text style={{ fontStyle: 'italic', color: '#888', padding: 10 }}>{t('following_empty')}</Text>
         ) : (
-          <>
+          <View>
             {followingItems.slice((followingPage - 1) * itemsPerPage, followingPage * itemsPerPage).map((item, index) => (
               <View key={`${item.type}-${item.id}-${index}`} style={styles.followingItem}>
                 <Text style={{ fontSize: 20 }}>
-                  {item.type === 'user' ? '👤 ' : item.type === 'author' ? '✍️ ' : '🏷️ '}
+                  {item.type === 'user' ? '👤 ' : item.type === 'author' ? '✍️ ' : item.type === 'event' ? '📅 ' : '🏷️ '}
                 </Text>
-                <Text variant="bodyLarge" style={{ flex: 1, marginLeft: 10 }}>{item.name}</Text>
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text variant="bodyLarge" style={{ fontWeight: item.type === 'event' ? 'bold' : 'normal' }}>{item.name}</Text>
+                  {item.type === 'event' && (
+                    <Text variant="bodySmall" numberOfLines={1} style={{ color: '#666' }}>{item.direccion}</Text>
+                  )}
+                </View>
+                
+                {/* Botón dinámico de navegación por fila */}
                 {item.type === 'user' && (
                   <Button mode="text" compact onPress={() => navigation.navigate("Profile", { userId: item.id })}>
+                    {t('view')}
+                  </Button>
+                )}
+                {item.type === 'event' && (
+                  <Button mode="text" textColor="#7c3aed" compact onPress={() => navigation.navigate("EventDetail", { eventoId: item.id })}>
                     {t('view')}
                   </Button>
                 )}
@@ -161,7 +205,7 @@ export default function DashboardScreen() {
                 </Button>
               </View>
             )}
-          </>
+          </View>
         )}
       </Card>
 

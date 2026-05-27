@@ -155,8 +155,18 @@ const resources = {
       following_empty: "No sigues a nadie ni a nada todavía.",
       err_delete_rent: "No puedes eliminar ni ocultar tu perfil mientras tengas algún alquiler en curso (libros que has alquilado o libros tuyos alquilados por otros).",
       focus_mode_title: "Modo enfoque de lectura",
-      focus_mode_desc: "Convierte partes del texto en mayúsculas para facilitar el seguimiento visual."
+      // Eventos
+      event_detail_title: "Detalle del Evento",
+      focus_mode_desc: "Convierte partes del texto en mayúsculas para facilitar el seguimiento visual.",
+      participants: "Personas inscritas",
+      join_event: "Quiero participar",
+      leave_event: "Dejar de participar",
+      be_the_first_participant: "Sé el primero en apuntarte a este evento.",
+      joined_event_success: "¡Te has apuntado al evento con éxito!",
+      left_event_success: "Has cancelado tu participación en este evento.",
+      event_not_found: "El evento solicitado no se encuentra disponible."
     }
+    
   },
   ca: {
     translation: {

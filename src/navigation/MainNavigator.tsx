@@ -34,14 +34,6 @@ export default function MainNavigator() {
         }} 
       />
       <Tab.Screen 
-        name="MyBooks" 
-        component={MyBooksScreen} 
-        options={{
-          title: t('my_books'),
-          tabBarIcon: ({ size }) => <Text style={{ fontSize: size }}>📚</Text>
-        }} 
-      />
-      <Tab.Screen 
         name="Discover" 
         component={DiscoverScreen} 
         options={{
