@@ -25,7 +25,8 @@ export default function BooksForRentScreen() {
       const fetchBooks = async () => {
         try {
           const response = await api.get('/libros/type/ALQUILER');
-          setBooks(response.data);
+          //console.log(JSON.stringify(response.data.data));
+          setBooks(response.data.data);
           setPage(1);
         } catch (error) {
           console.error('Error fetching books:', error);
@@ -53,7 +54,7 @@ export default function BooksForRentScreen() {
       Alert.alert(t('success'), `${t('rent_action')}: ${book.title}`);
       // Refresh the list
       const response = await api.get('/libros/type/ALQUILER');
-      setBooks(response.data);
+      setBooks(response.data.data);
     } catch (error) {
       console.error('Error renting book:', error);
       Alert.alert(t('error'), t('rent_err') || 'No se pudo completar el alquiler');

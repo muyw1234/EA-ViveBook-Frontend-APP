@@ -25,7 +25,8 @@ export default function BooksForSaleScreen() {
       const fetchBooks = async () => {
         try {
           const response = await api.get('/libros/type/VENTA');
-          setBooks(response.data);
+          //console.log(JSON.stringify(response.data.data));
+          setBooks(response.data.data);
           setPage(1);
         } catch (error) {
           console.error('Error fetching books:', error);
@@ -53,7 +54,7 @@ export default function BooksForSaleScreen() {
       Alert.alert(t('success'), `${t('buy_action')}: ${book.title}`);
       // Refresh the list
       const response = await api.get('/libros/type/VENTA');
-      setBooks(response.data);
+      setBooks(response.data.data);
     } catch (error) {
       console.error('Error buying book:', error);
       Alert.alert(t('error'), t('buy_err') || 'No se pudo completar la compra');
