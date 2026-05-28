@@ -63,7 +63,7 @@ export default function DashboardScreen() {
   return (
     <ScrollView style={styles.container}>
       <Text variant="headlineMedium" style={styles.header}>{t('dash_header')}</Text>
-
+      {/* La barra de busqueda por titulo*/}
       <Searchbar
         placeholder={t('search_placeholder')}
         onChangeText={setSearchQuery}

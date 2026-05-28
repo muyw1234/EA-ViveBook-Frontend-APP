@@ -1,16 +1,39 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, ActivityIndicator, Alert, ScrollView, Dimensions, Text as RNText } from 'react-native';
-import { Searchbar, Card, Button, Avatar, Divider, IconButton, Portal, Modal, TextInput, SegmentedButtons, Menu, TouchableRipple } from 'react-native-paper';
-import { AppText as Text } from '../components/AppText';
-import { useTranslation } from 'react-i18next';
-import api from '../services/api';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  Dimensions,
+  Text as RNText,
+  ToastAndroid,
+} from "react-native";
+import {
+  Searchbar,
+  Card,
+  Button,
+  Avatar,
+  Divider,
+  IconButton,
+  Portal,
+  Modal,
+  TextInput,
+  SegmentedButtons,
+  Menu,
+  TouchableRipple,
+} from "react-native-paper";
+import { AppText as Text } from "../components/AppText";
+import { useTranslation } from "react-i18next";
+import api from "../services/api";
+import { useNavigation } from "@react-navigation/native";
 
 export default function SearchScreen({ route }: any) {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
-  const initialQuery = route?.params?.query || '';
-  
+  const initialQuery = route?.params?.query || "";
+
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [bookResults, setBookResults] = useState<any[]>([]);
   const [userResults, setUserResults] = useState<any[]>([]);
@@ -23,17 +46,30 @@ export default function SearchScreen({ route }: any) {
 
   // Draft Filters State (for modal)
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
-  const [filterCategoria, setFilterCategoria] = useState('');
+  const [filterCategoria, setFilterCategoria] = useState("");
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
-  const [filterMaxPrice, setFilterMaxPrice] = useState('');
-  const [filterType, setFilterType] = useState('');
+  const [filterMaxPrice, setFilterMaxPrice] = useState("");
+  const [filterType, setFilterType] = useState("");
 
   // Applied Filters State
-  const [appliedCategoria, setAppliedCategoria] = useState('');
-  const [appliedMaxPrice, setAppliedMaxPrice] = useState('');
-  const [appliedType, setAppliedType] = useState('');
+  const [appliedCategoria, setAppliedCategoria] = useState("");
+  const [appliedMaxPrice, setAppliedMaxPrice] = useState("");
+  const [appliedType, setAppliedType] = useState("");
 
-  const ALL_CATEGORIES = ['Todas', 'Terror', 'Misterio', 'Aventura', 'Juvenil', 'Policíaco', 'Infantil', 'Autoayuda', 'Novela', 'Biografías', 'Cómics', 'Otros'];
+  const ALL_CATEGORIES = [
+    "Todas",
+    "Terror",
+    "Misterio",
+    "Aventura",
+    "Juvenil",
+    "Policíaco",
+    "Infantil",
+    "Autoayuda",
+    "Novela",
+    "Biografías",
+    "Cómics",
+    "Otros",
+  ];
 
   useEffect(() => {
     if (initialQuery) {
@@ -54,10 +90,10 @@ export default function SearchScreen({ route }: any) {
   const fetchAllBooks = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/libros');
+      const response = await api.get("/libros");
       setBookResults(response.data.data || response.data);
     } catch (error) {
-      console.error('Error fetching all books:', error);
+      console.error("Error fetching all books:", error);
     } finally {
       setLoading(false);
     }
@@ -65,37 +101,64 @@ export default function SearchScreen({ route }: any) {
 
   const handleSearch = async (query: string) => {
     if (!query.trim()) return;
-    
+
     setLoading(true);
-    try {
-      // Parallel search for books and users
-      // const [booksResponse, usersResponse] = await Promise.allSettled([
-      //   api.get(`/libros/search?term=${query}`),
-      //   api.get(`/usuarios/search?term=${query}`)
-      // ]);
+    // try {
+    // Parallel search for books and users
+    // const [booksResponse, usersResponse] = await Promise.allSettled([
+    //   api.get(`/libros/search?term=${query}`),
+    //   api.get(`/usuarios/search?term=${query}`)
+    // ]);
 
-      console.log(`Searching for book and user: ${query}`);
-      const booksResponse = (await api.get(`/libros/search?term=${query}&page=1&limit=10`)).data;
-      const usersResponse = (await  api.get(`/usuarios/search?term=${query}&page=1&limit=10`)).data;
-
-      if (booksResponse.status === 200) {
-        setBookResults(booksResponse.value.data);
-      } else {
+    console.log(`Searching for book and user: ${query}`);
+    // const booksResponse = (await api.get(`/libros/search?term=${query}&page=1&limit=10`)).data;
+    api
+      .get(`/libros/search?term=${query}&page=1&limit=10`)
+      .then((res) => {
+        if(res.status === 404) {
+          Alert.alert(`Search`,`El libro ${query} no fue encontrado.`);
+          return;
+        }
+        setBookResults(res.data.data);
+      })
+      .catch((error) => {
         setBookResults([]);
-      }
-
-      if (usersResponse.status === 200) {
-        setUserResults(usersResponse.value.data);
-      } else {
+        console.log(`Error: ${JSON.stringify(error)}`);
+      });
+    // const usersResponse = (await  api.get(`/usuarios/search?term=${query}&page=1&limit=10`)).data;
+    api
+      .get(`/usuarios/search?term=${query}&page=1&limit=10`)
+      .then((res) => {
+        if(res.status === 404) {
+          Alert.alert(`Search`,`El usuario ${query} no fue encontrado.`);
+          return;
+        }
+        setUserResults(res.data.data);
+      })
+      .catch((error) => {
         setUserResults([]);
-      }
+        console.log(`Error: ${JSON.stringify(error)}`);
+      });
 
-    } catch (error: any) {
-      console.error('Error searching:', error);
-      Alert.alert(t('error'), 'Hubo un problema al realizar la búsqueda');
-    } finally {
-      setLoading(false);
-    }
+    // if (booksResponse.data.status === 200) {
+    //   setBookResults(booksResponse.value.data);
+    // } else {
+
+    //   setBookResults([]);
+    // }
+
+    // if (usersResponse.data.status === 200) {
+    //   setUserResults(usersResponse.value.data);
+    // } else {
+    //   setUserResults([]);
+    // }
+
+    // } catch (error: any) {
+    // console.error('Error searching:', error);
+    // Alert.alert(t('error'), 'Hubo un problema al realizar la búsqueda');
+    // } finally {
+    setLoading(false);
+    // }
   };
 
   const openMenu = (id: string) => setMenuVisible(id);
@@ -103,20 +166,26 @@ export default function SearchScreen({ route }: any) {
 
   const handleTalkToSeller = (book: any) => {
     closeMenu();
-    Alert.alert(t('talk_to_seller'), `${t('chat_header')} ${book.title}`);
+    Alert.alert(t("talk_to_seller"), `${t("chat_header")} ${book.title}`);
   };
 
   const handleTransaction = async (book: any) => {
     closeMenu();
     try {
-      const endpoint = book.type === 'VENTA' ? `/libros/buy/${book._id}` : `/libros/rent/${book._id}`;
+      const endpoint =
+        book.type === "VENTA"
+          ? `/libros/buy/${book._id}`
+          : `/libros/rent/${book._id}`;
       await api.post(endpoint);
-      Alert.alert(t('success'), `${book.type === 'VENTA' ? t('buy_action') : t('rent_action')}: ${book.title}`);
+      Alert.alert(
+        t("success"),
+        `${book.type === "VENTA" ? t("buy_action") : t("rent_action")}: ${book.title}`,
+      );
       if (searchQuery) handleSearch(searchQuery);
       else fetchAllBooks();
     } catch (error) {
       console.error(`Error processing transaction:`, error);
-      Alert.alert(t('error'), 'No se pudo completar la operación');
+      Alert.alert(t("error"), "No se pudo completar la operación");
     }
   };
 
@@ -125,17 +194,37 @@ export default function SearchScreen({ route }: any) {
       <Card.Content style={isGridView ? styles.gridCardContent : undefined}>
         <View style={isGridView ? undefined : styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <Text variant={isGridView ? "titleMedium" : "titleMedium"} numberOfLines={2} style={styles.titleText}>{book.title}</Text>
-            <Text variant="bodySmall" style={styles.typeTag}>{book.type}</Text>
+            <Text
+              variant={isGridView ? "titleMedium" : "titleMedium"}
+              numberOfLines={2}
+              style={styles.titleText}
+            >
+              {book.title}
+            </Text>
+            <Text variant="bodySmall" style={styles.typeTag}>
+              {book.type}
+            </Text>
           </View>
-          <Text variant="titleMedium" style={styles.priceText}>{book.precio}€</Text>
+          <Text variant="titleMedium" style={styles.priceText}>
+            {book.precio}€
+          </Text>
         </View>
         {!isGridView && (
           <>
-            {book.autor ? <Text variant="bodySmall">{t('author_label')}: {book.autor}</Text> : null}
-            {book.categoria ? <Text variant="bodySmall">Categoría: {book.categoria}</Text> : null}
-            <Text variant="bodySmall">{t('isbn_label')}: {book.isbn}</Text>
-            <Text variant="bodySmall">{t('state_label')}: {book.estado}</Text>
+            {book.autor ? (
+              <Text variant="bodySmall">
+                {t("author_label")}: {book.autor}
+              </Text>
+            ) : null}
+            {book.categoria ? (
+              <Text variant="bodySmall">Categoría: {book.categoria}</Text>
+            ) : null}
+            <Text variant="bodySmall">
+              {t("isbn_label")}: {book.isbn}
+            </Text>
+            <Text variant="bodySmall">
+              {t("state_label")}: {book.estado}
+            </Text>
           </>
         )}
       </Card.Content>
@@ -144,29 +233,35 @@ export default function SearchScreen({ route }: any) {
           visible={menuVisible === book._id}
           onDismiss={closeMenu}
           anchor={
-            <Button 
-              mode="contained" 
-              buttonColor="#D183BA" 
+            <Button
+              mode="contained"
+              buttonColor="#D183BA"
               onPress={() => openMenu(book._id)}
               compact={isGridView}
               style={isGridView ? styles.gridButton : undefined}
               labelStyle={isGridView ? { fontSize: 10 } : undefined}
             >
-              {book.type === 'VENTA' ? t('buy_action') : t('rent_action')}
+              {book.type === "VENTA" ? t("buy_action") : t("rent_action")}
             </Button>
           }
-          contentStyle={{ backgroundColor: 'white' }}
+          contentStyle={{ backgroundColor: "white" }}
         >
-          <Menu.Item 
-            onPress={() => handleTalkToSeller(book)} 
-            title={t('talk_to_seller')} 
+          <Menu.Item
+            onPress={() => handleTalkToSeller(book)}
+            title={t("talk_to_seller")}
             leadingIcon={() => <RNText style={{ fontSize: 18 }}>💬</RNText>}
           />
           <Divider />
-          <Menu.Item 
-            onPress={() => handleTransaction(book)} 
-            title={book.type === 'VENTA' ? t('buy_directly') : t('rent_directly')} 
-            leadingIcon={() => <RNText style={{ fontSize: 18 }}>{book.type === 'VENTA' ? '💰' : '📅'}</RNText>}
+          <Menu.Item
+            onPress={() => handleTransaction(book)}
+            title={
+              book.type === "VENTA" ? t("buy_directly") : t("rent_directly")
+            }
+            leadingIcon={() => (
+              <RNText style={{ fontSize: 18 }}>
+                {book.type === "VENTA" ? "💰" : "📅"}
+              </RNText>
+            )}
           />
         </Menu>
       </Card.Actions>
@@ -174,20 +269,48 @@ export default function SearchScreen({ route }: any) {
   );
 
   const renderUserItem = ({ item: user }: { item: any }) => (
-    <Card style={styles.userCard} onPress={() => navigation.navigate('UserProfile', { userId: user._id })}>
+    <Card
+      style={styles.userCard}
+      onPress={() => navigation.navigate("UserProfile", { userId: user._id })}
+    >
       <Card.Title
         title={user.name}
         subtitle={user.email}
-        left={(props) => <Avatar.Text {...props} label={user.name.substring(0, 2).toUpperCase()} style={{ backgroundColor: '#D183BA' }} />}
-        right={(props) => <Button icon="chevron-right" onPress={() => navigation.navigate('UserProfile', { userId: user._id })}>{""}</Button>}
+        left={(props) => (
+          <Avatar.Text
+            {...props}
+            label={user.name.substring(0, 2).toUpperCase()}
+            style={{ backgroundColor: "#D183BA" }}
+          />
+        )}
+        right={(props) => (
+          <Button
+            icon="chevron-right"
+            onPress={() =>
+              navigation.navigate("UserProfile", { userId: user._id })
+            }
+          >
+            {""}
+          </Button>
+        )}
       />
     </Card>
   );
 
   const filteredBooks = bookResults.filter((book) => {
     if (appliedType && book.type !== appliedType) return false;
-    if (appliedCategoria && appliedCategoria !== 'Todas' && book.categoria !== appliedCategoria) return false;
-    if (appliedMaxPrice && !isNaN(parseFloat(appliedMaxPrice)) && book.precio > parseFloat(appliedMaxPrice)) return false;
+    if (
+      appliedCategoria &&
+      appliedCategoria !== "Todas" &&
+      book.categoria !== appliedCategoria
+    )
+      return false;
+    if (
+      appliedMaxPrice &&
+      !isNaN(parseFloat(appliedMaxPrice)) &&
+      book.precio > parseFloat(appliedMaxPrice)
+    )
+      return false;
     return true;
   });
 
@@ -199,21 +322,23 @@ export default function SearchScreen({ route }: any) {
   };
 
   const totalPages = Math.ceil(filteredBooks.length / ITEMS_PER_PAGE);
-  const paginatedBooks = filteredBooks.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  const paginatedBooks = filteredBooks.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE,
+  );
 
   const renderFooter = () => {
     if (filteredBooks.length <= ITEMS_PER_PAGE) return null;
     return (
       <View style={styles.paginationContainer}>
-        <Button 
-          disabled={page === 1} 
-          onPress={() => setPage(page - 1)}
-        >
+        <Button disabled={page === 1} onPress={() => setPage(page - 1)}>
           Anterior
         </Button>
-        <RNText style={styles.pageText}>Página {page} de {totalPages}</RNText>
-        <Button 
-          disabled={page === totalPages} 
+        <RNText style={styles.pageText}>
+          Página {page} de {totalPages}
+        </RNText>
+        <Button
+          disabled={page === totalPages}
           onPress={() => setPage(page + 1)}
         >
           Siguiente
@@ -226,11 +351,11 @@ export default function SearchScreen({ route }: any) {
     <>
       {userResults.length > 0 && (
         <View style={styles.section}>
-          <Text variant="titleLarge" style={styles.sectionTitle}>Usuarios</Text>
-          {userResults.map(user => (
-            <View key={user._id}>
-              {renderUserItem({ item: user })}
-            </View>
+          <Text variant="titleLarge" style={styles.sectionTitle}>
+            Usuarios
+          </Text>
+          {userResults.map((user) => (
+            <View key={user._id}>{renderUserItem({ item: user })}</View>
           ))}
           <Divider style={styles.divider} />
         </View>
@@ -238,7 +363,9 @@ export default function SearchScreen({ route }: any) {
 
       {filteredBooks.length > 0 && (
         <View style={styles.headerRowSection}>
-          <Text variant="titleLarge" style={styles.sectionTitle}>Libros</Text>
+          <Text variant="titleLarge" style={styles.sectionTitle}>
+            Libros
+          </Text>
           <IconButton
             icon={isGridView ? "view-list" : "view-grid"}
             iconColor="#D183BA"
@@ -255,17 +382,29 @@ export default function SearchScreen({ route }: any) {
     const hasFilters = appliedCategoria || appliedMaxPrice || appliedType;
 
     if (hasFilters && filteredBooks.length === 0) {
-      return <Text style={styles.emptyText}>¡No hay ningún libro disponible con esos requisitos por el momento!</Text>;
+      return (
+        <Text style={styles.emptyText}>
+          ¡No hay ningún libro disponible con esos requisitos por el momento!
+        </Text>
+      );
     }
 
     if (searchQuery && filteredBooks.length === 0) {
-      return <Text style={styles.emptyText}>{t('search_no_results', { query: searchQuery })}</Text>;
+      return (
+        <Text style={styles.emptyText}>
+          {t("search_no_results", { query: searchQuery })}
+        </Text>
+      );
     }
 
     if (filteredBooks.length === 0) {
-      return <Text style={styles.emptyText}>¡No hay ningún libro disponible con esos requisitos por el momento!</Text>;
+      return (
+        <Text style={styles.emptyText}>
+          ¡No hay ningún libro disponible con esos requisitos por el momento!
+        </Text>
+      );
     }
-    
+
     return null;
   };
 
@@ -279,7 +418,7 @@ export default function SearchScreen({ route }: any) {
   return (
     <View style={styles.container}>
       <Searchbar
-        placeholder={t('search_placeholder')}
+        placeholder={t("search_placeholder")}
         onChangeText={setSearchQuery}
         value={searchQuery}
         onSubmitEditing={() => handleSearch(searchQuery)}
@@ -297,10 +436,14 @@ export default function SearchScreen({ route }: any) {
       />
 
       {loading ? (
-        <ActivityIndicator size="large" color="#D183BA" style={{ marginTop: 20 }} />
+        <ActivityIndicator
+          size="large"
+          color="#D183BA"
+          style={{ marginTop: 20 }}
+        />
       ) : (
         <FlatList
-          key={isGridView ? 'grid' : 'list'}
+          key={isGridView ? "grid" : "list"}
           ListHeaderComponent={ListHeader}
           data={paginatedBooks}
           renderItem={renderBookItem}
@@ -319,8 +462,10 @@ export default function SearchScreen({ route }: any) {
           onDismiss={() => setIsFilterModalVisible(false)}
           contentContainerStyle={styles.modalContent}
         >
-          <Text variant="titleLarge" style={styles.modalTitle}>Filtros</Text>
-          
+          <Text variant="titleLarge" style={styles.modalTitle}>
+            Filtros
+          </Text>
+
           <Menu
             visible={categoryMenuVisible}
             onDismiss={() => setCategoryMenuVisible(false)}
@@ -329,7 +474,7 @@ export default function SearchScreen({ route }: any) {
                 <View pointerEvents="none">
                   <TextInput
                     label="Categoría"
-                    value={filterCategoria === '' ? 'Todas' : filterCategoria}
+                    value={filterCategoria === "" ? "Todas" : filterCategoria}
                     style={styles.modalInput}
                     mode="outlined"
                     right={<TextInput.Icon icon="menu-down" />}
@@ -344,7 +489,7 @@ export default function SearchScreen({ route }: any) {
               <Menu.Item
                 key={cat}
                 onPress={() => {
-                  setFilterCategoria(cat === 'Todas' ? '' : cat);
+                  setFilterCategoria(cat === "Todas" ? "" : cat);
                   setCategoryMenuVisible(false);
                 }}
                 title={cat}
@@ -368,15 +513,15 @@ export default function SearchScreen({ route }: any) {
             value={filterType}
             onValueChange={setFilterType}
             buttons={[
-              { value: '', label: 'Todos' },
-              { value: 'VENTA', label: 'Venta' },
-              { value: 'ALQUILER', label: 'Alquiler' },
+              { value: "", label: "Todos" },
+              { value: "VENTA", label: "Venta" },
+              { value: "ALQUILER", label: "Alquiler" },
             ]}
             style={styles.segmented}
           />
 
-          <Button 
-            mode="contained" 
+          <Button
+            mode="contained"
             onPress={handleApplyFilters}
             buttonColor="#D183BA"
             style={{ marginTop: 16 }}
@@ -389,17 +534,17 @@ export default function SearchScreen({ route }: any) {
   );
 }
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5EBF4',
+    backgroundColor: "#F5EBF4",
   },
   searchBar: {
     margin: 16,
     elevation: 4,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 30,
   },
   scrollContent: {
@@ -410,112 +555,112 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   headerRowSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   sectionTitle: {
-    fontWeight: 'bold',
-    color: '#D6AED2',
+    fontWeight: "bold",
+    color: "#D6AED2",
     marginLeft: 4,
   },
   listCard: {
     marginBottom: 12,
     elevation: 2,
     borderRadius: 12,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   gridCard: {
     width: (width - 40) / 2,
     marginBottom: 16,
     elevation: 2,
     borderRadius: 12,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   gridCardContent: {
     padding: 12,
     height: 100,
   },
   gridCardActions: {
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingHorizontal: 8,
   },
   gridButton: {
-    width: '100%',
+    width: "100%",
   },
   columnWrapper: {
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   userCard: {
     marginBottom: 8,
     elevation: 1,
     borderRadius: 8,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: 8,
   },
   titleText: {
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
   },
   typeTag: {
-    color: '#D183BA',
-    fontWeight: 'bold',
+    color: "#D183BA",
+    fontWeight: "bold",
     fontSize: 10,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   priceText: {
-    color: '#D183BA',
-    fontWeight: 'bold',
+    color: "#D183BA",
+    fontWeight: "bold",
   },
   divider: {
     marginVertical: 16,
-    backgroundColor: '#ddd',
+    backgroundColor: "#ddd",
   },
   emptyText: {
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 40,
-    color: '#666',
+    color: "#666",
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     padding: 24,
     margin: 20,
     borderRadius: 16,
   },
   modalTitle: {
     marginBottom: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#333',
+    fontWeight: "bold",
+    textAlign: "center",
+    color: "#333",
   },
   modalInput: {
     marginBottom: 16,
-    backgroundColor: 'white',
+    backgroundColor: "white",
   },
   labelModal: {
     marginBottom: 8,
     fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: "500",
+    color: "#333",
   },
   segmented: {
     marginBottom: 16,
   },
   paginationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     marginVertical: 20,
   },
   pageText: {
     marginHorizontal: 15,
-    fontWeight: 'bold',
-    color: '#555',
-  }
+    fontWeight: "bold",
+    color: "#555",
+  },
 });
