@@ -23,6 +23,7 @@ import {
   SegmentedButtons,
   Menu,
   TouchableRipple,
+  Chip,
 } from "react-native-paper";
 import { AppText as Text } from "../components/AppText";
 import { useTranslation } from "react-i18next";
@@ -91,7 +92,9 @@ export default function SearchScreen({ route }: any) {
     setLoading(true);
     try {
       const response = await api.get("/libros");
-      setBookResults(response.data.data || response.data);
+      const resData = response.data?.data || response.data;
+      const booksArray = Array.isArray(resData) ? resData : (Array.isArray(resData?.data) ? resData.data : []);
+      setBookResults(booksArray);
     } catch (error) {
       console.error("Error fetching all books:", error);
     } finally {
@@ -103,62 +106,32 @@ export default function SearchScreen({ route }: any) {
     if (!query.trim()) return;
 
     setLoading(true);
-    // try {
-    // Parallel search for books and users
-    // const [booksResponse, usersResponse] = await Promise.allSettled([
-    //   api.get(`/libros/search?term=${query}`),
-    //   api.get(`/usuarios/search?term=${query}`)
-    // ]);
-
     console.log(`Searching for book and user: ${query}`);
-    // const booksResponse = (await api.get(`/libros/search?term=${query}&page=1&limit=10`)).data;
     api
       .get(`/libros/search?term=${query}&page=1&limit=10`)
       .then((res) => {
-        if(res.status === 404) {
-          Alert.alert(`Search`,`El libro ${query} no fue encontrado.`);
-          return;
-        }
-        setBookResults(res.data.data);
+        const resData = res.data?.data || res.data;
+        const booksArray = Array.isArray(resData) ? resData : (Array.isArray(resData?.data) ? resData.data : []);
+        setBookResults(booksArray);
       })
       .catch((error) => {
         setBookResults([]);
-        console.log(`Error: ${JSON.stringify(error)}`);
+        console.log(`Error search libros: ${JSON.stringify(error)}`);
       });
-    // const usersResponse = (await  api.get(`/usuarios/search?term=${query}&page=1&limit=10`)).data;
+      
     api
       .get(`/usuarios/search?term=${query}&page=1&limit=10`)
       .then((res) => {
-        if(res.status === 404) {
-          Alert.alert(`Search`,`El usuario ${query} no fue encontrado.`);
-          return;
-        }
-        setUserResults(res.data.data);
+        const resData = res.data?.data || res.data;
+        const usersArray = Array.isArray(resData) ? resData : (Array.isArray(resData?.data) ? resData.data : []);
+        setUserResults(usersArray);
       })
       .catch((error) => {
         setUserResults([]);
-        console.log(`Error: ${JSON.stringify(error)}`);
+        console.log(`Error search usuarios: ${JSON.stringify(error)}`);
       });
 
-    // if (booksResponse.data.status === 200) {
-    //   setBookResults(booksResponse.value.data);
-    // } else {
-
-    //   setBookResults([]);
-    // }
-
-    // if (usersResponse.data.status === 200) {
-    //   setUserResults(usersResponse.value.data);
-    // } else {
-    //   setUserResults([]);
-    // }
-
-    // } catch (error: any) {
-    // console.error('Error searching:', error);
-    // Alert.alert(t('error'), 'Hubo un problema al realizar la búsqueda');
-    // } finally {
     setLoading(false);
-    // }
   };
 
   const openMenu = (id: string) => setMenuVisible(id);
@@ -381,7 +354,9 @@ export default function SearchScreen({ route }: any) {
   const renderEmptyState = () => {
     const hasFilters = appliedCategoria || appliedMaxPrice || appliedType;
 
-    if (hasFilters && filteredBooks.length === 0) {
+    if (filteredBooks.length > 0) return null;
+
+    if (hasFilters) {
       return (
         <Text style={styles.emptyText}>
           ¡No hay ningún libro disponible con esos requisitos por el momento!
@@ -389,7 +364,7 @@ export default function SearchScreen({ route }: any) {
       );
     }
 
-    if (searchQuery && filteredBooks.length === 0) {
+    if (searchQuery) {
       return (
         <Text style={styles.emptyText}>
           {t("search_no_results", { query: searchQuery })}
@@ -397,15 +372,11 @@ export default function SearchScreen({ route }: any) {
       );
     }
 
-    if (filteredBooks.length === 0) {
-      return (
-        <Text style={styles.emptyText}>
-          ¡No hay ningún libro disponible con esos requisitos por el momento!
-        </Text>
-      );
-    }
-
-    return null;
+    return (
+      <Text style={styles.emptyText}>
+        ¡No hay ningún libro disponible con esos requisitos por el momento!
+      </Text>
+    );
   };
 
   const handleOpenFilters = () => {
@@ -423,7 +394,7 @@ export default function SearchScreen({ route }: any) {
         value={searchQuery}
         onSubmitEditing={() => handleSearch(searchQuery)}
         style={styles.searchBar}
-        icon={() => <Text style={{ fontSize: 20 }}>🔍</Text>}
+        icon={() => <RNText style={{ fontSize: 20 }}>🔍</RNText>}
         right={(props) => (
           <IconButton
             {...props}
@@ -451,7 +422,7 @@ export default function SearchScreen({ route }: any) {
           numColumns={isGridView ? 2 : 1}
           columnWrapperStyle={isGridView ? styles.columnWrapper : undefined}
           contentContainerStyle={styles.scrollContent}
-          ListEmptyComponent={renderEmptyState()}
+          ListEmptyComponent={renderEmptyState}
           ListFooterComponent={renderFooter}
         />
       )}
@@ -466,36 +437,27 @@ export default function SearchScreen({ route }: any) {
             Filtros
           </Text>
 
-          <Menu
-            visible={categoryMenuVisible}
-            onDismiss={() => setCategoryMenuVisible(false)}
-            anchor={
-              <TouchableRipple onPress={() => setCategoryMenuVisible(true)}>
-                <View pointerEvents="none">
-                  <TextInput
-                    label="Categoría"
-                    value={filterCategoria === "" ? "Todas" : filterCategoria}
-                    style={styles.modalInput}
-                    mode="outlined"
-                    right={<TextInput.Icon icon="menu-down" />}
-                    outlineColor="#D183BA"
-                    activeOutlineColor="#D183BA"
-                  />
-                </View>
-              </TouchableRipple>
-            }
-          >
-            {ALL_CATEGORIES.map((cat) => (
-              <Menu.Item
-                key={cat}
-                onPress={() => {
-                  setFilterCategoria(cat === "Todas" ? "" : cat);
-                  setCategoryMenuVisible(false);
-                }}
-                title={cat}
-              />
-            ))}
-          </Menu>
+          <Text style={styles.labelModal}>Categoría:</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+            {ALL_CATEGORIES.map((cat) => {
+              const isSelected = filterCategoria === (cat === "Todas" ? "" : cat);
+              return (
+                <Chip
+                  key={cat}
+                  selected={isSelected}
+                  onPress={() => setFilterCategoria(cat === "Todas" ? "" : cat)}
+                  style={[
+                    { marginHorizontal: 4, height: 34 },
+                    isSelected ? { backgroundColor: "#D183BA" } : { backgroundColor: "#fff", borderWidth: 1, borderColor: "#ccc" }
+                  ]}
+                  textStyle={isSelected ? { color: "#fff" } : { color: "#333" }}
+                  showSelectedOverlay
+                >
+                  {cat}
+                </Chip>
+              );
+            })}
+          </ScrollView>
 
           <TextInput
             label="Precio Máximo (€)"
@@ -509,16 +471,30 @@ export default function SearchScreen({ route }: any) {
           />
 
           <Text style={styles.labelModal}>Tipo:</Text>
-          <SegmentedButtons
-            value={filterType}
-            onValueChange={setFilterType}
-            buttons={[
+          <View style={{ flexDirection: "row", marginBottom: 16, justifyContent: 'space-between' }}>
+            {[
               { value: "", label: "Todos" },
               { value: "VENTA", label: "Venta" },
-              { value: "ALQUILER", label: "Alquiler" },
-            ]}
-            style={styles.segmented}
-          />
+              { value: "ALQUILER", label: "Alquiler" }
+            ].map((item) => {
+              const isSelected = filterType === item.value;
+              return (
+                <Chip
+                  key={item.label}
+                  selected={isSelected}
+                  onPress={() => setFilterType(item.value)}
+                  style={[
+                    { flex: 1, marginHorizontal: 2, height: 34 },
+                    isSelected ? { backgroundColor: "#D183BA" } : { backgroundColor: "#fff", borderWidth: 1, borderColor: "#ccc" }
+                  ]}
+                  textStyle={isSelected ? { color: "#fff" } : { color: "#333" }}
+                  showSelectedOverlay
+                >
+                  {item.label}
+                </Chip>
+              );
+            })}
+          </View>
 
           <Button
             mode="contained"

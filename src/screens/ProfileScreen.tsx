@@ -22,6 +22,7 @@ export default function ProfileScreen({ route }: any) {
     const [reviews, setReviews] = useState<any[]>([]);
     const [stats, setStats] = useState({ averageRating: 0, totalReviews: 0 });
     const [followers, setFollowers] = useState<any[]>([]);
+    const [myFollowingUsers, setMyFollowingUsers] = useState<string[]>([]);
 
     // Favorites state
     const [favoriteAuthors, setFavoriteAuthors] = useState<string[]>([]);
@@ -56,6 +57,17 @@ export default function ProfileScreen({ route }: any) {
                 currentUserId = JSON.parse(storedUserStr)._id;
             }
 
+            // Always fetch current logged-in user's details to know who they are following
+            try {
+                const loggedInRes = await api.get("/auth/profile");
+                const loggedInUser = loggedInRes.data?.data || loggedInRes.data;
+                if (loggedInUser) {
+                    setMyFollowingUsers((loggedInUser.followingUsers || []).map((u: any) => u._id || u));
+                }
+            } catch (err) {
+                console.error("Error fetching logged-in user details:", err);
+            }
+
             if (userId) {
                 response = await api.get(`/usuarios/${userId}`);
                 setIsMyProfile(currentUserId === userId);
@@ -64,17 +76,21 @@ export default function ProfileScreen({ route }: any) {
                 setIsMyProfile(true);
             }
             
-            setUser(response.data);
-            setName(response.data.name);
-            setEmail(response.data.email);
-            setDescription(response.data.description || "");
+            // Backend wraps responses in { success, data, message } via sendSuccess()
+            // /auth/profile and /usuarios/:id both use sendSuccess, so user is in response.data.data
+            const userData = response.data?.data || response.data;
+            
+            setUser(userData);
+            setName(userData.name);
+            setEmail(userData.email);
+            setDescription(userData.description || "");
             
             // Set favorites
-            setFavoriteAuthors(Array.isArray(response.data.favoriteAuthors) ? response.data.favoriteAuthors : []);
-            setFavoriteBooks(Array.isArray(response.data.favoriteBooks) ? response.data.favoriteBooks : []);
-            setFavoriteCategories(Array.isArray(response.data.favoriteCategories) ? response.data.favoriteCategories : []);
+            setFavoriteAuthors(Array.isArray(userData.favoriteAuthors) ? userData.favoriteAuthors : []);
+            setFavoriteBooks(Array.isArray(userData.favoriteBooks) ? userData.favoriteBooks : []);
+            setFavoriteCategories(Array.isArray(userData.favoriteCategories) ? userData.favoriteCategories : []);
 
-            const targetId = userId || response.data._id || currentUserId;
+            const targetId = userId || userData._id || currentUserId;
             if (targetId && typeof targetId === 'string' && targetId.length === 24) {
                 try {
                     const [reviewsResponse, followersResponse] = await Promise.all([
@@ -83,6 +99,7 @@ export default function ProfileScreen({ route }: any) {
                     ]);
                     setReviews(Array.isArray(reviewsResponse.data.valoraciones) ? reviewsResponse.data.valoraciones : []);
                     setStats(reviewsResponse.data.stats || { averageRating: 0, totalReviews: 0 });
+                    // getFollowers uses res.status(200).json(followers) directly (not sendSuccess)
                     setFollowers(Array.isArray(followersResponse.data) ? followersResponse.data : []);
                 } catch (revError) {
                     console.error("Error fetching extra profile data:", revError);
@@ -95,6 +112,48 @@ export default function ProfileScreen({ route }: any) {
             Alert.alert(t('error'), errorMsg);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const toggleFollow = async () => {
+        if (!userId) return;
+        setUpdating(true);
+        try {
+            const storedUserStr = await AsyncStorage.getItem('user');
+            if (!storedUserStr) return;
+            const currentUserId = JSON.parse(storedUserStr)._id;
+
+            let updatedFollowing: string[];
+            const isFollowing = myFollowingUsers.includes(userId);
+            if (isFollowing) {
+                updatedFollowing = myFollowingUsers.filter(id => id !== userId);
+            } else {
+                updatedFollowing = [...myFollowingUsers, userId];
+            }
+
+            const response = await api.put(`/usuarios/${currentUserId}`, {
+                followingUsers: updatedFollowing
+            });
+
+            if (response.status === 200) {
+                setMyFollowingUsers(updatedFollowing);
+                
+                // Refresh the followers count of the viewed profile
+                const followersResponse = await api.get(`/usuarios/${userId}/followers`);
+                setFollowers(Array.isArray(followersResponse.data) ? followersResponse.data : []);
+
+                // Update the logged-in user in AsyncStorage
+                const updatedUser = {
+                    ...JSON.parse(storedUserStr),
+                    followingUsers: updatedFollowing
+                };
+                await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+            }
+        } catch (error) {
+            console.error("Error toggling follow:", error);
+            Alert.alert(t('error'), "No se pudo actualizar el estado de seguimiento.");
+        } finally {
+            setUpdating(false);
         }
     };
 
@@ -436,15 +495,41 @@ export default function ProfileScreen({ route }: any) {
                                 </View>
                             )}
 
-                            {isMyProfile && (
-                                <Button 
-                                    mode="contained" 
-                                    onPress={() => setIsEditing(true)}
-                                    buttonColor="#D183BA"
-                                    style={{ marginTop: 20 }}
-                                >
-                                    {t('profile_edit_btn')}
-                                </Button>
+                            {isMyProfile ? (
+                                <View style={{ marginTop: 20 }}>
+                                    <Button 
+                                        mode="contained" 
+                                        onPress={() => navigation.navigate("Retos" as never)}
+                                        buttonColor="#D183BA"
+                                        textColor="#fff"
+                                        style={{ marginBottom: 10 }}
+                                        icon={() => <Text style={{ fontSize: 16 }}>🏆</Text>}
+                                    >
+                                        {t('retos_title', 'Mis Retos')}
+                                    </Button>
+
+                                    <Button 
+                                        mode="outlined" 
+                                        onPress={() => setIsEditing(true)}
+                                        textColor="#D183BA"
+                                        style={{ borderColor: '#D183BA' }}
+                                    >
+                                        {t('profile_edit_btn')}
+                                    </Button>
+                                </View>
+                            ) : (
+                                <View style={{ marginTop: 20 }}>
+                                    <Button 
+                                        mode={myFollowingUsers.includes(userId) ? "outlined" : "contained"} 
+                                        onPress={toggleFollow}
+                                        loading={updating}
+                                        buttonColor={myFollowingUsers.includes(userId) ? undefined : "#D183BA"}
+                                        textColor={myFollowingUsers.includes(userId) ? "#D183BA" : "#fff"}
+                                        style={{ borderColor: '#D183BA', marginBottom: 10 }}
+                                    >
+                                        {myFollowingUsers.includes(userId) ? t('unfollow', 'Siguiendo') : t('follow', 'Seguir')}
+                                    </Button>
+                                </View>
                             )}
                         </>
                     )}

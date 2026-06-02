@@ -16,6 +16,7 @@ import AddBookScreen from "./src/screens/AddBookScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import SearchScreen from "./src/screens/SearchScreen";
 import DiscoverScreen from "./src/screens/DiscoverScreen";
+import RetosScreen from "./src/screens/RetosScreen";
 import { AccessibilityProvider } from "./src/context/AccessibilityContext";
 import style from "./styles/default.old"
 
@@ -60,6 +61,7 @@ export default function App() {
             <Stack.Screen name="UserProfile" component={ProfileScreen} options={{ title: 'Perfil de Usuario', presentation: 'modal' }} />
             <Stack.Screen name="Search" component={SearchScreen} options={{ title: 'Búsqueda de Libros' }} />
             <Stack.Screen name="Discover" component={DiscoverScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Retos" component={RetosScreen} options={{ title: 'Mis Retos' }} />
           </Stack.Navigator>
         </NavigationContainer>
       </PaperProvider>

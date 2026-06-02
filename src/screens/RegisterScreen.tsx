@@ -78,7 +78,8 @@ export default function RegisterScreen() {
             });
 
             if (response.status === 201) {
-                const { token, user } = response.data;
+                const dataObj = response.data?.data || response.data;
+                const { token, user } = dataObj;
                 
                 // Si el backend devuelve token y usuario, iniciamos sesión automáticamente
                 if (token && user) {
