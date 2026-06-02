@@ -26,7 +26,7 @@ export default function DashboardScreen() {
   const fetchFollowing = async () => {
     try {
       const response = await api.get('/auth/profile');
-      const user = response.data;
+      const user = response.data?.data || response.data;
       if (user) {
         let items: any[] = [];
         

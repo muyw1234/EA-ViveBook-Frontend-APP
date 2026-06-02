@@ -57,10 +57,11 @@ export default function MyBooksScreen() {
   const fetchMyBooks = async () => {
     try {
       const response = await api.get('/auth/profile');
-      if (response.data) {
-        setUploadedBooks(response.data.libros || []);
-        setBoughtBooks(response.data.boughtLibros || []);
-        setRentedBooks(response.data.rentedLibros || []);
+      const userData = response.data?.data || response.data;
+      if (userData) {
+        setUploadedBooks(userData.libros || []);
+        setBoughtBooks(userData.boughtLibros || []);
+        setRentedBooks(userData.rentedLibros || []);
       }
     } catch (error) {
       console.error('Error fetching my books:', error);
@@ -202,8 +203,8 @@ export default function MyBooksScreen() {
   };
 
   const submitRating = async () => {
-    if (!targetBook || (!targetBook.owner && typeof targetBook.owner !== 'string')) {
-      Alert.alert(t('error'), 'No se pudo identificar al vendedor');
+    if (!targetBook) {
+      Alert.alert(t('error'), 'No se pudo identificar el libro');
       return;
     }
 
@@ -214,7 +215,16 @@ export default function MyBooksScreen() {
 
     setSubmittingRating(true);
     try {
-      const ownerId = typeof targetBook.owner === 'object' ? targetBook.owner._id : targetBook.owner;
+      // Safely extract the ownerId checking null/undefined first to prevent TypeError
+      const ownerId = targetBook.owner 
+        ? (typeof targetBook.owner === 'object' ? targetBook.owner._id : targetBook.owner)
+        : null;
+
+      if (!ownerId) {
+        Alert.alert(t('error'), 'Este libro no tiene un vendedor registrado para valorar.');
+        setSubmittingRating(false);
+        return;
+      }
       
       const payload = {
         usuarioValorado: ownerId,
@@ -231,10 +241,25 @@ export default function MyBooksScreen() {
       
       Alert.alert(t('success'), t('rating_success'));
       setRatingModalVisible(false);
-      // Refresh to show stars in profile if we are viewing it
+      // Refresh my books to sync any state
+      fetchMyBooks();
     } catch (error: any) {
       console.error('Error submitting rating:', error);
-      let msg = error.response?.data?.message || error.message || t('rating_error');
+      
+      // Robust error message extraction (extracts Joi validation errors and custom messages)
+      let msg = t('rating_error');
+      if (error.response?.data) {
+        const resData = error.response.data;
+        if (resData.message) {
+          msg = resData.message;
+        } else if (resData.error?.message) {
+          msg = resData.error.message;
+        } else if (resData.error?.details && Array.isArray(resData.error.details)) {
+          msg = resData.error.details.map((d: any) => d.message).join(', ');
+        }
+      } else if (error.message) {
+        msg = error.message;
+      }
       
       // Handle MongoDB Duplicate Key Error (11000) or generic backend string errors that indicate duplicates
       if (msg.includes('11000') || msg.toLowerCase().includes('duplicate') || error.response?.data?.error?.code === 11000) {
@@ -403,6 +428,21 @@ export default function MyBooksScreen() {
               }}
             />
           )}
+        />
+
+        <SegmentedButtons
+          value={category}
+          onValueChange={(val) => {
+            setCategory(val);
+            setPage(1);
+          }}
+          buttons={[
+            { value: 'uploaded', label: t('uploaded', 'Subidos'), checkedColor: '#fff', uncheckedColor: '#555' },
+            { value: 'bought', label: t('bought', 'Comprados'), checkedColor: '#fff', uncheckedColor: '#555' },
+            { value: 'rented', label: t('rented', 'Alquilados'), checkedColor: '#fff', uncheckedColor: '#555' },
+          ]}
+          style={styles.segmented}
+          theme={{ colors: { secondaryContainer: '#D183BA', onSecondaryContainer: '#ffffff' } }}
         />
 
         {renderContent()}

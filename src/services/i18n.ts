@@ -90,7 +90,7 @@ const resources = {
       pwd_strength: "Fortaleza de la contraseña",
       err_pwd_requirements: "La contraseña no cumple con todos los requisitos de seguridad",
       // ProfileScreen
-      profile_title: "Editar Perfil",
+      profile_title: "Perfil",
       profile_err_loading: "No se pudo cargar el perfil",
       search_placeholder: "Busca libros, autores u otros usuarios.",
       search_no_results: "No se encontraron libros para \"{{query}}\"",
@@ -155,7 +155,22 @@ const resources = {
       following_empty: "No sigues a nadie ni a nada todavía.",
       err_delete_rent: "No puedes eliminar ni ocultar tu perfil mientras tengas algún alquiler en curso (libros que has alquilado o libros tuyos alquilados por otros).",
       focus_mode_title: "Modo enfoque de lectura",
-      focus_mode_desc: "Convierte partes del texto en mayúsculas para facilitar el seguimiento visual."
+      focus_mode_desc: "Convierte partes del texto en mayúsculas para facilitar el seguimiento visual.",
+      retos_title: "Mis Retos",
+      retos_subtitle: "Completa objetivos y gana insignias en la comunidad",
+      retos_empty: "No hay retos disponibles en este momento.",
+      retos_completed_badge: "Completado",
+      retos_progress_label: "Progreso",
+      retos_total_completed: "Retos completados",
+      retos_all: "Todos",
+      retos_pending: "Pendientes",
+      retos_completed: "Completados",
+      type_COMPRAR_LIBROS: "Comprar libros",
+      type_ALQUILAR_LIBROS: "Alquilar libros",
+      type_SEGUIR_USUARIOS: "Seguir usuarios",
+      type_RECIBIR_VALORACIONES: "Recibir valoraciones",
+      type_ASISTIR_EVENTOS: "Asistir a eventos",
+      type_SUBIR_LIBROS: "Subir libros"
     }
   },
   ca: {
@@ -245,7 +260,7 @@ const resources = {
       pwd_strength: "Fortalesa de la contrasenya",
       err_pwd_requirements: "La contrasenya no compleix tots els requisits de seguretat",
       // ProfileScreen
-      profile_title: "Editar Perfil",
+      profile_title: "Perfil",
       profile_err_loading: "No s'ha pogut carregar el perfil",
       profile_err_fields: "El nom i l'email són obligatoris",
       profile_success_update: "Perfil actualitzat correctament",
@@ -306,7 +321,22 @@ const resources = {
       following_empty: "Encara no segueixes a ningú ni a res.",
       err_delete_rent: "No pots eliminar ni amagar el teu perfil mentre tinguis algun lloguer en curs (llibres que has llogat o llibres teus llogats per altres).",
       focus_mode_title: "Mode d'enfocament de lectura",
-      focus_mode_desc: "Converteix parts del text en majúscules per facilitar el seguiment visual."
+      focus_mode_desc: "Converteix parts del text en majúscules per facilitar el seguiment visual.",
+      retos_title: "Els Meus Reptes",
+      retos_subtitle: "Completa objectius i guanya insígnies a la comunitat",
+      retos_empty: "No hi ha reptes disponibles en aquest moment.",
+      retos_completed_badge: "Completat",
+      retos_progress_label: "Progrés",
+      retos_total_completed: "Reptes completats",
+      retos_all: "Tots",
+      retos_pending: "Pendents",
+      retos_completed: "Completats",
+      type_COMPRAR_LIBROS: "Comprar llibres",
+      type_ALQUILAR_LIBROS: "Llogar llibres",
+      type_SEGUIR_USUARIOS: "Seguir usuaris",
+      type_RECIBIR_VALORACIONES: "Rebre valoracions",
+      type_ASISTIR_EVENTOS: "Asistir a esdeveniments",
+      type_SUBIR_LIBROS: "Penjar llibres"
     }
   },
   en: {
@@ -396,7 +426,7 @@ const resources = {
       pwd_strength: "Password strength",
       err_pwd_requirements: "The password does not meet all security requirements",
       // ProfileScreen
-      profile_title: "Edit Profile",
+      profile_title: "Profile",
       profile_err_loading: "Could not load profile",
       search_placeholder: "Search books or users...",
       search_no_results: "No books found for \"{{query}}\"",
@@ -461,7 +491,22 @@ const resources = {
       following_empty: "You are not following anything yet.",
       err_delete_rent: "You cannot delete or hide your profile while you have an ongoing rent (books you rented or your books rented by others).",
       focus_mode_title: "Reading Focus Mode",
-      focus_mode_desc: "Converts parts of the text to uppercase to help visual tracking."
+      focus_mode_desc: "Converts parts of the text to uppercase to help visual tracking.",
+      retos_title: "My Challenges",
+      retos_subtitle: "Complete goals and earn badges in the community",
+      retos_empty: "There are no challenges available at this time.",
+      retos_completed_badge: "Completed",
+      retos_progress_label: "Progress",
+      retos_total_completed: "Challenges completed",
+      retos_all: "All",
+      retos_pending: "In Progress",
+      retos_completed: "Completed",
+      type_COMPRAR_LIBROS: "Buy books",
+      type_ALQUILAR_LIBROS: "Rent books",
+      type_SEGUIR_USUARIOS: "Follow users",
+      type_RECIBIR_VALORACIONES: "Receive reviews",
+      type_ASISTIR_EVENTOS: "Attend events",
+      type_SUBIR_LIBROS: "Upload books"
     }
   }
 };
