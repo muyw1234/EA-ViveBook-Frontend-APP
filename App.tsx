@@ -17,6 +17,7 @@ import ProfileScreen from "./src/screens/ProfileScreen";
 import SearchScreen from "./src/screens/SearchScreen";
 import DiscoverScreen from "./src/screens/DiscoverScreen";
 import RetosScreen from "./src/screens/RetosScreen";
+import SettingsScreen from "./src/screens/SettingsScreen";
 import { AccessibilityProvider } from "./src/context/AccessibilityContext";
 import style from "./styles/default.old"
 
@@ -62,6 +63,7 @@ export default function App() {
             <Stack.Screen name="Search" component={SearchScreen} options={{ title: 'Búsqueda de Libros' }} />
             <Stack.Screen name="Discover" component={DiscoverScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Retos" component={RetosScreen} options={{ title: 'Mis Retos' }} />
+            <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Ajustes de accesibilidad' }} />
           </Stack.Navigator>
         </NavigationContainer>
       </PaperProvider>

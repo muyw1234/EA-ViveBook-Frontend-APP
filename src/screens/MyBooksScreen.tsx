@@ -11,6 +11,7 @@ export default function MyBooksScreen() {
   const [uploadedBooks, setUploadedBooks] = useState<any[]>([]);
   const [boughtBooks, setBoughtBooks] = useState<any[]>([]);
   const [rentedBooks, setRentedBooks] = useState<any[]>([]);
+  const [reservedReservations, setReservedReservations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [category, setCategory] = useState('uploaded');
@@ -63,12 +64,23 @@ export default function MyBooksScreen() {
         setBoughtBooks(userData.boughtLibros || []);
         setRentedBooks(userData.rentedLibros || []);
       }
+
+      const reservationsResponse = await api.get('/reservas/solicitadas');
+      const resData = reservationsResponse.data?.data || reservationsResponse.data;
+      const accepted = Array.isArray(resData) 
+        ? resData.filter((r: any) => r.estado === 'ACEPTADA') 
+        : [];
+      setReservedReservations(accepted);
     } catch (error) {
       console.error('Error fetching my books:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  const handleTalkToSeller = (book: any) => {
+    Alert.alert(t('talk_to_seller'), `${t('chat_header')} ${book?.title}`);
   };
 
   useFocusEffect(
@@ -277,11 +289,14 @@ export default function MyBooksScreen() {
     if (category === 'uploaded') baseBooks = uploadedBooks;
     else if (category === 'bought') baseBooks = boughtBooks;
     else if (category === 'rented') baseBooks = rentedBooks;
+    else if (category === 'reserved') baseBooks = reservedReservations;
 
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      baseBooks = baseBooks.filter((book) => {
+      baseBooks = baseBooks.filter((item) => {
+        const book = category === 'reserved' ? item.libro : item;
+        if (!book) return false;
         const titleMatch = book.title?.toLowerCase().includes(query);
         const autorMatch = book.autor?.toLowerCase().includes(query);
         const isbnMatch = book.isbn?.toLowerCase().includes(query);
@@ -291,7 +306,9 @@ export default function MyBooksScreen() {
 
     // Filter by category dropdown
     if (selectedCategory && selectedCategory !== 'all') {
-      baseBooks = baseBooks.filter((book) => {
+      baseBooks = baseBooks.filter((item) => {
+        const book = category === 'reserved' ? item.libro : item;
+        if (!book) return false;
         return book.categoria?.toLowerCase() === selectedCategory.toLowerCase();
       });
     }
@@ -313,6 +330,44 @@ export default function MyBooksScreen() {
     }
 
     const paginatedBooks = currentBooks.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+    if (category === 'reserved') {
+      return paginatedBooks.map((res: any) => (
+        <Card key={res._id} style={styles.card}>
+          <Card.Content>
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Text variant="titleLarge" style={styles.bookTitle}>{res.libro?.title}</Text>
+                {res.libro?.autor ? <Text variant="bodyMedium" style={styles.bookDetails}>{t('author_label')}: {res.libro.autor}</Text> : null}
+                <Text variant="bodyMedium" style={styles.bookDetails}>{t('isbn_label')}: {res.libro?.isbn}</Text>
+                <Text variant="bodyMedium" style={styles.bookDetails}>
+                  Vendedor: {res.propietario?.name || 'Desconocido'}
+                </Text>
+                <Text variant="bodyMedium" style={[styles.bookDetails, { fontWeight: 'bold', color: '#f59e0b', marginTop: 4 }]}>
+                  Fecha Límite: {res.fechaLimite ? new Date(res.fechaLimite).toLocaleDateString() : 'Sin fecha'}
+                </Text>
+                <Text variant="bodyMedium" style={styles.bookDetails}>
+                  Estado de Reserva: {res.estado}
+                </Text>
+              </View>
+              <View style={[styles.typeBadge, { backgroundColor: '#fef3c7' }]}>
+                <Text style={[styles.typeText, { color: '#d97706' }]}>RESERVADO</Text>
+              </View>
+            </View>
+          </Card.Content>
+          <Card.Actions>
+            <Button 
+              icon={() => <RNText style={{ fontSize: 16 }}>💬</RNText>}
+              mode="contained" 
+              onPress={() => handleTalkToSeller(res.libro)}
+              style={{ backgroundColor: '#D183BA' }}
+            >
+              {t('talk_to_seller')}
+            </Button>
+          </Card.Actions>
+        </Card>
+      ));
+    }
 
     return paginatedBooks.map((book: any) => (
       <Card key={book._id} style={styles.card}>
@@ -440,6 +495,7 @@ export default function MyBooksScreen() {
             { value: 'uploaded', label: t('uploaded', 'Subidos'), checkedColor: '#fff', uncheckedColor: '#555' },
             { value: 'bought', label: t('bought', 'Comprados'), checkedColor: '#fff', uncheckedColor: '#555' },
             { value: 'rented', label: t('rented', 'Alquilados'), checkedColor: '#fff', uncheckedColor: '#555' },
+            { value: 'reserved', label: t('reserved', 'Reservados'), checkedColor: '#fff', uncheckedColor: '#555' },
           ]}
           style={styles.segmented}
           theme={{ colors: { secondaryContainer: '#D183BA', onSecondaryContainer: '#ffffff' } }}
@@ -468,6 +524,7 @@ export default function MyBooksScreen() {
               { value: 'uploaded', label: t('uploaded') },
               { value: 'bought', label: t('bought') },
               { value: 'rented', label: t('rented') },
+              { value: 'reserved', label: t('reserved') },
             ]}
             style={styles.segmented}
             theme={{ colors: { secondaryContainer: '#ffffff', onSecondaryContainer: '#D6AED2' } }}

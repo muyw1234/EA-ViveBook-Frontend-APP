@@ -170,7 +170,21 @@ const resources = {
       type_SEGUIR_USUARIOS: "Seguir usuarios",
       type_RECIBIR_VALORACIONES: "Recibir valoraciones",
       type_ASISTIR_EVENTOS: "Asistir a eventos",
-      type_SUBIR_LIBROS: "Subir libros"
+      type_SUBIR_LIBROS: "Subir libros",
+      reserve_action: "Reservar",
+      reserved: "Reservado",
+      reserve_success: "Solicitud de reserva enviada correctamente",
+      reserve_err: "No se pudo realizar la reserva",
+      reserve_already_requested: "Ya has solicitado reservar este libro",
+      reservation_accepted: "Reserva aceptada",
+      reservation_rejected: "Reserva rechazada",
+      mailbox: "Chats",
+      request_reserve: "Solicitar reserva",
+      received_requests: "Solicitudes Recibidas",
+      sent_requests: "Solicitudes Enviadas",
+      accept_reservation: "Aceptar Reserva",
+      reject_reservation: "Rechazar Reserva",
+      enter_duration_days: "Introduce la duración de la reserva en días:"
     }
   },
   ca: {
@@ -336,7 +350,21 @@ const resources = {
       type_SEGUIR_USUARIOS: "Seguir usuaris",
       type_RECIBIR_VALORACIONES: "Rebre valoracions",
       type_ASISTIR_EVENTOS: "Asistir a esdeveniments",
-      type_SUBIR_LIBROS: "Penjar llibres"
+      type_SUBIR_LIBROS: "Penjar llibres",
+      reserve_action: "Reservar",
+      reserved: "Reservat",
+      reserve_success: "Sol·licitud de reserva enviada correctament",
+      reserve_err: "No s'ha pogut realitzar la reserva",
+      reserve_already_requested: "Ja has sol·licitat reservar aquest llibre",
+      reservation_accepted: "Reserva acceptada",
+      reservation_rejected: "Reserva rebutjada",
+      mailbox: "Chats",
+      request_reserve: "Sol·licitar reserva",
+      received_requests: "Sol·licituds Rebudes",
+      sent_requests: "Sol·licituds Enviades",
+      accept_reservation: "Acceptar Reserva",
+      reject_reservation: "Rebutjar Reserva",
+      enter_duration_days: "Introdueix la durada de la reserva en dies:"
     }
   },
   en: {
@@ -506,7 +534,21 @@ const resources = {
       type_SEGUIR_USUARIOS: "Follow users",
       type_RECIBIR_VALORACIONES: "Receive reviews",
       type_ASISTIR_EVENTOS: "Attend events",
-      type_SUBIR_LIBROS: "Upload books"
+      type_SUBIR_LIBROS: "Upload books",
+      reserve_action: "Reserve",
+      reserved: "Reserved",
+      reserve_success: "Reservation request sent successfully",
+      reserve_err: "Could not reserve book",
+      reserve_already_requested: "You have already requested to reserve this book",
+      reservation_accepted: "Reservation accepted",
+      reservation_rejected: "Reservation rejected",
+      mailbox: "Chats",
+      request_reserve: "Request reservation",
+      received_requests: "Received Requests",
+      sent_requests: "Sent Requests",
+      accept_reservation: "Accept Reservation",
+      reject_reservation: "Reject Reservation",
+      enter_duration_days: "Enter the reservation duration in days:"
     }
   }
 };
