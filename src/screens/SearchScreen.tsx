@@ -9,6 +9,7 @@ import {
   Dimensions,
   Text as RNText,
   ToastAndroid,
+  Platform,
 } from "react-native";
 import {
   Searchbar,
@@ -24,6 +25,7 @@ import {
   Menu,
   TouchableRipple,
   Chip,
+  useTheme,
 } from "react-native-paper";
 import { AppText as Text } from "../components/AppText";
 import { useTranslation } from "react-i18next";
@@ -35,11 +37,21 @@ export default function SearchScreen({ route }: any) {
   const navigation = useNavigation<any>();
   const initialQuery = route?.params?.query || "";
 
+  const showAlert = (title: string, message: string) => {
+    if (Platform.OS === 'web') {
+      alert(`${title}: ${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
+
+  const theme = useTheme();
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [bookResults, setBookResults] = useState<any[]>([]);
   const [userResults, setUserResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [menuVisible, setMenuVisible] = useState<string | null>(null);
+  const [requestedBookIds, setRequestedBookIds] = useState<string[]>([]);
 
   const [isGridView, setIsGridView] = useState(false);
   const [page, setPage] = useState(1);
@@ -72,12 +84,29 @@ export default function SearchScreen({ route }: any) {
     "Otros",
   ];
 
+  const fetchReservations = async () => {
+    try {
+      const resResponse = await api.get('/reservas/solicitadas');
+      const resList = resResponse.data?.data || resResponse.data || [];
+      const pendingBookIds = Array.isArray(resList)
+        ? resList
+            .filter((r: any) => r.estado?.toUpperCase() === 'PENDIENTE' || r.estado?.toUpperCase() === 'ACEPTADA')
+            .map((r: any) => typeof r.libro === 'string' ? r.libro : r.libro?._id)
+            .filter(Boolean)
+        : [];
+      setRequestedBookIds(pendingBookIds);
+    } catch (err) {
+      console.error('Error fetching reservations:', err);
+    }
+  };
+
   useEffect(() => {
     if (initialQuery) {
       handleSearch(initialQuery);
     } else {
       fetchAllBooks();
     }
+    fetchReservations();
     if (route?.params?.openFilters) {
       setIsFilterModalVisible(true);
     }
@@ -139,7 +168,7 @@ export default function SearchScreen({ route }: any) {
 
   const handleTalkToSeller = (book: any) => {
     closeMenu();
-    Alert.alert(t("talk_to_seller"), `${t("chat_header")} ${book.title}`);
+    showAlert(t("talk_to_seller"), `${t("chat_header")} ${book.title}`);
   };
 
   const handleTransaction = async (book: any) => {
@@ -150,7 +179,7 @@ export default function SearchScreen({ route }: any) {
           ? `/libros/buy/${book._id}`
           : `/libros/rent/${book._id}`;
       await api.post(endpoint);
-      Alert.alert(
+      showAlert(
         t("success"),
         `${book.type === "VENTA" ? t("buy_action") : t("rent_action")}: ${book.title}`,
       );
@@ -158,7 +187,25 @@ export default function SearchScreen({ route }: any) {
       else fetchAllBooks();
     } catch (error) {
       console.error(`Error processing transaction:`, error);
-      Alert.alert(t("error"), "No se pudo completar la operación");
+      showAlert(t("error"), "No se pudo completar la operación");
+    }
+  };
+
+  const handleReserveBook = async (book: any) => {
+    closeMenu();
+    try {
+      await api.post('/reservas', { libroId: book._id });
+      setRequestedBookIds(prev => [...prev, book._id]);
+      showAlert(t('success'), t('reserve_success', 'Solicitud de reserva enviada correctamente'));
+    } catch (error: any) {
+      console.error('Error reserving book:', error);
+      let errMsg = t('reserve_err', 'No se pudo realizar la reserva');
+      if (error.response?.data?.message) {
+        errMsg = error.response.data.message;
+      } else if (error.response?.data?.error?.message) {
+        errMsg = error.response.data.error.message;
+      }
+      showAlert(t('error'), errMsg);
     }
   };
 
@@ -177,6 +224,11 @@ export default function SearchScreen({ route }: any) {
             <Text variant="bodySmall" style={styles.typeTag}>
               {book.type}
             </Text>
+            {book.isReserved && (
+              <Chip style={styles.reservedBadge} textStyle={styles.reservedBadgeText}>
+                {t('reserved', 'Reservado')}
+              </Chip>
+            )}
           </View>
           <Text variant="titleMedium" style={styles.priceText}>
             {book.precio}€
@@ -185,7 +237,7 @@ export default function SearchScreen({ route }: any) {
         {!isGridView && (
           <>
             {book.autor ? (
-              <Text variant="bodySmall">
+              <Text variant="bodySmall" style={{ marginTop: book.isReserved ? 6 : 0 }}>
                 {t("author_label")}: {book.autor}
               </Text>
             ) : null}
@@ -201,20 +253,20 @@ export default function SearchScreen({ route }: any) {
           </>
         )}
       </Card.Content>
-      <Card.Actions style={isGridView ? styles.gridCardActions : undefined}>
+      <Card.Actions style={styles.cardActions}>
         <Menu
           visible={menuVisible === book._id}
           onDismiss={closeMenu}
           anchor={
             <Button
               mode="contained"
-              buttonColor="#D183BA"
+              buttonColor={book.isReserved ? "#f59e0b" : "#D183BA"}
               onPress={() => openMenu(book._id)}
-              compact={isGridView}
-              style={isGridView ? styles.gridButton : undefined}
-              labelStyle={isGridView ? { fontSize: 10 } : undefined}
+              compact
+              style={styles.actionButton}
+              labelStyle={{ fontSize: isGridView ? 10 : 12 }}
             >
-              {book.type === "VENTA" ? t("buy_action") : t("rent_action")}
+              {book.isReserved ? t('reserved', 'Reservado') : (book.type === "VENTA" ? t("buy_action") : t("rent_action"))}
             </Button>
           }
           contentStyle={{ backgroundColor: "white" }}
@@ -224,19 +276,39 @@ export default function SearchScreen({ route }: any) {
             title={t("talk_to_seller")}
             leadingIcon={() => <RNText style={{ fontSize: 18 }}>💬</RNText>}
           />
-          <Divider />
-          <Menu.Item
-            onPress={() => handleTransaction(book)}
-            title={
-              book.type === "VENTA" ? t("buy_directly") : t("rent_directly")
-            }
-            leadingIcon={() => (
-              <RNText style={{ fontSize: 18 }}>
-                {book.type === "VENTA" ? "💰" : "📅"}
-              </RNText>
-            )}
-          />
+          {!book.isReserved && (
+            <>
+              <Divider />
+              <Menu.Item
+                onPress={() => handleTransaction(book)}
+                title={
+                  book.type === "VENTA" ? t("buy_directly") : t("rent_directly")
+                }
+                leadingIcon={() => (
+                  <RNText style={{ fontSize: 18 }}>
+                    {book.type === "VENTA" ? "💰" : "📅"}
+                  </RNText>
+                )}
+              />
+            </>
+          )}
         </Menu>
+        {!book.isReserved && (
+          <Button
+            mode="outlined"
+            onPress={() => handleReserveBook(book)}
+            textColor={theme.colors.primary}
+            style={[
+              styles.actionButton,
+              !requestedBookIds.includes(book._id) && { borderColor: theme.colors.primary }
+            ]}
+            compact
+            labelStyle={{ fontSize: isGridView ? 10 : 12 }}
+            disabled={requestedBookIds.includes(book._id)}
+          >
+            {requestedBookIds.includes(book._id) ? 'Reserva solicitada' : t('request_reserve', 'Solicitar reserva')}
+          </Button>
+        )}
       </Card.Actions>
     </Card>
   );
@@ -562,6 +634,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 8,
   },
+  cardActions: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    gap: 8,
+  },
+  actionButton: {
+    width: 150,
+  },
   gridButton: {
     width: "100%",
   },
@@ -638,5 +720,16 @@ const styles = StyleSheet.create({
     marginHorizontal: 15,
     fontWeight: "bold",
     color: "#555",
+  },
+  reservedBadge: {
+    backgroundColor: "#f59e0b",
+    alignSelf: "flex-start",
+    marginTop: 8,
+    height: 28,
+  },
+  reservedBadgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
   },
 });

@@ -510,11 +510,31 @@ export default function ProfileScreen({ route }: any) {
 
                                     <Button 
                                         mode="outlined" 
+                                        onPress={() => navigation.navigate("Settings")}
+                                        textColor="#D183BA"
+                                        style={{ borderColor: '#D183BA', marginBottom: 10 }}
+                                        icon={() => <Text style={{ fontSize: 16 }}>⚙️</Text>}
+                                    >
+                                        {t('accessibility_settings')}
+                                    </Button>
+
+                                    <Button 
+                                        mode="outlined" 
                                         onPress={() => setIsEditing(true)}
                                         textColor="#D183BA"
-                                        style={{ borderColor: '#D183BA' }}
+                                        style={{ borderColor: '#D183BA', marginBottom: 10 }}
                                     >
                                         {t('profile_edit_btn')}
+                                    </Button>
+
+                                    <Button
+                                        mode="outlined"
+                                        onPress={logout}
+                                        textColor="#ef4444"
+                                        style={{ borderColor: '#ef4444' }}
+                                        icon={() => <Text style={{ fontSize: 16 }}>🚪</Text>}
+                                    >
+                                        {t('logout')}
                                     </Button>
                                 </View>
                             ) : (

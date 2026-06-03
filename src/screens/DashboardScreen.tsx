@@ -48,10 +48,6 @@ export default function DashboardScreen() {
     }
   };
 
-  const handleLogout = async () => {
-    await AsyncStorage.clear();
-    navigation.navigate("Home" as never);
-  };
 
   const onSearch = () => {
     if (searchQuery.trim()) {
@@ -165,14 +161,6 @@ export default function DashboardScreen() {
         )}
       </Card>
 
-      <Button 
-        mode="outlined" 
-        onPress={handleLogout} 
-        style={{ marginTop: 20, marginBottom: 40, borderColor: '#ef4444' }}
-        textColor="#ef4444"
-      >
-        {t('logout')}
-      </Button>
     </ScrollView>
   );
 }
