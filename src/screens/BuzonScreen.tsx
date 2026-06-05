@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, TouchableOpacity, ScrollView, RefreshControl, Alert, PanResponder, Animated, DeviceEventEmitter } from 'react-native';
-import { TextInput, IconButton, Surface, SegmentedButtons, Card, Button, Portal, Modal, Chip } from 'react-native-paper';
+import { TextInput, IconButton, Surface, SegmentedButtons, Card, Button, Portal, Modal, Chip, Avatar, List, Divider } from 'react-native-paper';
 import { AppText as Text } from '../components/AppText';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -112,12 +112,15 @@ export default function BuzonScreen() {
         }
     };
     
-    // Chat States (from ChatRoomScreen)
-    const chatId = '000000000000000000000001'; // Global Chat ID
-    const [messages, setMessages] = useState<any[]>([]);
-    const [newMessage, setNewMessage] = useState('');
+    // States
     const [userId, setUserId] = useState<string | null>(null);
-    const flatListRef = useRef<FlatList>(null);
+
+    // Private Chats and Message Requests states
+    const [privateChats, setPrivateChats] = useState<any[]>([]);
+    const [receivedMsgRequests, setReceivedMsgRequests] = useState<any[]>([]);
+    const [sentMsgRequests, setSentMsgRequests] = useState<any[]>([]);
+    const [loadingChats, setLoadingChats] = useState(false);
+    const [refreshingChats, setRefreshingChats] = useState(false);
 
     // Reservation States
     const [receivedRequests, setReceivedRequests] = useState<any[]>([]);
@@ -139,6 +142,11 @@ export default function BuzonScreen() {
             if (userStr) {
                 const user = JSON.parse(userStr);
                 setUserId(user._id);
+                
+                if (!socket.connected) {
+                    socket.connect();
+                }
+                socket.emit('register_user', user._id);
             }
         };
         setupUser();
@@ -147,12 +155,6 @@ export default function BuzonScreen() {
     // Chat socket effect
     useEffect(() => {
         if (!userId) return;
-
-        if (!socket.connected) {
-            socket.connect();
-        }
-
-        socket.emit('join_chat', chatId);
 
         const handleReceiveMessage = (message: any) => {
             if (message.category === 'reservation') {
@@ -166,52 +168,59 @@ export default function BuzonScreen() {
                     DeviceEventEmitter.emit('unread_change');
                 }
             } else {
-                setMessages(prev => {
-                    if (prev.some(m => m._id === message._id)) return prev;
-                    return [...prev, message];
-                });
-                if (mode === 'chat') {
-                    api.patch(`/mensajes/chat/${chatId}/read`)
-                        .then(() => DeviceEventEmitter.emit('unread_change'))
-                        .catch(() => {});
-                    setTimeout(() => flatListRef.current?.scrollToEnd(), 100);
-                } else {
-                    DeviceEventEmitter.emit('unread_change');
-                }
+                fetchMessageRequestsAndChats();
+                DeviceEventEmitter.emit('unread_change');
             }
         };
 
+        const handleNewMessageRequest = () => {
+            fetchMessageRequestsAndChats();
+            DeviceEventEmitter.emit('unread_change');
+        };
+
+        const handleNewChatNotification = () => {
+            fetchMessageRequestsAndChats();
+            DeviceEventEmitter.emit('unread_change');
+        };
+
+        const handleMessageRequestUpdate = () => {
+            fetchMessageRequestsAndChats();
+        };
+
         socket.on('receive_message', handleReceiveMessage);
+        socket.on('receiveMessage', handleReceiveMessage);
+        socket.on('newMessageRequest', handleNewMessageRequest);
+        socket.on('newChatNotification', handleNewChatNotification);
+        socket.on('newMessageRequestUpdate', handleMessageRequestUpdate);
 
         return () => {
             socket.off('receive_message', handleReceiveMessage);
+            socket.off('receiveMessage', handleReceiveMessage);
+            socket.off('newMessageRequest', handleNewMessageRequest);
+            socket.off('newChatNotification', handleNewChatNotification);
+            socket.off('newMessageRequestUpdate', handleMessageRequestUpdate);
         };
     }, [mode, userId]);
 
-    // Reservations / Chat mode mark as read and fetch effect
-    useEffect(() => {
+    // Fetch Chats and requests
+    const fetchMessageRequestsAndChats = async () => {
         if (!userId) return;
-        if (mode === 'reservas') {
-            fetchAllData();
-            api.patch('/reservas/read')
-                .then(() => DeviceEventEmitter.emit('unread_change'))
-                .catch(() => {});
-        } else if (mode === 'chat') {
-            const fetchMessages = async () => {
-                try {
-                    const response = await api.get(`/mensajes/chat/${chatId}`);
-                    setMessages(response.data?.data || response.data || []);
-                    setTimeout(() => flatListRef.current?.scrollToEnd(), 100);
-                } catch (error) {
-                    console.error(t('chat_error_load'));
-                }
-            };
-            fetchMessages();
-            api.patch(`/mensajes/chat/${chatId}/read`)
-                .then(() => DeviceEventEmitter.emit('unread_change'))
-                .catch(() => {});
+        try {
+            const chatsRes = await api.get('/chats');
+            setPrivateChats(chatsRes.data?.data || chatsRes.data || []);
+
+            const receivedRes = await api.get('/message-requests/received');
+            setReceivedMsgRequests(receivedRes.data?.data || receivedRes.data || []);
+
+            const sentRes = await api.get('/message-requests/sent');
+            setSentMsgRequests(sentRes.data?.data || sentRes.data || []);
+        } catch (error) {
+            console.error('Error fetching message requests and chats:', error);
+        } finally {
+            setLoadingChats(false);
+            setRefreshingChats(false);
         }
-    }, [mode, userId]);
+    };
 
     // Reservations fetch logic
     const fetchReservations = async () => {
@@ -247,6 +256,7 @@ export default function BuzonScreen() {
         if (!userId) return;
         await fetchReservations();
         await fetchReservationMessages();
+        await fetchMessageRequestsAndChats();
     };
 
     useFocusEffect(
@@ -258,9 +268,7 @@ export default function BuzonScreen() {
                     .then(() => DeviceEventEmitter.emit('unread_change'))
                     .catch(() => {});
             } else if (mode === 'chat') {
-                api.patch(`/mensajes/chat/${chatId}/read`)
-                    .then(() => DeviceEventEmitter.emit('unread_change'))
-                    .catch(() => {});
+                fetchMessageRequestsAndChats();
             }
         }, [mode, userId])
     );
@@ -270,15 +278,53 @@ export default function BuzonScreen() {
         fetchAllData();
     };
 
-    // Chat Actions
-    const sendMessage = () => {
-        if (newMessage.trim() && userId) {
-            socket.emit('send_message', {
-                chatId,
-                senderId: userId,
-                content: newMessage.trim()
-            });
-            setNewMessage('');
+    const onRefreshChats = () => {
+        setRefreshingChats(true);
+        fetchMessageRequestsAndChats();
+    };
+
+    // Message Request Actions
+    const handleAcceptMsgRequest = async (requestId: string) => {
+        try {
+            const response = await api.patch(`/message-requests/${requestId}/accept`);
+            showAlert(t('success', 'Éxito'), 'Solicitud aceptada correctamente.');
+            await fetchMessageRequestsAndChats();
+            DeviceEventEmitter.emit('unread_change');
+            
+            // Navigate directly to the newly created chat
+            const chat = response.data?.data || response.data;
+            if (chat && chat._id) {
+                navigation.navigate('ChatRoom', { chatId: chat._id });
+            }
+        } catch (error) {
+            console.error('Error accepting message request:', error);
+            showAlert(t('error', 'Error'), 'No se pudo aceptar la solicitud de mensaje.');
+        }
+    };
+
+    const handleDenyMsgRequest = async (requestId: string) => {
+        showConfirm(
+            'Rechazar solicitud',
+            '¿Seguro que quieres rechazar esta solicitud de conversación?',
+            async () => {
+                try {
+                    await api.patch(`/message-requests/${requestId}/deny`);
+                    showAlert(t('success', 'Éxito'), 'Solicitud rechazada.');
+                    fetchMessageRequestsAndChats();
+                } catch (error) {
+                    console.error('Error denying message request:', error);
+                    showAlert(t('error', 'Error'), 'No se pudo rechazar la solicitud.');
+                }
+            }
+        );
+    };
+
+    const handleDismissMsgRequest = async (requestId: string) => {
+        try {
+            await api.patch(`/message-requests/${requestId}/dismiss`);
+            fetchMessageRequestsAndChats();
+        } catch (error) {
+            console.error('Error dismissing message request:', error);
         }
     };
 
@@ -328,7 +374,6 @@ export default function BuzonScreen() {
     const handleDeleteMessage = async (messageId: string) => {
         try {
             await api.delete(`/mensajes/${messageId}`);
-            setMessages(prev => prev.filter(m => m._id !== messageId));
             setReservationMessages(prev => prev.filter(m => m._id !== messageId));
             DeviceEventEmitter.emit('unread_change');
         } catch (error) {
@@ -349,73 +394,185 @@ export default function BuzonScreen() {
         }
     };
 
-    // Rendering Helpers
-    const renderMessage = ({ item }: any) => {
-        const isMine = item.sender?._id === userId || item.sender === userId;
-        const senderName = item.sender?.name || 'Usuario';
-
-        return (
-            <SwipeableRow style={{ marginVertical: 5 }} onDelete={() => handleDeleteMessage(item._id)}>
-                <View style={[styles.messageContainer, isMine ? styles.myMessage : styles.theirMessage, { width: '100%', paddingHorizontal: 12, marginVertical: 0 }]}>
-                    {!isMine && <Text style={styles.senderName}>{senderName}</Text>}
-                    <Surface style={[styles.bubble, isMine ? styles.myBubble : styles.theirBubble]}>
-                        <Text style={isMine ? styles.myText : styles.theirText}>{item.content}</Text>
-                    </Surface>
-                    <Text style={styles.timestamp}>
-                        {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </Text>
-                </View>
-            </SwipeableRow>
-        );
-    };
-
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'ACEPTADA':
+            case 'accepted':
                 return { bg: '#def7ec', text: '#03543f' };
             case 'RECHAZADA':
+            case 'denied':
                 return { bg: '#fde8e8', text: '#9b1c1c' };
             default:
                 return { bg: '#e5e7eb', text: '#374151' };
         }
     };
 
-    const renderChatSection = () => (
-        <KeyboardAvoidingView 
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
-            style={styles.flexContainer}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-        >
-            <FlatList
-                ref={flatListRef}
-                data={messages}
-                keyExtractor={(item) => item._id}
-                renderItem={renderMessage}
-                contentContainerStyle={styles.chatListContent}
-                onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
-            />
-            <View style={styles.inputContainer}>
-                <TextInput
-                    value={newMessage}
-                    onChangeText={setNewMessage}
-                    placeholder={t('chat_placeholder')}
-                    mode="outlined"
-                    style={styles.input}
-                    dense
-                    outlineColor="#D183BA"
-                    activeOutlineColor="#D183BA"
-                />
-                <IconButton
-                    icon="send"
-                    mode="contained"
-                    containerColor="#D183BA"
-                    iconColor="white"
-                    onPress={sendMessage}
-                    disabled={!newMessage.trim()}
-                />
-            </View>
-        </KeyboardAvoidingView>
-    );
+    const renderChatSection = () => {
+        // Find notices (sent requests that are accepted or denied)
+        const notices = sentMsgRequests.filter(req => req.status !== 'pending');
+
+        return (
+            <ScrollView 
+                style={styles.flexContainer}
+                contentContainerStyle={styles.chatsContainer}
+                refreshControl={
+                    <RefreshControl refreshing={refreshingChats} onRefresh={onRefreshChats} colors={["#D183BA"]} />
+                }
+            >
+                {/* Global Chat Access */}
+                <Card 
+                    style={styles.globalChatCard}
+                    onPress={() => navigation.navigate('ChatRoom', { chatId: '000000000000000000000001' })}
+                >
+                    <Card.Content style={styles.globalChatContent}>
+                        <Avatar.Icon size={44} icon="earth" style={{ backgroundColor: '#D183BA' }} color="white" />
+                        <View style={styles.globalChatTextContainer}>
+                            <Text variant="titleMedium" style={styles.globalChatTitle}>Chat Global</Text>
+                            <Text variant="bodySmall" style={styles.globalChatSub}>Comunidad de ViveBook en tiempo real</Text>
+                        </View>
+                        <IconButton icon="chevron-right" iconColor="#D183BA" size={24} />
+                    </Card.Content>
+                </Card>
+
+                {/* Avisos de solicitudes de chat */}
+                {notices.length > 0 && (
+                    <View style={{ marginBottom: 20 }}>
+                        <Text variant="titleMedium" style={styles.sectionHeader}>Avisos y Actualizaciones</Text>
+                        {notices.map((notice: any) => {
+                            const isAccepted = notice.status === 'accepted';
+                            return (
+                                <Card 
+                                    key={notice._id} 
+                                    style={[
+                                        styles.noticeCard, 
+                                        { backgroundColor: isAccepted ? '#ecfdf5' : '#fef2f2', borderColor: isAccepted ? '#10b981' : '#f87171' }
+                                    ]}
+                                >
+                                    <Card.Content style={styles.noticeCardContent}>
+                                        <View style={{ flex: 1, marginRight: 8 }}>
+                                            <Text variant="titleSmall" style={{ fontWeight: 'bold', color: isAccepted ? '#065f46' : '#991b1b' }}>
+                                                {isAccepted ? 'Solicitud Aceptada 🎉' : 'Solicitud Rechazada ❌'}
+                                            </Text>
+                                            <Text variant="bodyMedium" style={{ marginTop: 2, color: isAccepted ? '#047857' : '#b91c1c' }}>
+                                                {isAccepted 
+                                                    ? `${notice.seller?.name || 'El vendedor'} ha aceptado tu solicitud para hablar sobre el libro "${notice.book?.title}". ¡Ya podéis chatear!`
+                                                    : `${notice.seller?.name || 'El vendedor'} ha rechazado tu solicitud de mensaje para el libro "${notice.book?.title}".`
+                                                }
+                                            </Text>
+                                        </View>
+                                        <IconButton 
+                                            icon="close" 
+                                            size={20} 
+                                            iconColor={isAccepted ? '#047857' : '#b91c1c'} 
+                                            onPress={() => handleDismissMsgRequest(notice._id)} 
+                                        />
+                                    </Card.Content>
+                                </Card>
+                            );
+                        })}
+                    </View>
+                )}
+
+                {/* Solicitudes de mensaje recibidas */}
+                {receivedMsgRequests.length > 0 && (
+                    <View style={{ marginBottom: 20 }}>
+                        <Text variant="titleMedium" style={styles.sectionHeader}>Solicitudes de Mensajes</Text>
+                        {receivedMsgRequests.map((req: any) => (
+                            <Card key={req._id} style={styles.requestCard}>
+                                <Card.Content>
+                                    <View style={styles.requestHeader}>
+                                        <Avatar.Text 
+                                            size={36} 
+                                            label={req.requester?.name?.substring(0, 2).toUpperCase() || 'U'} 
+                                            style={{ backgroundColor: '#D6AED2' }} 
+                                        />
+                                        <View style={styles.requestHeaderText}>
+                                            <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>{req.requester?.name || 'Usuario'}</Text>
+                                            <Text variant="bodySmall" style={{ color: '#666' }}>
+                                                Libro: <Text style={{ fontWeight: 'bold' }}>{req.book?.title}</Text>
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    {req.initialMessage ? (
+                                        <View style={styles.initialMessageBox}>
+                                            <Text variant="bodyMedium" style={{ fontStyle: 'italic', color: '#555' }}>
+                                                "{req.initialMessage}"
+                                            </Text>
+                                        </View>
+                                    ) : null}
+                                    <Text variant="bodySmall" style={styles.requestDate}>
+                                        Fecha: {new Date(req.createdAt).toLocaleDateString()}
+                                    </Text>
+                                </Card.Content>
+                                <Card.Actions style={styles.requestActions}>
+                                    <Button 
+                                        mode="outlined" 
+                                        textColor="#ef4444"
+                                        style={{ borderColor: '#ef4444', flex: 1 }}
+                                        onPress={() => handleDenyMsgRequest(req._id)}
+                                    >
+                                        Rechazar
+                                    </Button>
+                                    <Button 
+                                        mode="contained" 
+                                        buttonColor="#D183BA" 
+                                        style={{ flex: 1 }}
+                                        onPress={() => handleAcceptMsgRequest(req._id)}
+                                    >
+                                        Aceptar
+                                    </Button>
+                                </Card.Actions>
+                            </Card>
+                        ))}
+                    </View>
+                )}
+
+                {/* Chats privados activos */}
+                <Text variant="titleMedium" style={styles.sectionHeader}>Mensajes Privados</Text>
+                {privateChats.length === 0 ? (
+                    <Card style={styles.emptyChatsCard}>
+                        <Card.Content>
+                            <Text style={styles.emptyText}>No tienes conversaciones privadas activas.</Text>
+                            <Text style={styles.emptyTextSub}>Solicita hablar con un vendedor desde los detalles de su libro.</Text>
+                        </Card.Content>
+                    </Card>
+                ) : (
+                    privateChats.map((chat: any) => {
+                        const otherParticipant = chat.participants?.find((p: any) => p._id !== userId) || {};
+                        const otherName = otherParticipant.name || 'Usuario';
+                        const firstLetters = otherName.substring(0, 2).toUpperCase() || 'U';
+
+                        return (
+                            <TouchableOpacity 
+                                key={chat._id} 
+                                onPress={() => navigation.navigate('ChatRoom', { chatId: chat._id })}
+                                activeOpacity={0.7}
+                            >
+                                <Card style={styles.chatCard}>
+                                    <Card.Content style={styles.chatCardContent}>
+                                        <Avatar.Text 
+                                            size={44} 
+                                            label={firstLetters} 
+                                            style={{ backgroundColor: '#D183BA' }} 
+                                            color="white"
+                                        />
+                                        <View style={styles.chatTextContainer}>
+                                            <Text variant="titleMedium" style={styles.chatPartnerName}>{otherName}</Text>
+                                            <Text variant="bodySmall" numberOfLines={1} style={styles.chatBookTitle}>
+                                                Libro: {chat.libro?.title || 'General'}
+                                            </Text>
+                                        </View>
+                                        <IconButton icon="chat-outline" iconColor="#D183BA" size={24} />
+                                    </Card.Content>
+                                </Card>
+                            </TouchableOpacity>
+                        );
+                    })
+                )}
+                <View style={{ height: 40 }} />
+            </ScrollView>
+        );
+    };
 
     const renderReservasSection = () => (
         <ScrollView 
@@ -553,7 +710,7 @@ export default function BuzonScreen() {
                     value={mode}
                     onValueChange={(val: any) => setMode(val)}
                     buttons={[
-                        { value: 'chat', label: 'Chat Global', checkedColor: '#fff', uncheckedColor: '#555' },
+                        { value: 'chat', label: 'Chats', checkedColor: '#fff', uncheckedColor: '#555' },
                         { value: 'reservas', label: 'Reservas', checkedColor: '#fff', uncheckedColor: '#555' },
                     ]}
                     style={styles.segmented}
@@ -624,64 +781,110 @@ const styles = StyleSheet.create({
     flexContainer: {
         flex: 1,
     },
-    chatListContent: {
-        padding: 10,
+    chatsContainer: {
+        padding: 16,
     },
-    messageContainer: {
-        marginVertical: 5,
-        maxWidth: '80%',
+    globalChatCard: {
+        marginBottom: 20,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        elevation: 2,
     },
-    myMessage: {
-        alignSelf: 'flex-end',
-    },
-    theirMessage: {
-        alignSelf: 'flex-start',
-    },
-    senderName: {
-        fontSize: 12,
-        fontWeight: 'bold',
-        color: '#D183BA',
-        marginBottom: 2,
-        marginLeft: 4,
-    },
-    bubble: {
-        padding: 10,
-        borderRadius: 15,
-        elevation: 1,
-    },
-    myBubble: {
-        backgroundColor: '#D183BA',
-        borderBottomRightRadius: 2,
-    },
-    theirBubble: {
-        backgroundColor: 'white',
-        borderBottomLeftRadius: 2,
-    },
-    myText: {
-        color: 'white',
-    },
-    theirText: {
-        color: 'black',
-    },
-    timestamp: {
-        fontSize: 10,
-        color: '#888',
-        marginTop: 2,
-        alignSelf: 'flex-end',
-        marginRight: 4,
-    },
-    inputContainer: {
+    globalChatContent: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 8,
-        backgroundColor: 'white',
-        borderTopWidth: 1,
-        borderTopColor: '#e5e7eb',
     },
-    input: {
+    globalChatTextContainer: {
         flex: 1,
-        marginRight: 8,
+        marginLeft: 12,
+    },
+    globalChatTitle: {
+        fontWeight: 'bold',
+        color: '#1a1a1a',
+    },
+    globalChatSub: {
+        color: '#666',
+        marginTop: 2,
+    },
+    noticeCard: {
+        marginBottom: 10,
+        borderRadius: 8,
+        borderWidth: 1,
+        elevation: 1,
+    },
+    noticeCardContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 4,
+    },
+    requestCard: {
+        marginBottom: 12,
         backgroundColor: '#fff',
+        borderRadius: 12,
+        elevation: 2,
+    },
+    requestHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    requestHeaderText: {
+        marginLeft: 12,
+        flex: 1,
+    },
+    initialMessageBox: {
+        marginTop: 10,
+        backgroundColor: '#f5eff4',
+        padding: 10,
+        borderRadius: 8,
+    },
+    requestDate: {
+        marginTop: 8,
+        color: '#777',
+        fontSize: 11,
+    },
+    requestActions: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 8,
+        paddingBottom: 8,
+        gap: 8,
+    },
+    chatCard: {
+        marginBottom: 10,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        elevation: 1,
+    },
+    chatCardContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 10,
+    },
+    chatTextContainer: {
+        flex: 1,
+        marginLeft: 12,
+    },
+    chatPartnerName: {
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    chatBookTitle: {
+        color: '#666',
+        marginTop: 2,
+    },
+    emptyChatsCard: {
+        padding: 20,
+        alignItems: 'center',
+        borderRadius: 12,
+        backgroundColor: '#fff',
+        elevation: 1,
+    },
+    emptyTextSub: {
+        textAlign: 'center',
+        color: '#999',
+        fontSize: 12,
+        marginTop: 6,
     },
     reservasContainer: {
         padding: 16,
@@ -702,6 +905,7 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
         paddingVertical: 10,
         paddingLeft: 4,
+        textAlign: 'center',
     },
     dialogContent: {
         backgroundColor: 'white',

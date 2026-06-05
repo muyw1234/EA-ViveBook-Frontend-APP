@@ -3,11 +3,13 @@ import { View, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert,
 import { Card, Button, Avatar, SegmentedButtons, Portal, Modal, TextInput, ProgressBar, IconButton, Menu, Searchbar, TouchableRipple } from 'react-native-paper';
 import { AppText as Text } from '../components/AppText';
 import { useTranslation } from 'react-i18next';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import api from '../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function MyBooksScreen() {
   const { t } = useTranslation();
+  const navigation = useNavigation<any>();
   const [uploadedBooks, setUploadedBooks] = useState<any[]>([]);
   const [boughtBooks, setBoughtBooks] = useState<any[]>([]);
   const [rentedBooks, setRentedBooks] = useState<any[]>([]);
@@ -17,6 +19,15 @@ export default function MyBooksScreen() {
   const [category, setCategory] = useState('uploaded');
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
+
+  // New Chat/Requests states
+  const [userId, setUserId] = useState<string | null>(null);
+  const [msgRequests, setMsgRequests] = useState<any[]>([]);
+  const [activeChats, setActiveChats] = useState<any[]>([]);
+  const [requestModalVisible, setRequestModalVisible] = useState(false);
+  const [selectedBookForRequest, setSelectedBookForRequest] = useState<any>(null);
+  const [initialMessage, setInitialMessage] = useState('');
+  const [sendingRequest, setSendingRequest] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -53,7 +64,19 @@ export default function MyBooksScreen() {
   const [ratingValue, setRatingValue] = useState(5);
   const [ratingComment, setRatingComment] = useState('');
   const [targetBook, setTargetBook] = useState<any>(null);
+  const [targetReservationId, setTargetReservationId] = useState<string | null>(null);
+  const [targetOwnerId, setTargetOwnerId] = useState<string | null>(null);
+  const [targetOwnerName, setTargetOwnerName] = useState<string | null>(null);
+  const [sentRatings, setSentRatings] = useState<any[]>([]);
   const [submittingRating, setSubmittingRating] = useState(false);
+
+  const showAlert = (title: string, message: string) => {
+    if (Platform.OS === 'web') {
+      alert(`${title}: ${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
 
   const fetchMyBooks = async () => {
     try {
@@ -71,6 +94,25 @@ export default function MyBooksScreen() {
         ? resData.filter((r: any) => r.estado === 'ACEPTADA') 
         : [];
       setReservedReservations(accepted);
+
+      try {
+        const userStr = await AsyncStorage.getItem('user');
+        if (userStr) {
+          const u = JSON.parse(userStr);
+          setUserId(u._id);
+          
+          const reqResponse = await api.get('/message-requests/sent');
+          setMsgRequests(reqResponse.data?.data || reqResponse.data || []);
+
+          const chatsResponse = await api.get('/chats');
+          setActiveChats(chatsResponse.data?.data || chatsResponse.data || []);
+
+          const ratingsResponse = await api.get('/valoraciones/sent');
+          setSentRatings(ratingsResponse.data?.data || ratingsResponse.data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching chats/requests/ratings in MyBooksScreen:', err);
+      }
     } catch (error) {
       console.error('Error fetching my books:', error);
     } finally {
@@ -79,8 +121,52 @@ export default function MyBooksScreen() {
     }
   };
 
-  const handleTalkToSeller = (book: any) => {
-    Alert.alert(t('talk_to_seller'), `${t('chat_header')} ${book?.title}`);
+  const handleTalkToSeller = async (book: any) => {
+    if (!book) return;
+    const ownerId = book.owner?._id || book.owner;
+    
+    if (userId && userId === ownerId) {
+      showAlert(t('error'), 'No puedes hablar contigo mismo.');
+      return;
+    }
+
+    const chat = activeChats.find((c: any) => c.libro === book._id || c.libro?._id === book._id);
+    if (chat) {
+      navigation.navigate('ChatRoom', { chatId: chat._id });
+      return;
+    }
+
+    const pending = msgRequests.find((r: any) => (r.book === book._id || r.book?._id === book._id) && r.status === 'pending');
+    if (pending) {
+      showAlert('Solicitud enviada', 'Ya tienes una solicitud de mensaje pendiente para este libro.');
+      return;
+    }
+
+    setSelectedBookForRequest(book);
+    setInitialMessage('');
+    setRequestModalVisible(true);
+  };
+
+  const handleSendRequest = async () => {
+    if (!selectedBookForRequest) return;
+    setSendingRequest(true);
+    try {
+      await api.post('/message-requests', {
+        bookId: selectedBookForRequest._id,
+        initialMessage: initialMessage.trim()
+      });
+      showAlert('Solicitud enviada', 'Tu solicitud de mensaje ha sido enviada al vendedor.');
+      setRequestModalVisible(false);
+      
+      const reqResponse = await api.get('/message-requests/sent');
+      setMsgRequests(reqResponse.data?.data || reqResponse.data || []);
+    } catch (error: any) {
+      console.error('Error sending message request:', error);
+      const msg = error.response?.data?.message || 'No se pudo enviar la solicitud de mensaje.';
+      showAlert('Error', msg);
+    } finally {
+      setSendingRequest(false);
+    }
   };
 
   useFocusEffect(
@@ -112,7 +198,7 @@ export default function MyBooksScreen() {
       fetchMyBooks();
     } catch (error) {
       console.error('Error deleting book:', error);
-      Alert.alert(t('error'), t('profile_err_update') || 'No se pudo eliminar el libro.');
+      showAlert(t('error'), t('profile_err_update') || 'No se pudo eliminar el libro.');
     } finally {
       setUpdating(false);
     }
@@ -144,7 +230,7 @@ export default function MyBooksScreen() {
 
   const handleUpdateBook = async () => {
     if (!editTitle || !editIsbn || !editPrice || !editState) {
-      Alert.alert(t('error'), t('err_missing_fields'));
+      showAlert(t('error'), t('err_missing_fields'));
       return;
     }
 
@@ -158,12 +244,12 @@ export default function MyBooksScreen() {
         estado: editState,
         type: editingBook.type // Keep original type
       });
-      Alert.alert(t('success'), t('profile_success_update'));
+      showAlert(t('success'), t('profile_success_update'));
       setEditModalVisible(false);
       fetchMyBooks();
     } catch (error) {
       console.error('Error updating book:', error);
-      Alert.alert(t('error'), t('profile_err_update'));
+      showAlert(t('error'), t('profile_err_update'));
     } finally {
       setUpdating(false);
     }
@@ -209,50 +295,82 @@ export default function MyBooksScreen() {
 
   const handleRateSeller = (book: any) => {
     setTargetBook(book);
+    setTargetReservationId(null);
+    setTargetOwnerId(book.owner?._id || book.owner || null);
+    setTargetOwnerName(book.owner?.name || null);
     setRatingValue(5);
     setRatingComment('');
     setRatingModalVisible(true);
   };
 
+  const handleRateReservation = (reserva: any) => {
+    setTargetBook(reserva.libro);
+    setTargetReservationId(reserva._id);
+    setTargetOwnerId(reserva.propietario?._id || reserva.propietario || null);
+    setTargetOwnerName(reserva.propietario?.name || null);
+    setRatingValue(5);
+    setRatingComment('');
+    setRatingModalVisible(true);
+  };
+
+  const alreadyRated = (bookId: string, type: string, reservationId?: string) => {
+    if (reservationId) {
+      return sentRatings.some((r: any) => {
+        const rResId = r.reservationId && typeof r.reservationId === 'object' ? r.reservationId._id : r.reservationId;
+        return rResId && rResId.toString() === reservationId.toString();
+      });
+    }
+    return sentRatings.some((r: any) => {
+      const rLibroId = r.libro && typeof r.libro === 'object' ? r.libro._id : r.libro;
+      return rLibroId && rLibroId.toString() === bookId.toString();
+    });
+  };
+
   const submitRating = async () => {
     if (!targetBook) {
-      Alert.alert(t('error'), 'No se pudo identificar el libro');
+      showAlert(t('error'), 'No se pudo identificar el libro');
       return;
     }
 
     if (ratingValue < 1 || ratingValue > 5) {
-      Alert.alert(t('error'), t('rating_error'));
+      showAlert(t('error'), t('rating_error'));
       return;
     }
 
     setSubmittingRating(true);
     try {
-      // Safely extract the ownerId checking null/undefined first to prevent TypeError
-      const ownerId = targetBook.owner 
-        ? (typeof targetBook.owner === 'object' ? targetBook.owner._id : targetBook.owner)
-        : null;
+      const ownerId = targetOwnerId;
 
       if (!ownerId) {
-        Alert.alert(t('error'), 'Este libro no tiene un vendedor registrado para valorar.');
+        showAlert(t('error'), 'Este libro no tiene un vendedor registrado para valorar.');
         setSubmittingRating(false);
         return;
       }
       
-      const payload = {
+      const payload: any = {
         usuarioValorado: ownerId,
         libro: targetBook._id,
-        tipoOperacion: targetBook.type, // Should be VENTA or ALQUILER
+        tipoOperacion: targetReservationId ? 'RESERVA' : targetBook.type, // Should be VENTA, ALQUILER or RESERVA
         puntuacion: ratingValue,
         comentario: ratingComment
       };
+
+      if (targetReservationId) {
+        payload.reservationId = targetReservationId;
+      }
 
       console.log('Sending rating payload:', payload);
       
       const response = await api.post('/valoraciones', payload);
       console.log('Rating response:', response.data);
       
-      Alert.alert(t('success'), t('rating_success'));
+      showAlert(t('success'), t('rating_success'));
       setRatingModalVisible(false);
+
+      // Refresh sent ratings list immediately
+      const ratingsResponse = await api.get('/valoraciones/sent');
+      setSentRatings(ratingsResponse.data?.data || ratingsResponse.data || []);
+
       // Refresh my books to sync any state
       fetchMyBooks();
     } catch (error: any) {
@@ -278,7 +396,7 @@ export default function MyBooksScreen() {
         msg = 'Ya has valorado a este usuario por este libro.';
       }
       
-      Alert.alert(t('error'), msg);
+      showAlert(t('error'), msg);
     } finally {
       setSubmittingRating(false);
     }
@@ -364,6 +482,16 @@ export default function MyBooksScreen() {
             >
               {t('talk_to_seller')}
             </Button>
+            {!alreadyRated('', '', res._id) && (
+              <Button 
+                icon={() => <RNText style={{ fontSize: 16 }}>⭐</RNText>}
+                mode="contained" 
+                onPress={() => handleRateReservation(res)}
+                style={{ backgroundColor: '#f59e0b', marginLeft: 8 }}
+              >
+                {t('rating_title')}
+              </Button>
+            )}
           </Card.Actions>
         </Card>
       ));
@@ -404,14 +532,16 @@ export default function MyBooksScreen() {
               {t('edit')}
             </Button>
           ) : (
-            <Button 
-              icon={() => <RNText style={{ fontSize: 16 }}>⭐</RNText>}
-              mode="contained" 
-              onPress={() => handleRateSeller(book)}
-              style={{ backgroundColor: '#f59e0b' }}
-            >
-              {t('rating_title')}
-            </Button>
+            !alreadyRated(book._id, book.type) && (
+              <Button 
+                icon={() => <RNText style={{ fontSize: 16 }}>⭐</RNText>}
+                mode="contained" 
+                onPress={() => handleRateSeller(book)}
+                style={{ backgroundColor: '#f59e0b' }}
+              >
+                {t('rating_title')}
+              </Button>
+            )
           )}
         </Card.Actions>
       </Card>
@@ -674,7 +804,7 @@ export default function MyBooksScreen() {
           <Text variant="headlineSmall" style={styles.modalTitle}>{t('rating_title')}</Text>
           {targetBook && (
             <Text variant="bodyMedium" style={{ textAlign: 'center', marginBottom: 15 }}>
-              {targetBook.title} - {targetBook.owner?.name}
+              {targetBook.title} {targetOwnerName ? `- ${targetOwnerName}` : (targetBook.owner?.name ? `- ${targetBook.owner.name}` : '')}
             </Text>
           )}
 
@@ -720,6 +850,55 @@ export default function MyBooksScreen() {
               buttonColor="#D183BA"
             >
               {t('btn_publish')}
+            </Button>
+          </View>
+        </Modal>
+
+        {/* Message Request Modal */}
+        <Modal
+          visible={requestModalVisible}
+          onDismiss={() => !sendingRequest && setRequestModalVisible(false)}
+          contentContainerStyle={{
+            backgroundColor: 'white',
+            padding: 24,
+            margin: 20,
+            borderRadius: 16,
+          }}
+        >
+          <Text variant="headlineSmall" style={{ fontWeight: 'bold', marginBottom: 12, color: '#333' }}>
+            Hablar con el vendedor
+          </Text>
+          <Text variant="bodyMedium" style={{ marginBottom: 16, color: '#666' }}>
+            Escribe un mensaje de presentación para el libro "{selectedBookForRequest?.title}":
+          </Text>
+          <TextInput
+            label="Mensaje inicial"
+            placeholder="Hola, me interesa tu libro..."
+            value={initialMessage}
+            onChangeText={setInitialMessage}
+            mode="outlined"
+            multiline
+            numberOfLines={4}
+            style={{ marginBottom: 20, height: 100 }}
+            outlineColor="#D183BA"
+            activeOutlineColor="#D183BA"
+          />
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
+            <Button 
+              onPress={() => setRequestModalVisible(false)} 
+              disabled={sendingRequest}
+              textColor="#666"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              mode="contained" 
+              onPress={handleSendRequest}
+              loading={sendingRequest}
+              disabled={sendingRequest}
+              buttonColor="#D183BA"
+            >
+              Enviar Solicitud
             </Button>
           </View>
         </Modal>
