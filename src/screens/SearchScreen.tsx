@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -8,7 +8,6 @@ import {
   ScrollView,
   Dimensions,
   Text as RNText,
-  ToastAndroid,
   Platform,
 } from "react-native";
 import {
@@ -21,16 +20,15 @@ import {
   Portal,
   Modal,
   TextInput,
-  SegmentedButtons,
-  Menu,
-  TouchableRipple,
   Chip,
   useTheme,
+  Menu,
 } from "react-native-paper";
 import { AppText as Text } from "../components/AppText";
 import { useTranslation } from "react-i18next";
 import api from "../services/api";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SearchScreen({ route }: any) {
   const { t } = useTranslation();
@@ -60,7 +58,6 @@ export default function SearchScreen({ route }: any) {
   // Draft Filters State (for modal)
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [filterCategoria, setFilterCategoria] = useState("");
-  const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
   const [filterMaxPrice, setFilterMaxPrice] = useState("");
   const [filterType, setFilterType] = useState("");
 
@@ -68,6 +65,15 @@ export default function SearchScreen({ route }: any) {
   const [appliedCategoria, setAppliedCategoria] = useState("");
   const [appliedMaxPrice, setAppliedMaxPrice] = useState("");
   const [appliedType, setAppliedType] = useState("");
+
+  // New Chat/Requests states
+  const [userId, setUserId] = useState<string | null>(null);
+  const [msgRequests, setMsgRequests] = useState<any[]>([]);
+  const [activeChats, setActiveChats] = useState<any[]>([]);
+  const [requestModalVisible, setRequestModalVisible] = useState(false);
+  const [selectedBookForRequest, setSelectedBookForRequest] = useState<any>(null);
+  const [initialMessage, setInitialMessage] = useState('');
+  const [sendingRequest, setSendingRequest] = useState(false);
 
   const ALL_CATEGORIES = [
     "Todas",
@@ -100,13 +106,37 @@ export default function SearchScreen({ route }: any) {
     }
   };
 
+  const fetchChatsAndRequests = async () => {
+    try {
+      const userStr = await AsyncStorage.getItem('user');
+      if (userStr) {
+        const u = JSON.parse(userStr);
+        setUserId(u._id);
+        
+        const reqResponse = await api.get('/message-requests/sent');
+        setMsgRequests(reqResponse.data?.data || reqResponse.data || []);
+
+        const chatsResponse = await api.get('/chats');
+        setActiveChats(chatsResponse.data?.data || chatsResponse.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching chats/requests in SearchScreen:', err);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchReservations();
+      fetchChatsAndRequests();
+    }, [])
+  );
+
   useEffect(() => {
     if (initialQuery) {
       handleSearch(initialQuery);
     } else {
       fetchAllBooks();
     }
-    fetchReservations();
     if (route?.params?.openFilters) {
       setIsFilterModalVisible(true);
     }
@@ -168,7 +198,50 @@ export default function SearchScreen({ route }: any) {
 
   const handleTalkToSeller = (book: any) => {
     closeMenu();
-    showAlert(t("talk_to_seller"), `${t("chat_header")} ${book.title}`);
+
+    const ownerId = book.owner?._id || book.owner;
+    if (userId && userId === ownerId) {
+      showAlert(t('error'), 'No puedes hablar contigo mismo.');
+      return;
+    }
+
+    const chat = activeChats.find((c: any) => c.libro === book._id || c.libro?._id === book._id);
+    if (chat) {
+      navigation.navigate('ChatRoom', { chatId: chat._id });
+      return;
+    }
+
+    const pending = msgRequests.find((r: any) => (r.book === book._id || r.book?._id === book._id) && r.status === 'pending');
+    if (pending) {
+      showAlert('Solicitud enviada', 'Ya tienes una solicitud de mensaje pendiente para este libro.');
+      return;
+    }
+
+    setSelectedBookForRequest(book);
+    setInitialMessage('');
+    setRequestModalVisible(true);
+  };
+
+  const handleSendRequest = async () => {
+    if (!selectedBookForRequest) return;
+    setSendingRequest(true);
+    try {
+      await api.post('/message-requests', {
+        bookId: selectedBookForRequest._id,
+        initialMessage: initialMessage.trim()
+      });
+      showAlert('Solicitud enviada', 'Tu solicitud de mensaje ha sido enviada al vendedor.');
+      setRequestModalVisible(false);
+      
+      const reqResponse = await api.get('/message-requests/sent');
+      setMsgRequests(reqResponse.data?.data || reqResponse.data || []);
+    } catch (error: any) {
+      console.error('Error sending message request:', error);
+      const msg = error.response?.data?.message || 'No se pudo enviar la solicitud de mensaje.';
+      showAlert('Error', msg);
+    } finally {
+      setSendingRequest(false);
+    }
   };
 
   const handleTransaction = async (book: any) => {
@@ -209,109 +282,114 @@ export default function SearchScreen({ route }: any) {
     }
   };
 
-  const renderBookItem = ({ item: book }: { item: any }) => (
-    <Card style={isGridView ? styles.gridCard : styles.listCard}>
-      <Card.Content style={isGridView ? styles.gridCardContent : undefined}>
-        <View style={isGridView ? undefined : styles.headerRow}>
-          <View style={{ flex: 1 }}>
-            <Text
-              variant={isGridView ? "titleMedium" : "titleMedium"}
-              numberOfLines={2}
-              style={styles.titleText}
-            >
-              {book.title}
-            </Text>
-            <Text variant="bodySmall" style={styles.typeTag}>
-              {book.type}
-            </Text>
-            {book.isReserved && (
-              <Chip style={styles.reservedBadge} textStyle={styles.reservedBadgeText}>
-                {t('reserved', 'Reservado')}
-              </Chip>
-            )}
-          </View>
-          <Text variant="titleMedium" style={styles.priceText}>
-            {book.precio}€
-          </Text>
-        </View>
-        {!isGridView && (
-          <>
-            {book.autor ? (
-              <Text variant="bodySmall" style={{ marginTop: book.isReserved ? 6 : 0 }}>
-                {t("author_label")}: {book.autor}
+  const renderBookItem = ({ item: book }: { item: any }) => {
+    const hasPending = msgRequests.some((r: any) => (r.book === book._id || r.book?._id === book._id) && r.status === 'pending');
+
+    return (
+      <Card style={isGridView ? styles.gridCard : styles.listCard}>
+        <Card.Content style={isGridView ? styles.gridCardContent : undefined}>
+          <View style={isGridView ? undefined : styles.headerRow}>
+            <View style={{ flex: 1 }}>
+              <Text
+                variant="titleMedium"
+                numberOfLines={2}
+                style={styles.titleText}
+              >
+                {book.title}
               </Text>
-            ) : null}
-            {book.categoria ? (
-              <Text variant="bodySmall">Categoría: {book.categoria}</Text>
-            ) : null}
-            <Text variant="bodySmall">
-              {t("isbn_label")}: {book.isbn}
+              <Text variant="bodySmall" style={styles.typeTag}>
+                {book.type}
+              </Text>
+              {book.isReserved && (
+                <Chip style={styles.reservedBadge} textStyle={styles.reservedBadgeText}>
+                  {t('reserved', 'Reservado')}
+                </Chip>
+              )}
+            </View>
+            <Text variant="titleMedium" style={styles.priceText}>
+              {book.precio}€
             </Text>
-            <Text variant="bodySmall">
-              {t("state_label")}: {book.estado}
-            </Text>
-          </>
-        )}
-      </Card.Content>
-      <Card.Actions style={styles.cardActions}>
-        <Menu
-          visible={menuVisible === book._id}
-          onDismiss={closeMenu}
-          anchor={
-            <Button
-              mode="contained"
-              buttonColor={book.isReserved ? "#f59e0b" : "#D183BA"}
-              onPress={() => openMenu(book._id)}
-              compact
-              style={styles.actionButton}
-              labelStyle={{ fontSize: isGridView ? 10 : 12 }}
-            >
-              {book.isReserved ? t('reserved', 'Reservado') : (book.type === "VENTA" ? t("buy_action") : t("rent_action"))}
-            </Button>
-          }
-          contentStyle={{ backgroundColor: "white" }}
-        >
-          <Menu.Item
-            onPress={() => handleTalkToSeller(book)}
-            title={t("talk_to_seller")}
-            leadingIcon={() => <RNText style={{ fontSize: 18 }}>💬</RNText>}
-          />
-          {!book.isReserved && (
+          </View>
+          {!isGridView && (
             <>
-              <Divider />
-              <Menu.Item
-                onPress={() => handleTransaction(book)}
-                title={
-                  book.type === "VENTA" ? t("buy_directly") : t("rent_directly")
-                }
-                leadingIcon={() => (
-                  <RNText style={{ fontSize: 18 }}>
-                    {book.type === "VENTA" ? "💰" : "📅"}
-                  </RNText>
-                )}
-              />
+              {book.autor ? (
+                <Text variant="bodySmall" style={{ marginTop: book.isReserved ? 6 : 0 }}>
+                  {t("author_label")}: {book.autor}
+                </Text>
+              ) : null}
+              {book.categoria ? (
+                <Text variant="bodySmall">Categoría: {book.categoria}</Text>
+              ) : null}
+              <Text variant="bodySmall">
+                {t("isbn_label")}: {book.isbn}
+              </Text>
+              <Text variant="bodySmall">
+                {t("state_label")}: {book.estado}
+              </Text>
             </>
           )}
-        </Menu>
-        {!book.isReserved && (
-          <Button
-            mode="outlined"
-            onPress={() => handleReserveBook(book)}
-            textColor={theme.colors.primary}
-            style={[
-              styles.actionButton,
-              !requestedBookIds.includes(book._id) && { borderColor: theme.colors.primary }
-            ]}
-            compact
-            labelStyle={{ fontSize: isGridView ? 10 : 12 }}
-            disabled={requestedBookIds.includes(book._id)}
+        </Card.Content>
+        <Card.Actions style={styles.cardActions}>
+          <Menu
+            visible={menuVisible === book._id}
+            onDismiss={closeMenu}
+            anchor={
+              <Button
+                mode="contained"
+                buttonColor={book.isReserved ? "#f59e0b" : "#D183BA"}
+                onPress={() => openMenu(book._id)}
+                compact
+                style={styles.actionButton}
+                labelStyle={{ fontSize: isGridView ? 10 : 12 }}
+              >
+                {book.isReserved ? t('reserved', 'Reservado') : (book.type === "VENTA" ? t("buy_action") : t("rent_action"))}
+              </Button>
+            }
+            contentStyle={{ backgroundColor: "white" }}
           >
-            {requestedBookIds.includes(book._id) ? 'Reserva solicitada' : t('request_reserve', 'Solicitar reserva')}
-          </Button>
-        )}
-      </Card.Actions>
-    </Card>
-  );
+            <Menu.Item
+              onPress={() => handleTalkToSeller(book)}
+              title={hasPending ? 'Solicitud enviada' : t("talk_to_seller")}
+              disabled={hasPending}
+              leadingIcon={() => <RNText style={{ fontSize: 18 }}>💬</RNText>}
+            />
+            {!book.isReserved && (
+              <>
+                <Divider />
+                <Menu.Item
+                  onPress={() => handleTransaction(book)}
+                  title={
+                    book.type === "VENTA" ? t("buy_directly") : t("rent_directly")
+                  }
+                  leadingIcon={() => (
+                    <RNText style={{ fontSize: 18 }}>
+                      {book.type === "VENTA" ? "💰" : "📅"}
+                    </RNText>
+                  )}
+                />
+              </>
+            )}
+          </Menu>
+          {!book.isReserved && (
+            <Button
+              mode="outlined"
+              onPress={() => handleReserveBook(book)}
+              textColor={theme.colors.primary}
+              style={[
+                styles.actionButton,
+                !requestedBookIds.includes(book._id) && { borderColor: theme.colors.primary }
+              ]}
+              compact
+              labelStyle={{ fontSize: isGridView ? 10 : 12 }}
+              disabled={requestedBookIds.includes(book._id)}
+            >
+              {requestedBookIds.includes(book._id) ? 'Reserva solicitada' : t('request_reserve', 'Solicitar reserva')}
+            </Button>
+          )}
+        </Card.Actions>
+      </Card>
+    );
+  };
 
   const renderUserItem = ({ item: user }: { item: any }) => (
     <Card
@@ -577,6 +655,54 @@ export default function SearchScreen({ route }: any) {
             Aplicar Filtros
           </Button>
         </Modal>
+
+        <Modal
+          visible={requestModalVisible}
+          onDismiss={() => !sendingRequest && setRequestModalVisible(false)}
+          contentContainerStyle={{
+            backgroundColor: 'white',
+            padding: 24,
+            margin: 20,
+            borderRadius: 16,
+          }}
+        >
+          <Text variant="headlineSmall" style={{ fontWeight: 'bold', marginBottom: 12, color: '#333' }}>
+            Hablar con el vendedor
+          </Text>
+          <Text variant="bodyMedium" style={{ marginBottom: 16, color: '#666' }}>
+            Escribe un mensaje de presentación para el libro "{selectedBookForRequest?.title}":
+          </Text>
+          <TextInput
+            label="Mensaje inicial"
+            placeholder="Hola, me interesa tu libro..."
+            value={initialMessage}
+            onChangeText={setInitialMessage}
+            mode="outlined"
+            multiline
+            numberOfLines={4}
+            style={{ marginBottom: 20, height: 100 }}
+            outlineColor="#D183BA"
+            activeOutlineColor="#D183BA"
+          />
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
+            <Button 
+              onPress={() => setRequestModalVisible(false)} 
+              disabled={sendingRequest}
+              textColor="#666"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              mode="contained" 
+              onPress={handleSendRequest}
+              loading={sendingRequest}
+              disabled={sendingRequest}
+              buttonColor="#D183BA"
+            >
+              Enviar Solicitud
+            </Button>
+          </View>
+        </Modal>
       </Portal>
     </View>
   );
@@ -629,10 +755,6 @@ const styles = StyleSheet.create({
   gridCardContent: {
     padding: 12,
     height: 100,
-  },
-  gridCardActions: {
-    justifyContent: "center",
-    paddingHorizontal: 8,
   },
   cardActions: {
     flexDirection: 'column',

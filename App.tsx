@@ -18,6 +18,7 @@ import SearchScreen from "./src/screens/SearchScreen";
 import DiscoverScreen from "./src/screens/DiscoverScreen";
 import RetosScreen from "./src/screens/RetosScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
+import ChatRoomScreen from "./src/screens/ChatRoomScreen";
 import { AccessibilityProvider } from "./src/context/AccessibilityContext";
 import style from "./styles/default.old"
 
@@ -64,6 +65,7 @@ export default function App() {
             <Stack.Screen name="Discover" component={DiscoverScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Retos" component={RetosScreen} options={{ title: 'Mis Retos' }} />
             <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Ajustes de accesibilidad' }} />
+            <Stack.Screen name="ChatRoom" component={ChatRoomScreen} options={{ title: 'Chat Privado' }} />
           </Stack.Navigator>
         </NavigationContainer>
       </PaperProvider>

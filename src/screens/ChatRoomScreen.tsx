@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, FlatList, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, FlatList, StyleSheet, KeyboardAvoidingView, Platform, DeviceEventEmitter } from 'react-native';
 import { TextInput, IconButton, Surface } from 'react-native-paper';
 import { AppText as Text } from '../components/AppText';
 import { useRoute } from '@react-navigation/native';
@@ -17,6 +17,15 @@ export default function ChatRoomScreen() {
     const [userId, setUserId] = useState<string | null>(null);
     const flatListRef = useRef<FlatList>(null);
 
+    const markAsRead = async () => {
+        try {
+            await api.patch(`/chats/${chatId}/read`);
+            DeviceEventEmitter.emit('unread_change');
+        } catch (error) {
+            console.error('Error marking messages as read:', error);
+        }
+    };
+
     useEffect(() => {
         const setup = async () => {
             const userStr = await AsyncStorage.getItem('user');
@@ -28,26 +37,44 @@ export default function ChatRoomScreen() {
                     socket.connect();
                 }
 
+                socket.emit('register_user', user._id);
                 socket.emit('join_chat', chatId);
 
                 try {
-                    const response = await api.get(`/mensajes/chat/${chatId}`);
-                    setMessages(response.data);
+                    const response = await api.get(`/chats/${chatId}/messages`);
+                    setMessages(response.data?.data || response.data || []);
+                    setTimeout(() => flatListRef.current?.scrollToEnd(), 100);
                 } catch (error) {
                     console.error(t('chat_error_load'));
                 }
+
+                // Mark messages as read when opening chat
+                markAsRead();
             }
         };
 
         setup();
 
-        socket.on('receive_message', (message: any) => {
-            setMessages(prev => [...prev, message]);
-            setTimeout(() => flatListRef.current?.scrollToEnd(), 100);
-        });
+        const handleReceiveMessage = (message: any) => {
+            if (message.chat === chatId || message.chat?._id === chatId) {
+                setMessages(prev => {
+                    if (prev.some(m => m._id === message._id)) return prev;
+                    return [...prev, message];
+                });
+                setTimeout(() => flatListRef.current?.scrollToEnd(), 100);
+                
+                // Mark incoming messages as read since we are currently viewing the chat
+                markAsRead();
+            }
+        };
+
+        socket.on('receive_message', handleReceiveMessage);
+        socket.on('receiveMessage', handleReceiveMessage);
 
         return () => {
-            socket.off('receive_message');
+            socket.emit('leave_chat', chatId);
+            socket.off('receive_message', handleReceiveMessage);
+            socket.off('receiveMessage', handleReceiveMessage);
         };
     }, [chatId]);
 
@@ -83,7 +110,7 @@ export default function ChatRoomScreen() {
         <KeyboardAvoidingView 
             behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
             style={styles.container}
-            keyboardVerticalOffset={90}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
             <FlatList
                 ref={flatListRef}
@@ -101,6 +128,8 @@ export default function ChatRoomScreen() {
                     mode="outlined"
                     style={styles.input}
                     dense
+                    outlineColor="#D183BA"
+                    activeOutlineColor="#D183BA"
                 />
                 <IconButton
                     icon="send"

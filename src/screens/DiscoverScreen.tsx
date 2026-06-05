@@ -46,14 +46,20 @@ export default function DiscoverScreen() {
             ]);
 
             // Filter out current user from users list
-            if (usersRes.data && usersRes.data.data) {
+            if (usersRes.data) {
+                const resData = usersRes.data.data || usersRes.data;
+                const usersList = Array.isArray(resData) 
+                    ? resData 
+                    : (Array.isArray(resData?.data) ? resData.data : []);
                 const currentId = userStr ? JSON.parse(userStr)._id : null;
-                setUsers(usersRes.data.data.filter((u: any) => u._id !== currentId));
+                setUsers(usersList.filter((u: any) => u._id !== currentId));
             }
 
-            if (authorsRes.data && authorsRes.data.data) {
-                // Combine predefined with backend authors, avoiding exact duplicates by name
-                const backendAuthors = authorsRes.data.data;
+            if (authorsRes.data) {
+                const resAuthorsData = authorsRes.data.data || authorsRes.data;
+                const backendAuthors = Array.isArray(resAuthorsData) 
+                    ? resAuthorsData 
+                    : (Array.isArray(resAuthorsData?.data) ? resAuthorsData.data : []);
                 const combined = [...PREDEFINED_AUTHORS];
                 backendAuthors.forEach((ba: any) => {
                     const name = ba.fullName || ba.name;
