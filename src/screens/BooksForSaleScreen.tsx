@@ -173,10 +173,12 @@ export default function BooksForSaleScreen() {
     
     return (
       <Card style={isGridView ? styles.gridCard : styles.listCard}>
+        <Card.Title title={book.title} titleVariant='displaySmall'/>
+        <Card.Cover source={{uri:book.imageUrl}}/> {/* Puedo utilizar este (https://oss.callstack.com/react-native-paper/docs/components/Card/) o el componente ImageFrame */}
         <Card.Content style={isGridView ? styles.gridCardContent : undefined}>
-          <Text variant={isGridView ? "titleMedium" : "titleLarge"} numberOfLines={2} style={styles.bookTitle}>
+          {/* <Text variant={isGridView ? "titleMedium" : "titleLarge"} numberOfLines={2} style={styles.bookTitle}>
             {book.title}
-          </Text>
+          </Text> */}
           {book.isReserved && (
             <Chip style={styles.reservedBadge} textStyle={styles.reservedBadgeText}>
               {t('reserved', 'Reservado')}
@@ -208,6 +210,7 @@ export default function BooksForSaleScreen() {
             {book.precio}€
           </Text>
         </Card.Content>
+        
         <View style={styles.cardButtons}>
           <Menu
             visible={menuVisible === book._id}
@@ -310,7 +313,7 @@ export default function BooksForSaleScreen() {
 
       <FlatList
         key={isGridView ? 'grid' : 'list'}
-        data={paginatedBooks}
+        data={paginatedBooks} 
         renderItem={renderBookItem}
         keyExtractor={(item) => item._id}
         numColumns={isGridView ? 2 : 1}
