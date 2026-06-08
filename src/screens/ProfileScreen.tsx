@@ -509,6 +509,17 @@ export default function ProfileScreen({ route }: any) {
                                     </Button>
 
                                     <Button 
+                                        mode="contained" 
+                                        onPress={() => navigation.navigate("Favorites" as never)}
+                                        buttonColor="#D183BA"
+                                        textColor="#fff"
+                                        style={{ marginBottom: 10 }}
+                                        icon={() => <Text style={{ fontSize: 16 }}>❤️</Text>}
+                                    >
+                                        {t('favorites_title', 'Mis Favoritos')}
+                                    </Button>
+
+                                    <Button 
                                         mode="outlined" 
                                         onPress={() => navigation.navigate("Settings")}
                                         textColor="#D183BA"

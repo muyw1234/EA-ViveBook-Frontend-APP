@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, Alert, StyleSheet, ScrollView, Text as RNText } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Alert, StyleSheet, ScrollView, Text as RNText, Platform } from "react-native";
 import { TextInput, Button } from "react-native-paper";
 import { AppText as Text } from '../components/AppText';
 import { useNavigation } from "@react-navigation/native";
@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import api from "../services/api";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles as globalStyles } from "../../styles/default";
+import { configureGoogleSignIn, loginWithGoogle, isAppleLoginAvailable, loginWithApple } from "../services/socialAuth";
 
 export default function RegisterScreen() {
     const { t } = useTranslation();
@@ -22,6 +23,16 @@ export default function RegisterScreen() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
+    const [appleAvailable, setAppleAvailable] = useState(false);
+
+    useEffect(() => {
+        configureGoogleSignIn();
+        const checkApple = async () => {
+            const isAvailable = await isAppleLoginAvailable();
+            setAppleAvailable(isAvailable);
+        };
+        checkApple();
+    }, []);
 
     // Real-time password requirement checks
     const hasMinLength = password.length >= 8;
@@ -118,6 +129,46 @@ export default function RegisterScreen() {
             }
             
             setErrorMsg(message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSocialLogin = async (provider: 'google' | 'apple') => {
+        setErrorMsg("");
+        setLoading(true);
+        try {
+            let idToken = "";
+            let name = "";
+            if (provider === 'google') {
+                const userInfo: any = await loginWithGoogle();
+                idToken = userInfo?.data?.idToken || userInfo?.idToken || "";
+                if (!idToken) throw new Error("No Google ID Token");
+            } else if (provider === 'apple') {
+                const credential = await loginWithApple();
+                idToken = credential.identityToken || "";
+                if (!idToken) throw new Error("No Apple Identity Token");
+                if (credential.fullName?.givenName) {
+                    name = `${credential.fullName.givenName} ${credential.fullName.familyName || ""}`.trim();
+                }
+            }
+
+            const response = await api.post("/auth/social-login", { provider, idToken, name });
+
+            if (response.status === 200 || response.status === 201) {
+                const token = response.data.data.token;
+                const user = response.data.data.user;
+                
+                await AsyncStorage.setItem('token', token);
+                await AsyncStorage.setItem('user', JSON.stringify(user));
+                
+                navigation.navigate("Discover" as never);
+            }
+        } catch (error: any) {
+            console.log(error);
+            const msg = error.message || t('err_reg_problem');
+            setErrorMsg(msg);
+            Alert.alert(t('error'), msg);
         } finally {
             setLoading(false);
         }
@@ -284,6 +335,33 @@ export default function RegisterScreen() {
                     >
                         {t("btn_create_account")}
                     </Button>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, marginBottom: 10, width: '100%' }}>
+                        {Platform.OS !== 'web' && (
+                            <Button 
+                                mode="outlined" 
+                                onPress={() => handleSocialLogin('google')} 
+                                disabled={loading}
+                                style={{ flex: 1, marginRight: appleAvailable ? 5 : 0, borderColor: '#D183BA' }}
+                                textColor="#D183BA"
+                                icon={() => <RNText style={{ fontSize: 18 }}>G</RNText>}
+                            >
+                                Google
+                            </Button>
+                        )}
+                        {appleAvailable && (
+                            <Button 
+                                mode="outlined" 
+                                onPress={() => handleSocialLogin('apple')} 
+                                disabled={loading}
+                                style={{ flex: 1, marginLeft: 5, borderColor: '#D183BA' }}
+                                textColor="#D183BA"
+                                icon={() => <RNText style={{ fontSize: 18 }}></RNText>}
+                            >
+                                Apple
+                            </Button>
+                        )}
+                    </View>
 
                     <Button 
                         onPress={() => navigation.navigate("Login" as never)}

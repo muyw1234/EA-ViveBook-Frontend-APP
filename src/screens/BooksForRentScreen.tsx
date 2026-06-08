@@ -28,6 +28,7 @@ export default function BooksForRentScreen() {
   const [isGridView, setIsGridView] = useState(false);
   const [page, setPage] = useState(1);
   const [requestedBookIds, setRequestedBookIds] = useState<string[]>([]);
+  const [favoriteBookIds, setFavoriteBookIds] = useState<string[]>([]);
   const ITEMS_PER_PAGE = 5;
 
   // New Chat/Requests states
@@ -38,6 +39,38 @@ export default function BooksForRentScreen() {
   const [selectedBookForRequest, setSelectedBookForRequest] = useState<any>(null);
   const [initialMessage, setInitialMessage] = useState('');
   const [sendingRequest, setSendingRequest] = useState(false);
+
+  const handleToggleFavorite = async (bookId: string) => {
+    try {
+      const isFav = favoriteBookIds.includes(bookId);
+      if (isFav) {
+        setFavoriteBookIds(prev => prev.filter(id => id !== bookId));
+      } else {
+        setFavoriteBookIds(prev => [...prev, bookId]);
+      }
+      await api.put(`/usuarios/favoritos/${bookId}`);
+      
+      const userStr = await AsyncStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (!user.favoritos) user.favoritos = [];
+        if (isFav) {
+          user.favoritos = user.favoritos.filter((id: string) => id !== bookId);
+        } else {
+          user.favoritos.push(bookId);
+        }
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      showAlert(t('error'), 'No se pudo actualizar favoritos.');
+      try {
+        const favResponse = await api.get('/usuarios/favoritos');
+        const favList = favResponse.data?.data || favResponse.data || [];
+        setFavoriteBookIds(favList.map((f: any) => typeof f === 'string' ? f : f._id));
+      } catch {}
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -58,6 +91,14 @@ export default function BooksForRentScreen() {
             setRequestedBookIds(pendingBookIds);
           } catch (resErr) {
             console.error('Error fetching reservations:', resErr);
+          }
+
+          try {
+            const favResponse = await api.get('/usuarios/favoritos');
+            const favList = favResponse.data?.data || favResponse.data || [];
+            setFavoriteBookIds(favList.map((f: any) => typeof f === 'string' ? f : f._id));
+          } catch (favErr) {
+            console.error('Error fetching favorites:', favErr);
           }
 
           try {
@@ -170,13 +211,23 @@ export default function BooksForRentScreen() {
 
   const renderBookItem = ({ item: book }: { item: any }) => {
     const hasPending = msgRequests.some((r: any) => (r.book === book._id || r.book?._id === book._id) && r.status === 'pending');
-
+    const isFavorite = favoriteBookIds.includes(book._id);
+    
     return (
       <Card style={isGridView ? styles.gridCard : styles.listCard}>
         <Card.Content style={isGridView ? styles.gridCardContent : undefined}>
-          <Text variant={isGridView ? "titleMedium" : "titleLarge"} numberOfLines={2} style={styles.bookTitle}>
-            {book.title}
-          </Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text variant={isGridView ? "titleMedium" : "titleLarge"} numberOfLines={2} style={[styles.bookTitle, { flex: 1 }]}>
+              {book.title}
+            </Text>
+            <IconButton
+              icon={isFavorite ? "heart" : "heart-outline"}
+              iconColor={isFavorite ? "#ef4444" : "#9ca3af"}
+              size={24}
+              onPress={() => handleToggleFavorite(book._id)}
+              style={{ margin: 0 }}
+            />
+          </View>
           {book.isReserved && (
             <Chip style={styles.reservedBadge} textStyle={styles.reservedBadgeText}>
               {t('reserved', 'Reservado')}
@@ -410,7 +461,7 @@ const styles = StyleSheet.create({
   },
   gridCardContent: {
     padding: 12,
-    height: 100,
+    height: 120,
   },
   cardButtons: {
     flexDirection: 'column',

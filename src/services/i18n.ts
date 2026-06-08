@@ -184,7 +184,9 @@ const resources = {
       sent_requests: "Solicitudes Enviadas",
       accept_reservation: "Aceptar Reserva",
       reject_reservation: "Rechazar Reserva",
-      enter_duration_days: "Introduce la duración de la reserva en días:"
+      enter_duration_days: "Introduce la duración de la reserva en días:",
+      favorites_title: "Mis Favoritos",
+      no_favorites: "No tienes ningún libro en tus favoritos todavía."
     }
   },
   ca: {
@@ -364,7 +366,9 @@ const resources = {
       sent_requests: "Sol·licituds Enviades",
       accept_reservation: "Acceptar Reserva",
       reject_reservation: "Rebutjar Reserva",
-      enter_duration_days: "Introdueix la durada de la reserva en dies:"
+      enter_duration_days: "Introdueix la durada de la reserva en dies:",
+      favorites_title: "Els Meus Preferits",
+      no_favorites: "No tens cap llibre als teus preferits encara."
     }
   },
   en: {
@@ -548,7 +552,9 @@ const resources = {
       sent_requests: "Sent Requests",
       accept_reservation: "Accept Reservation",
       reject_reservation: "Reject Reservation",
-      enter_duration_days: "Enter the reservation duration in days:"
+      enter_duration_days: "Enter the reservation duration in days:",
+      favorites_title: "My Favorites",
+      no_favorites: "You don't have any favorite books yet."
     }
   }
 };

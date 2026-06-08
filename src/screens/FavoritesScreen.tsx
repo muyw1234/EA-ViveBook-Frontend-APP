@@ -10,7 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
-export default function BooksForSaleScreen() {
+export default function FavoritesScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
 
@@ -28,7 +28,6 @@ export default function BooksForSaleScreen() {
   const [isGridView, setIsGridView] = useState(false);
   const [page, setPage] = useState(1);
   const [requestedBookIds, setRequestedBookIds] = useState<string[]>([]);
-  const [favoriteBookIds, setFavoriteBookIds] = useState<string[]>([]);
   const ITEMS_PER_PAGE = 5;
 
   // New Chat/Requests states
@@ -40,93 +39,53 @@ export default function BooksForSaleScreen() {
   const [initialMessage, setInitialMessage] = useState('');
   const [sendingRequest, setSendingRequest] = useState(false);
 
-  const handleToggleFavorite = async (bookId: string) => {
+  const fetchFavorites = async () => {
     try {
-      const isFav = favoriteBookIds.includes(bookId);
-      if (isFav) {
-        setFavoriteBookIds(prev => prev.filter(id => id !== bookId));
-      } else {
-        setFavoriteBookIds(prev => [...prev, bookId]);
-      }
-      await api.put(`/usuarios/favoritos/${bookId}`);
+      const response = await api.get('/usuarios/favoritos');
+      // response.data.data is the array of populated books
+      const favList = response.data?.data || response.data || [];
+      setBooks(favList);
       
-      const userStr = await AsyncStorage.getItem('user');
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        if (!user.favoritos) user.favoritos = [];
-        if (isFav) {
-          user.favoritos = user.favoritos.filter((id: string) => id !== bookId);
-        } else {
-          user.favoritos.push(bookId);
-        }
-        await AsyncStorage.setItem('user', JSON.stringify(user));
-      }
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-      showAlert(t('error'), 'No se pudo actualizar favoritos.');
-      // Fallback: sync from server
       try {
-        const favResponse = await api.get('/usuarios/favoritos');
-        const favList = favResponse.data?.data || favResponse.data || [];
-        setFavoriteBookIds(favList.map((f: any) => typeof f === 'string' ? f : f._id));
-      } catch {}
+        const resResponse = await api.get('/reservas/solicitadas');
+        const resList = resResponse.data?.data || resResponse.data || [];
+        const pendingBookIds = Array.isArray(resList)
+          ? resList
+              .filter((r: any) => r.estado?.toUpperCase() === 'PENDIENTE' || r.estado?.toUpperCase() === 'ACEPTADA')
+              .map((r: any) => typeof r.libro === 'string' ? r.libro : r.libro?._id)
+              .filter(Boolean)
+          : [];
+        setRequestedBookIds(pendingBookIds);
+      } catch (resErr) {
+        console.error('Error fetching reservations:', resErr);
+      }
+
+      try {
+        const userStr = await AsyncStorage.getItem('user');
+        if (userStr) {
+          const u = JSON.parse(userStr);
+          setUserId(u._id);
+          
+          const reqResponse = await api.get('/message-requests/sent');
+          setMsgRequests(reqResponse.data?.data || reqResponse.data || []);
+
+          const chatsResponse = await api.get('/chats');
+          setActiveChats(chatsResponse.data?.data || chatsResponse.data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching user info/chats/requests:', err);
+      }
+      
+    } catch (error) {
+      console.error('Error fetching favorite books:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   useFocusEffect(
     useCallback(() => {
-      const fetchBooksAndReservations = async () => {
-        try {
-          const response = await api.get('/libros/type/VENTA');
-          setBooks(response.data.data);
-          
-          try {
-            const resResponse = await api.get('/reservas/solicitadas');
-            const resList = resResponse.data?.data || resResponse.data || [];
-            const pendingBookIds = Array.isArray(resList)
-              ? resList
-                  .filter((r: any) => r.estado?.toUpperCase() === 'PENDIENTE' || r.estado?.toUpperCase() === 'ACEPTADA')
-                  .map((r: any) => typeof r.libro === 'string' ? r.libro : r.libro?._id)
-                  .filter(Boolean)
-              : [];
-            setRequestedBookIds(pendingBookIds);
-          } catch (resErr) {
-            console.error('Error fetching reservations:', resErr);
-          }
-
-          try {
-            const favResponse = await api.get('/usuarios/favoritos');
-            const favList = favResponse.data?.data || favResponse.data || [];
-            setFavoriteBookIds(favList.map((f: any) => typeof f === 'string' ? f : f._id));
-          } catch (favErr) {
-            console.error('Error fetching favorites:', favErr);
-          }
-
-          try {
-            const userStr = await AsyncStorage.getItem('user');
-            if (userStr) {
-              const u = JSON.parse(userStr);
-              setUserId(u._id);
-              
-              const reqResponse = await api.get('/message-requests/sent');
-              setMsgRequests(reqResponse.data?.data || reqResponse.data || []);
-
-              const chatsResponse = await api.get('/chats');
-              setActiveChats(chatsResponse.data?.data || chatsResponse.data || []);
-            }
-          } catch (err) {
-            console.error('Error fetching user info/chats/requests:', err);
-          }
-          
-          setPage(1);
-        } catch (error) {
-          console.error('Error fetching books:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      fetchBooksAndReservations();
+      fetchFavorites();
     }, [])
   );
 
@@ -181,16 +140,16 @@ export default function BooksForSaleScreen() {
     }
   };
 
-  const handleBuyDirectly = async (book: any) => {
+  const handleBuyOrRentDirectly = async (book: any) => {
     closeMenu();
     try {
-      await api.post(`/libros/buy/${book._id}`);
-      showAlert(t('success'), `${t('buy_action')}: ${book.title}`);
-      const response = await api.get('/libros/type/VENTA');
-      setBooks(response.data.data);
+      const endpoint = book.type === 'VENTA' ? `/libros/buy/${book._id}` : `/libros/rent/${book._id}`;
+      await api.post(endpoint);
+      showAlert(t('success'), `${book.type === 'VENTA' ? t('buy_action') : t('rent_action')}: ${book.title}`);
+      fetchFavorites();
     } catch (error) {
-      console.error('Error buying book:', error);
-      showAlert(t('error'), t('buy_err') || 'No se pudo completar la compra');
+      console.error('Error in direct purchase/rental:', error);
+      showAlert(t('error'), 'No se pudo completar la operación');
     }
   };
 
@@ -203,16 +162,36 @@ export default function BooksForSaleScreen() {
       const msg =
         error.response?.data?.message ||
         error.response?.data?.error?.message ||
-        (typeof error.response?.data?.error === 'string' ? error.response.data.error : null) ||
-        error.message ||
         'No se pudo realizar la reserva';
       showAlert('Error', String(msg));
     }
   };
 
+  const handleToggleFavorite = async (bookId: string) => {
+    try {
+      // Optimistic update
+      setBooks(prev => prev.filter(b => b._id !== bookId));
+      
+      await api.put(`/usuarios/favoritos/${bookId}`);
+      
+      // Update local storage user data as well
+      const userStr = await AsyncStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (user.favoritos) {
+          user.favoritos = user.favoritos.filter((id: string) => id !== bookId);
+          await AsyncStorage.setItem('user', JSON.stringify(user));
+        }
+      }
+    } catch (error) {
+      console.error('Error removing from favorites:', error);
+      showAlert(t('error'), 'No se pudo quitar de favoritos.');
+      fetchFavorites();
+    }
+  };
+
   const renderBookItem = ({ item: book }: { item: any }) => {
     const hasPending = msgRequests.some((r: any) => (r.book === book._id || r.book?._id === book._id) && r.status === 'pending');
-    const isFavorite = favoriteBookIds.includes(book._id);
     
     return (
       <Card style={isGridView ? styles.gridCard : styles.listCard}>
@@ -222,13 +201,14 @@ export default function BooksForSaleScreen() {
               {book.title}
             </Text>
             <IconButton
-              icon={isFavorite ? "heart" : "heart-outline"}
-              iconColor={isFavorite ? "#ef4444" : "#9ca3af"}
+              icon="heart"
+              iconColor="#ef4444"
               size={24}
               onPress={() => handleToggleFavorite(book._id)}
               style={{ margin: 0 }}
             />
           </View>
+
           {book.isReserved && (
             <Chip style={styles.reservedBadge} textStyle={styles.reservedBadgeText}>
               {t('reserved', 'Reservado')}
@@ -240,6 +220,7 @@ export default function BooksForSaleScreen() {
               {book.autor ? <Text variant="bodyMedium">{t('author_label')}: {book.autor}</Text> : null}
               {book.categoria ? <Text variant="bodyMedium">Categoría: {book.categoria}</Text> : null}
               <Text variant="bodyMedium">{t('state_label')}: {book.estado}</Text>
+              <Text variant="bodySmall" style={styles.typeTag}>{book.type}</Text>
             </>
           )}
           
@@ -250,7 +231,7 @@ export default function BooksForSaleScreen() {
             </Text>
             <RNText 
               style={styles.uploaderName}
-              onPress={() => navigation.navigate('UserProfile', { userId: book.owner?._id })}
+              onPress={() => navigation.navigate('UserProfile', { userId: book.owner?._id || book.owner })}
             >
               {book.owner?.name || t('unknown')}
             </RNText>
@@ -273,7 +254,7 @@ export default function BooksForSaleScreen() {
                 compact
                 labelStyle={{ fontSize: isGridView ? 10 : 12 }}
               >
-                {book.isReserved ? t('reserved', 'Reservado') : t('buy_action')}
+                {book.isReserved ? t('reserved', 'Reservado') : (book.type === 'VENTA' ? t('buy_action') : t('rent_action'))}
               </Button>
             }
             contentStyle={{ backgroundColor: 'white' }}
@@ -288,8 +269,8 @@ export default function BooksForSaleScreen() {
               <>
                 <Divider />
                 <Menu.Item 
-                  onPress={() => handleBuyDirectly(book)} 
-                  title={t('buy_directly')} 
+                  onPress={() => handleBuyOrRentDirectly(book)} 
+                  title={book.type === 'VENTA' ? t('buy_directly') : t('rent_directly')} 
                   leadingIcon={() => <RNText style={{ fontSize: 18 }}>💰</RNText>}
                 />
               </>
@@ -351,7 +332,7 @@ export default function BooksForSaleScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <Text variant="headlineMedium" style={styles.header}>{t('sale_header')}</Text>
+        <Text variant="headlineMedium" style={styles.header}>{t('favorites_title', 'Mis Favoritos')}</Text>
         <IconButton
           icon={isGridView ? "view-list" : "view-grid"}
           iconColor="#D183BA"
@@ -368,7 +349,7 @@ export default function BooksForSaleScreen() {
         numColumns={isGridView ? 2 : 1}
         columnWrapperStyle={isGridView ? styles.columnWrapper : undefined}
         contentContainerStyle={styles.listContent}
-        ListEmptyComponent={<Text style={styles.emptyText}>{t('no_books')}</Text>}
+        ListEmptyComponent={<Text style={styles.emptyText}>{t('no_favorites', 'No tienes ningún libro en tus favoritos todavía.')}</Text>}
         ListFooterComponent={renderFooter}
       />
 
@@ -454,12 +435,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     elevation: 2,
     borderRadius: 12,
+    backgroundColor: '#white',
   },
   gridCard: {
     width: (width - 40) / 2,
     marginBottom: 16,
     elevation: 2,
     borderRadius: 12,
+    backgroundColor: '#white',
   },
   gridCardContent: {
     padding: 12,
@@ -487,9 +470,6 @@ const styles = StyleSheet.create({
   columnWrapper: {
     justifyContent: 'space-between',
   },
-  gridButton: {
-    width: '100%',
-  },
   emptyText: {
     textAlign: 'center',
     marginTop: 20,
@@ -502,12 +482,14 @@ const styles = StyleSheet.create({
   },
   uploaderLabel: {
     color: '#777',
+    fontSize: 12,
   },
   uploaderName: {
     color: '#D183BA',
     fontWeight: 'bold',
     textDecorationLine: 'underline',
     fontSize: 12,
+    marginLeft: 3,
   },
   paginationContainer: {
     flexDirection: 'row',
@@ -530,5 +512,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  typeTag: {
+    color: '#D183BA',
+    fontWeight: 'bold',
+    fontSize: 10,
+    textTransform: 'uppercase',
+    marginTop: 4,
   }
 });

@@ -50,6 +50,7 @@ export default function SearchScreen({ route }: any) {
   const [loading, setLoading] = useState(false);
   const [menuVisible, setMenuVisible] = useState<string | null>(null);
   const [requestedBookIds, setRequestedBookIds] = useState<string[]>([]);
+  const [favoriteBookIds, setFavoriteBookIds] = useState<string[]>([]);
 
   const [isGridView, setIsGridView] = useState(false);
   const [page, setPage] = useState(1);
@@ -128,6 +129,17 @@ export default function SearchScreen({ route }: any) {
     useCallback(() => {
       fetchReservations();
       fetchChatsAndRequests();
+      
+      const fetchFavorites = async () => {
+        try {
+          const favResponse = await api.get('/usuarios/favoritos');
+          const favList = favResponse.data?.data || favResponse.data || [];
+          setFavoriteBookIds(favList.map((f: any) => typeof f === 'string' ? f : f._id));
+        } catch (favErr) {
+          console.error('Error fetching favorites in SearchScreen:', favErr);
+        }
+      };
+      fetchFavorites();
     }, [])
   );
 
@@ -141,6 +153,38 @@ export default function SearchScreen({ route }: any) {
       setIsFilterModalVisible(true);
     }
   }, [initialQuery, route?.params?.openFilters]);
+
+  const handleToggleFavorite = async (bookId: string) => {
+    try {
+      const isFav = favoriteBookIds.includes(bookId);
+      if (isFav) {
+        setFavoriteBookIds(prev => prev.filter(id => id !== bookId));
+      } else {
+        setFavoriteBookIds(prev => [...prev, bookId]);
+      }
+      await api.put(`/usuarios/favoritos/${bookId}`);
+      
+      const userStr = await AsyncStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (!user.favoritos) user.favoritos = [];
+        if (isFav) {
+          user.favoritos = user.favoritos.filter((id: string) => id !== bookId);
+        } else {
+          user.favoritos.push(bookId);
+        }
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      showAlert(t('error'), 'No se pudo actualizar favoritos.');
+      try {
+        const favResponse = await api.get('/usuarios/favoritos');
+        const favList = favResponse.data?.data || favResponse.data || [];
+        setFavoriteBookIds(favList.map((f: any) => typeof f === 'string' ? f : f._id));
+      } catch {}
+    }
+  };
 
   // Reset page when filters or search change
   useEffect(() => {
@@ -284,19 +328,29 @@ export default function SearchScreen({ route }: any) {
 
   const renderBookItem = ({ item: book }: { item: any }) => {
     const hasPending = msgRequests.some((r: any) => (r.book === book._id || r.book?._id === book._id) && r.status === 'pending');
+    const isFavorite = favoriteBookIds.includes(book._id);
 
     return (
       <Card style={isGridView ? styles.gridCard : styles.listCard}>
         <Card.Content style={isGridView ? styles.gridCardContent : undefined}>
           <View style={isGridView ? undefined : styles.headerRow}>
             <View style={{ flex: 1 }}>
-              <Text
-                variant="titleMedium"
-                numberOfLines={2}
-                style={styles.titleText}
-              >
-                {book.title}
-              </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text
+                  variant="titleMedium"
+                  numberOfLines={2}
+                  style={[styles.titleText, { flex: 1 }]}
+                >
+                  {book.title}
+                </Text>
+                <IconButton
+                  icon={isFavorite ? "heart" : "heart-outline"}
+                  iconColor={isFavorite ? "#ef4444" : "#9ca3af"}
+                  size={24}
+                  onPress={() => handleToggleFavorite(book._id)}
+                  style={{ margin: 0 }}
+                />
+              </View>
               <Text variant="bodySmall" style={styles.typeTag}>
                 {book.type}
               </Text>
@@ -754,7 +808,7 @@ const styles = StyleSheet.create({
   },
   gridCardContent: {
     padding: 12,
-    height: 100,
+    height: 120,
   },
   cardActions: {
     flexDirection: 'column',
