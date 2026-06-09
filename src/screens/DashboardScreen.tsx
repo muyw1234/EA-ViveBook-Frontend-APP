@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../services/api';
-import * as Location from 'expo-location'; // Requerido para pedir la ubicación real
+import * as Location from 'expo-location'; 
 import { MultiEventMap } from './EventMap';
 
 interface MapMarkerData {
@@ -17,9 +17,8 @@ interface MapMarkerData {
   title: string;
 }
 
-// Función matemática auxiliar para calcular distancias en km (Fórmula de Haversine)
 function getKilometersDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const R = 6371; // Radio de la Tierra en kilómetros
+  const R = 6371; 
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
   const a =
@@ -41,22 +40,22 @@ export default function DashboardScreen() {
 
   const [eventMarkers, setEventMarkers] = React.useState<MapMarkerData[]>([]);
   
-  // Estados nuevos para controlar la ubicación real por GPS/Navegador
   const [userLocation, setUserLocation] = React.useState<{ latitude: number; longitude: number } | null>(null);
   const [loadingLocation, setLoadingLocation] = React.useState(true);
   const [locationError, setLocationError] = React.useState<string | null>(null);
 
-  // Radio en kilómetros para decidir qué es cercano
   const RADIO_MAXIMO_KM = 15;
 
+  // 1. Efecto para escuchar y actualizar la posición GPS en tiempo real
   useFocusEffect(
     React.useCallback(() => {
+      let locationSubscriber: Location.LocationSubscription | null = null;
+
       async function requestAndFetchLocation() {
         try {
           let { status } = await Location.requestForegroundPermissionsAsync();
           if (status !== 'granted') {
-            console.log("Permiso de ubicación denegado.");
-            setLocationError('Permiso de ubicación denegado. Activa los permisos de ubicación y reinicia la app.');
+            setLocationError('Permiso de ubicación denegado.');
             setUserLocation({ latitude: 41.3851, longitude: 2.1734 });
             setLoadingLocation(false);
             return;
@@ -64,25 +63,30 @@ export default function DashboardScreen() {
 
           const servicesEnabled = await Location.hasServicesEnabledAsync();
           if (!servicesEnabled) {
-            console.log("Servicios de ubicación deshabilitados.");
-            setLocationError('Los servicios de ubicación están deshabilitados. Activa GPS/Ubicación en el dispositivo.');
+            setLocationError('Los servicios de ubicación están deshabilitados.');
             setUserLocation({ latitude: 41.3851, longitude: 2.1734 });
             setLoadingLocation(false);
             return;
           }
 
-          let location = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Highest,
-          });
-
-          setLocationError(null);
-          setUserLocation({
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-          });
+          locationSubscriber = await Location.watchPositionAsync(
+            {
+              accuracy: Location.Accuracy.Balanced, 
+              timeInterval: 10000, 
+              distanceInterval: 20, 
+            },
+            (location: Location.LocationObject) => {
+              setLocationError(null);
+              setUserLocation({
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+              });
+              setLoadingLocation(false);
+            }
+          );
         } catch (err) {
-          console.error("Error obteniendo la ubicación real:", err);
-          setLocationError('No se pudo obtener la ubicación real. Buscando la última ubicación conocida.');
+          console.error("Error en geolocalización:", err);
+          
           try {
             let lastKnown = await Location.getLastKnownPositionAsync({});
             if (lastKnown) {
@@ -91,39 +95,44 @@ export default function DashboardScreen() {
                 longitude: lastKnown.coords.longitude,
               });
             } else {
-              setLocationError('No hay ubicación conocida. Usando ubicación por defecto de Barcelona.');
               setUserLocation({ latitude: 41.3851, longitude: 2.1734 });
             }
           } catch (err2) {
-            console.error("Error obteniendo la última ubicación conocida:", err2);
-            setLocationError('No se pudo obtener ubicación. Usa una prueba en un dispositivo con GPS habilitado.');
             setUserLocation({ latitude: 41.3851, longitude: 2.1734 });
           }
-        } finally {
           setLoadingLocation(false);
         }
       }
 
       requestAndFetchLocation();
+      return () => {
+        if (locationSubscriber) {
+          try {
+            if (typeof locationSubscriber.remove === 'function') {
+              locationSubscriber.remove();
+            }
+          } catch (e) {
+            console.warn("Expo Location descuelgue controlado:", e);
+          }
+        }
+      };
     }, [])
   );
 
-  useFocusEffect(
-    React.useCallback(() => {
-      if (userLocation) {
-        fetchDashboardData();
-      }
-    }, [userLocation])
-  );
+  // 2. Efecto para volver a pedir los eventos del backend si el usuario se mueve
+  React.useEffect(() => {
+    if (userLocation) {
+      fetchDashboardData(userLocation);
+    }
+  }, [userLocation?.latitude, userLocation?.longitude]); 
 
-  const fetchDashboardData = async () => {
-    if (!userLocation) return;
-
+  // 3. Petición al Servidor y filtrado de eventos vigentes y cercanos
+  const fetchDashboardData = async (currentLocation: { latitude: number; longitude: number }) => {
     try {
       const profileRes = await api.get('/auth/profile');
       const user = profileRes.data;
 
-      const eventsRes = await api.get('/eventos?limit=20');
+      const eventsRes = await api.get('/eventos?limit=50'); // Aumentado el límite para tener más margen de filtrado
       
       let items: any[] = [];
       let markers: MapMarkerData[] = [];
@@ -143,8 +152,18 @@ export default function DashboardScreen() {
 
       if (eventsRes.data && eventsRes.data.data && eventsRes.data.data.data) {
         const backendEvents = eventsRes.data.data.data;
+        const ahora = new Date(); 
         
         backendEvents.forEach((e: any) => {
+          const fechaString = e.eventDate || e.date; 
+          if (!fechaString) return;
+
+          const fechaEvento = new Date(fechaString);
+          if (fechaEvento < ahora) {
+            return; 
+          }
+
+          // ─── FILTRO DE DISTANCIA GEOGRÁFICA ───
           const hasCoordinates = e.location && 
                                  e.location.coordinates && 
                                  e.location.coordinates.length === 2;
@@ -153,16 +172,14 @@ export default function DashboardScreen() {
             const eventLng = e.location.coordinates[0];
             const eventLat = e.location.coordinates[1];
 
-            // CALCULAMOS SI ESTÁ CERCA EN LA VIDA REAL
             const distanciaKM = getKilometersDistance(
-              userLocation.latitude,
-              userLocation.longitude,
+              currentLocation.latitude,
+              currentLocation.longitude,
               eventLat,
               eventLng
             );
 
             if (distanciaKM <= RADIO_MAXIMO_KM) {
-              // Añadimos al mapa
               markers.push({
                 id: e._id,
                 longitude: eventLng,
@@ -233,29 +250,14 @@ export default function DashboardScreen() {
         )}
       />
 
-      {locationError ? (
-        <Card style={[styles.card, { borderColor: '#f87171', borderWidth: 1 }]}> 
+      {/* Alerta de Error de GPS (Solo aparece si falla la ubicación) */}
+      {locationError && (
+        <Card style={[styles.card, { borderColor: '#ef4444', borderWidth: 1 }]}>
           <Card.Content>
-            <Text variant="bodyMedium" style={{ color: '#b91c1c' }}>
-              {locationError}
-            </Text>
-            {userLocation && (
-              <Text variant="bodySmall" style={{ marginTop: 6, color: '#6b7280' }}>
-                Coordenadas actuales: {userLocation.latitude.toFixed(5)}, {userLocation.longitude.toFixed(5)}
-              </Text>
-            )}
+            <Text style={{ color: '#ef4444' }}>⚠️ {locationError}</Text>
           </Card.Content>
         </Card>
-      ) : userLocation ? (
-        <Card style={[styles.card, { borderColor: '#22c55e', borderWidth: 1 }]}> 
-          <Card.Content>
-            <Text variant="bodyMedium">Ubicación detectada correctamente:</Text>
-            <Text variant="bodySmall" style={{ marginTop: 6, color: '#6b7280' }}>
-              {userLocation.latitude.toFixed(5)}, {userLocation.longitude.toFixed(5)}
-            </Text>
-          </Card.Content>
-        </Card>
-      ) : null}
+      )}
 
       {/* Tarjetas de Accesos Rápidos */}
       <Card style={styles.card}>
@@ -294,28 +296,30 @@ export default function DashboardScreen() {
         </Card.Actions>
       </Card>
 
-      {/* Sección de Eventos Literarios con Geocercanía en tiempo real */}
+      {/* Sección de Eventos Literarios */}
       <Card style={[styles.card, { borderLeftWidth: 4, borderLeftColor: '#7c3aed' }]}>
         <Card.Content>
           <Text variant="titleLarge" style={{ color: '#7c3aed', fontWeight: 'bold' }}>
-             {t('dash_events_title', { defaultValue: 'Eventos Cercanos a ti' })}
+            {t('dash_events_title', { defaultValue: 'Eventos Cercanos a ti' })}
           </Text>
           <Text variant="bodyMedium" style={{ marginBottom: 10 }}>
-            Mostrando reuniones literarias a menos de {RADIO_MAXIMO_KM} km de tu ubicación real.
+            Mostrando reuniones literarias vigentes a menos de {RADIO_MAXIMO_KM} km de tu ubicación real.
           </Text>
 
-          {/* Pasamos los marcadores limpios y filtrados junto con la ubicación real */}
-          {eventMarkers.length > 0 && userLocation ? (
+          {/* El mapa se muestra incondicionalmente siempre que tengamos las coordenadas base */}
+          {userLocation ? (
             <View style={styles.mapWrapper}>
               <MultiEventMap 
-                markers={eventMarkers}
+                markers={eventMarkers} 
                 userLatitude={userLocation.latitude}
                 userLongitude={userLocation.longitude}
               />
             </View>
-          ) : (
-            <Text style={{ fontStyle: 'italic', color: '#888', marginVertical: 10, textAlign: 'center' }}>
-              ℹ️ No se han encontrado eventos en un rango de {RADIO_MAXIMO_KM} km a la redonda.
+          ) : null}
+
+          {eventMarkers.length === 0 && (
+            <Text style={{ fontStyle: 'italic', color: '#888', marginTop: 12, textAlign: 'center' }}>
+              ℹ️ No se han encontrado eventos próximos en un rango de {RADIO_MAXIMO_KM} km a la redonda. Puedes ver tu posición en el mapa.
             </Text>
           )}
         </Card.Content>
@@ -324,9 +328,17 @@ export default function DashboardScreen() {
             {t('dash_events_btn', { defaultValue: 'Explorar Todos' })}
           </Button>
         </Card.Actions>
+        <IconButton
+          icon="plus"
+          size={30}
+          mode="contained"
+          containerColor="#7c3aed" 
+          iconColor="#ffffff"
+          onPress={() => navigation.navigate("CreateEventScreen")} 
+        />
       </Card>
 
-      {/* Feed dinámico inferior filtrado */}
+      {/* Feed dinámico inferior */}
       <Text variant="titleLarge" style={[styles.header, { marginTop: 10 }]}>{t('following_title')}</Text>
       <Card style={[styles.card, { padding: 10 }]}>
         {followingItems.length === 0 ? (
@@ -398,46 +410,12 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#F5EBF4',
-  },
-  header: {
-    marginBottom: 20,
-    fontWeight: 'bold',
-    color: '#D6AED2',
-  },
-  card: {
-    marginBottom: 16,
-    backgroundColor: '#ffffff',
-  },
-  searchBar: {
-    marginBottom: 20,
-    elevation: 4,
-    backgroundColor: '#fff',
-    borderRadius: 30,
-  },
-  followingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0'
-  },
-  pagination: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 15,
-  },
-  pageBtn: {
-    borderColor: '#D183BA',
-  },
-  mapWrapper: {
-    height: 220,
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginTop: 10,
-    backgroundColor: '#e5e7eb',
-  }
+  container: { flex: 1, padding: 16, backgroundColor: '#F5EBF4' },
+  header: { marginBottom: 20, fontWeight: 'bold', color: '#D6AED2' },
+  card: { marginBottom: 16, backgroundColor: '#ffffff' },
+  searchBar: { marginBottom: 20, elevation: 4, backgroundColor: '#fff', borderRadius: 30 },
+  followingItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  pagination: { flexDirection: 'row', justifyContent: 'center', marginTop: 15 },
+  pageBtn: { borderColor: '#D183BA' },
+  mapWrapper: { height: 220, borderRadius: 12, overflow: 'hidden', marginTop: 10, backgroundColor: '#e5e7eb' }
 });

@@ -1,19 +1,22 @@
 import React from 'react';
 import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Ionicons from '@react-native-vector-icons/ionicons';
+import { createNativeStackNavigator } from '@react-navigation/native-stack'; 
 import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import ChatRoomScreen from '../screens/ChatRoomScreen';
-import MyBooksScreen from '../screens/MyBooksScreen';
 import DiscoverScreen from '../screens/DiscoverScreen';
+import CreateEventScreen from '../screens/CreateEventScreen'; 
+import AddBookScreen from '../screens/AddBookScreen'; 
 import style from '../../styles/default.old';
 import { useTranslation } from 'react-i18next';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator(); 
 
-export default function MainNavigator() {
+// 1. Contenedor de las pestañas inferiores fijas
+function BottomTabs() {
   const { t } = useTranslation();
 
   return (
@@ -67,5 +70,29 @@ export default function MainNavigator() {
         }} 
       />
     </Tab.Navigator>
+  );
+}
+
+// 2. El enrutador principal que maneja los saltos a pantallas completas
+export default function MainNavigator() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {/* Tu vista con el menú inferior */}
+      <Stack.Screen name="MainTabs" component={BottomTabs} />
+      
+      {/* Pantalla para Crear Eventos */}
+      <Stack.Screen 
+        name="CreateEventScreen" 
+        component={CreateEventScreen} 
+        options={{ headerShown: true, title: 'Crear Nuevo Evento' }} 
+      />
+
+      {/* Pantalla para Añadir Libros formalizada en este Stack */}
+      <Stack.Screen 
+        name="AddBook" 
+        component={AddBookScreen} 
+        options={{ headerShown: true, title: 'Añadir Nuevo Libro' }} 
+      />
+    </Stack.Navigator>
   );
 }

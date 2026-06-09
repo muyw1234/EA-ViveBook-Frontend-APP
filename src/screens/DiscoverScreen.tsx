@@ -42,7 +42,7 @@ export default function DiscoverScreen() {
 
             const [usersRes, authorsRes] = await Promise.all([
                 api.get('/usuarios'),
-                api.get('/autores/all?limit=20') // Fetch up to 20 authors to show
+                api.get('/autores/all?limit=20') 
             ]);
 
             // Filter out current user from users list

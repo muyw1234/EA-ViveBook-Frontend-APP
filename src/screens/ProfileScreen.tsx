@@ -46,57 +46,81 @@ export default function ProfileScreen({ route }: any) {
     }, [userId]);
 
     const fetchProfile = async () => {
-        setLoading(true);
-        try {
-            let response;
-            let currentUserId;
-            
-            const storedUserStr = await AsyncStorage.getItem('user');
-            if (storedUserStr) {
-                currentUserId = JSON.parse(storedUserStr)._id;
-            }
+    setLoading(true);
+    try {
+        let response;
+        let currentUserId;
 
-            if (userId) {
-                response = await api.get(`/usuarios/${userId}`);
-                setIsMyProfile(currentUserId === userId);
-            } else {
-                response = await api.get("/auth/profile");
-                setIsMyProfile(true);
-            }
-            
-            setUser(response.data);
-            setName(response.data.name);
-            setEmail(response.data.email);
-            setDescription(response.data.description || "");
-            
-            // Set favorites
-            setFavoriteAuthors(Array.isArray(response.data.favoriteAuthors) ? response.data.favoriteAuthors : []);
-            setFavoriteBooks(Array.isArray(response.data.favoriteBooks) ? response.data.favoriteBooks : []);
-            setFavoriteCategories(Array.isArray(response.data.favoriteCategories) ? response.data.favoriteCategories : []);
+        // 1. Obtener los datos locales del usuario logueado
+        const storedUserStr = await AsyncStorage.getItem('user');
+        const token = await AsyncStorage.getItem('token');
 
-            const targetId = userId || response.data._id || currentUserId;
-            if (targetId && typeof targetId === 'string' && targetId.length === 24) {
-                try {
-                    const [reviewsResponse, followersResponse] = await Promise.all([
-                        api.get(`/valoraciones/received/${targetId}`),
-                        api.get(`/usuarios/${targetId}/followers`)
-                    ]);
-                    setReviews(Array.isArray(reviewsResponse.data.valoraciones) ? reviewsResponse.data.valoraciones : []);
-                    setStats(reviewsResponse.data.stats || { averageRating: 0, totalReviews: 0 });
-                    setFollowers(Array.isArray(followersResponse.data) ? followersResponse.data : []);
-                } catch (revError) {
-                    console.error("Error fetching extra profile data:", revError);
-                    // Don't fail the whole profile load if only reviews fail
-                }
-            }
-        } catch (error: any) {
-            console.error("Error fetching profile:", error);
-            const errorMsg = error.response?.data?.message || t('profile_err_loading');
-            Alert.alert(t('error'), errorMsg);
-        } finally {
-            setLoading(false);
+        if (storedUserStr) {
+            currentUserId = JSON.parse(storedUserStr)._id;
         }
-    };
+
+        // Si no hay token ni usuario guardado, no podemos pedir "/auth/profile"
+        if (!userId && !token) {
+            setLoading(false);
+            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+            return;
+        }
+
+        // 2. Realizar la petición del perfil principal
+        if (userId) {
+            response = await api.get(`/usuarios/${userId}`);
+            setIsMyProfile(currentUserId === userId);
+        } else {
+            // Asegúrate de que tu servicio 'api' incluya el token en los headers. 
+            // Si no lo hace automáticamente, puedes pasarlo de manera explícita así:
+            response = await api.get("/auth/profile", {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setIsMyProfile(true);
+        }
+
+        // Validar si la respuesta es correcta antes de continuar
+        if (!response || !response.data) {
+            throw new Error("No se recibieron datos del servidor");
+        }
+
+        const profileData = response.data.data ? response.data.data : response.data;
+
+        setUser(profileData);
+        setName(profileData.name);
+        setEmail(profileData.email);
+        setDescription(profileData.description || "");
+        
+        setFavoriteAuthors(Array.isArray(profileData.favoriteAuthors) ? profileData.favoriteAuthors : []);
+        setFavoriteBooks(Array.isArray(profileData.favoriteBooks) ? profileData.favoriteBooks : []);
+        setFavoriteCategories(Array.isArray(profileData.favoriteCategories) ? profileData.favoriteCategories : []);
+
+        // 3. Peticiones de datos adicionales (Seguidores y reviews)
+        const targetId = userId || profileData._id || currentUserId;
+        
+        if (targetId && typeof targetId === 'string' && targetId.length === 24) {
+            try {
+                const [reviewsResponse, followersResponse] = await Promise.all([
+                    api.get(`/valoraciones/received/${targetId}`),
+                    api.get(`/usuarios/${targetId}/followers`)
+                ]);
+                
+                setReviews(Array.isArray(reviewsResponse.data.valoraciones) ? reviewsResponse.data.valoraciones : []);
+                setStats(reviewsResponse.data.stats || { averageRating: 0, totalReviews: 0 });
+                setFollowers(Array.isArray(followersResponse.data) ? followersResponse.data : []);
+            } catch (revError) {
+                console.error("Error cargando datos extra del perfil:", revError);
+            }
+        }
+    } catch (error: any) {
+        console.error("Error fetching profile:", error);
+        const errorMsg = error.response?.data?.message || t('profile_err_loading');
+        Alert.alert(t('error'), errorMsg);
+        setUser(null); 
+    } finally {
+        setLoading(false);
+    }
+};
 
     const handleUpdate = async () => {
         if (!name || !email) {

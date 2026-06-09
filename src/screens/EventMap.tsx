@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
-interface MapMarkerData {
+export interface MapMarkerData {
   id: string;
   latitude: number;
   longitude: number;
@@ -14,6 +14,7 @@ interface EventMapProps {
   longitude: number;
   title: string;
   description: string;
+  onMapPress?: (e: any) => void;  
 }
 
 interface MultiEventMapProps {
@@ -22,24 +23,27 @@ interface MultiEventMapProps {
   userLongitude: number;
 }
 
-export default function EventMap({ latitude, longitude, title, description }: EventMapProps) {
+export default function EventMap({ latitude, longitude, title, description, onMapPress }: EventMapProps) {
   return (
     <View style={styles.mapContainer}>
-      <MapView style={styles.map} initialRegion={{ latitude, longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 }}>
+      <MapView 
+        style={styles.map} 
+        initialRegion={{ latitude, longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
+        onPress={onMapPress}
+      >
         <Marker coordinate={{ latitude, longitude }} title={title} description={description} pinColor="#7c3aed" />
       </MapView>
     </View>
   );
 }
 
-// NUEVO: Componente multi-marcador para el DiscoverScreen móvil
 export function MultiEventMap({ markers, userLatitude, userLongitude }: MultiEventMapProps) {
   return (
     <View style={[styles.mapContainer, { height: 300 }]}>
       <MapView
         style={styles.map}
         initialRegion={{
-          latitude: userLatitude || 41.3851, // Barcelona por defecto
+          latitude: userLatitude || 41.3851, 
           longitude: userLongitude || 2.1734,
           latitudeDelta: 0.06,
           longitudeDelta: 0.06,

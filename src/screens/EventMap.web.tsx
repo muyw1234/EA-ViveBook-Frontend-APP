@@ -1,7 +1,19 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, Platform } from 'react-native';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
 
-interface MapMarkerData {
+// @ts-ignore
+import 'leaflet/dist/leaflet.css';
+const DefaultIcon = L.icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+L.Marker.prototype.options.icon = DefaultIcon;
+
+export interface MapMarkerData {
   id: string;
   latitude: number;
   longitude: number;
@@ -13,6 +25,7 @@ interface EventMapProps {
   longitude: number;
   title: string;
   description: string;
+  onMapPress?: (e: any) => void;
 }
 
 interface MultiEventMapProps {
@@ -21,49 +34,89 @@ interface MultiEventMapProps {
   userLongitude: number;
 }
 
-// Mapa individual (Este ya te funciona perfecto)
-export default function EventMap({ latitude, longitude, title }: EventMapProps) {
-  const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${longitude-0.005}%2C${latitude-0.005}%2C${longitude+0.005}%2C${latitude+0.005}&layer=mapnik&marker=${latitude}%2C${longitude}`;
+// Componente auxiliar interno para capturar eventos de click en Leaflet Web
+function MapEventsHandler({ onMapPress }: { onMapPress?: (e: any) => void }) {
+  useMapEvents({
+    click(e) {
+      if (onMapPress) {
+        onMapPress({
+          nativeEvent: {
+            coordinate: {
+              latitude: e.latlng.lat,
+              longitude: e.latlng.lng,
+            },
+          },
+        });
+      }
+    },
+  });
+  return null;
+}
+
+// MAPA INDIVIDUAL INTERACTIVO PARA LA CREACIÓN EN WEB
+export default function EventMap({ latitude, longitude, title, onMapPress }: EventMapProps) {
+  const position: [number, number] = [latitude, longitude];
+
   return (
     <View style={styles.mapContainer}>
-      <iframe title={title} width="100%" height="100%" style={{ border: 0 }} src={mapUrl} />
+      {/* Comprobamos que estemos en entorno web antes de inyectar componentes del DOM */}
+      {Platform.OS === 'web' ? (
+        <MapContainer 
+          center={position} 
+          zoom={14} 
+          style={{ width: '100%', height: '100%' }}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <Marker position={position} />
+          {/* Controlador de clicks en la web */}
+          <MapEventsHandler onMapPress={onMapPress} />
+        </MapContainer>
+      ) : null}
     </View>
   );
 }
 
+// MAPA MULTI-EVENTO WEB
 export function MultiEventMap({ markers, userLatitude, userLongitude }: MultiEventMapProps) {
-  // Ajustamos el delta a 0.01 para que el Zoom sea mucho más cercano (callejero de Barcelona)
-  const zoomDelta = 0.01; 
-  
-  // Si hay marcadores, centramos la vista en el primer evento para asegurar que se vea la zona con acción
   const centerLat = markers.length > 0 ? markers[0].latitude : userLatitude;
   const centerLng = markers.length > 0 ? markers[0].longitude : userLongitude;
-
-  // Calculamos la caja de visualización (Bounding Box)
-  const minLng = centerLng - zoomDelta;
-  const minLat = centerLat - zoomDelta;
-  const maxLng = centerLng + zoomDelta;
-  const maxLat = centerLat + zoomDelta;
-
-  // Para que OpenStreetMap pinte un marcador destacado en el centro de los eventos en la versión embebida:
-  const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${minLng}%2C${minLat}%2C${maxLng}%2C${maxLat}&layer=mapnik&marker=${centerLat}%2C${centerLng}`;
+  const centerPosition: [number, number] = [centerLat, centerLng];
 
   return (
     <View style={styles.mapContainer}>
-      <iframe 
-        title="Multi Event Map" 
-        width="100%" 
-        height="100%" 
-        style={{ border: 0 }} 
-        src={mapUrl} 
-      />
+      {Platform.OS === 'web' ? (
+        <MapContainer 
+          center={centerPosition} 
+          zoom={13} 
+          style={{ width: '100%', height: '100%' }}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          
+          {/* Ubicación del usuario actual */}
+          <Marker position={[userLatitude, userLongitude]} />
+
+          {/* Renderizado de eventos circundantes */}
+          {markers.map((marker) => (
+            <Marker 
+              key={marker.id} 
+              position={[marker.latitude, marker.longitude]} 
+            />
+          ))}
+        </MapContainer>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   mapContainer: {
-    height: 180,
+    height: 220,
     width: '100%',
     borderRadius: 12,
     overflow: 'hidden',
