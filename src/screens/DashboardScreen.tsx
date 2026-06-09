@@ -205,10 +205,6 @@ export default function DashboardScreen() {
     }
   };
 
-  const handleLogout = async () => {
-    await AsyncStorage.clear();
-    navigation.navigate("Home" as never);
-  };
 
   const onSearch = () => {
     if (searchQuery.trim()) {
@@ -231,7 +227,7 @@ export default function DashboardScreen() {
   return (
     <ScrollView style={styles.container}>
       <Text variant="headlineMedium" style={styles.header}>{t('dash_header')}</Text>
-
+      {/* La barra de busqueda por titulo*/}
       <Searchbar
         placeholder={t('search_placeholder')}
         onChangeText={setSearchQuery}
@@ -397,14 +393,6 @@ export default function DashboardScreen() {
         )}
       </Card>
 
-      <Button 
-        mode="outlined" 
-        onPress={handleLogout} 
-        style={{ marginTop: 20, marginBottom: 40, borderColor: '#ef4444' }}
-        textColor="#ef4444"
-      >
-        {t('logout')}
-      </Button>
     </ScrollView>
   );
 }

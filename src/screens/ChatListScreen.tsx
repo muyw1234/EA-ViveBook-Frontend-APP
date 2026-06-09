@@ -10,7 +10,7 @@ export default function ChatListScreen() {
     const { t } = useTranslation();
     const [chats, setChats] = useState([]);
     const [loading, setLoading] = useState(true);
-    const navigation = useNavigation();
+    const navigation = useNavigation<any>();
 
     useEffect(() => {
         fetchChats();

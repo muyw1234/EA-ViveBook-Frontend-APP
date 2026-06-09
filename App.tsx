@@ -17,6 +17,10 @@ import ProfileScreen from "./src/screens/ProfileScreen";
 import SearchScreen from "./src/screens/SearchScreen";
 import DiscoverScreen from "./src/screens/DiscoverScreen";
 import EventDetailScreen from "./src/screens/EventDetailScreen";
+import RetosScreen from "./src/screens/RetosScreen";
+import SettingsScreen from "./src/screens/SettingsScreen";
+import ChatRoomScreen from "./src/screens/ChatRoomScreen";
+import FavoritesScreen from "./src/screens/FavoritesScreen";
 import { AccessibilityProvider } from "./src/context/AccessibilityContext";
 import style from "./styles/default.old"
 
@@ -62,6 +66,10 @@ export default function App() {
             <Stack.Screen name="Search" component={SearchScreen} options={{ title: 'Búsqueda de Libros' }} />
             <Stack.Screen name="EventDetail" component={EventDetailScreen} options={{ title: 'Detalle de Evento' }} />
             <Stack.Screen name="Discover" component={DiscoverScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Retos" component={RetosScreen} options={{ title: 'Mis Retos' }} />
+            <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Ajustes de accesibilidad' }} />
+            <Stack.Screen name="ChatRoom" component={ChatRoomScreen} options={{ title: 'Chat Privado' }} />
+            <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ title: 'Mis Favoritos' }} />
           </Stack.Navigator>
         </NavigationContainer>
       </PaperProvider>

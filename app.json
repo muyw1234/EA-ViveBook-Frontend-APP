@@ -14,6 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Necesitamos tu ubicación para mostrar eventos cercanos en el mapa y filtrar los eventos por distancia."
       }
@@ -28,13 +29,16 @@
         "ACCESS_COARSE_LOCATION"
       ],
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.EAViveBookFrontendAPP"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-font",
+      "@react-native-google-signin/google-signin",
+      "expo-apple-authentication",
       "@react-native-community/datetimepicker"
     ]
   }

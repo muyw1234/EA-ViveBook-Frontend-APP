@@ -22,6 +22,7 @@ export default function ProfileScreen({ route }: any) {
     const [reviews, setReviews] = useState<any[]>([]);
     const [stats, setStats] = useState({ averageRating: 0, totalReviews: 0 });
     const [followers, setFollowers] = useState<any[]>([]);
+    const [myFollowingUsers, setMyFollowingUsers] = useState<string[]>([]);
 
     // Favorites state
     const [favoriteAuthors, setFavoriteAuthors] = useState<string[]>([]);
@@ -46,81 +47,115 @@ export default function ProfileScreen({ route }: any) {
     }, [userId]);
 
     const fetchProfile = async () => {
-    setLoading(true);
-    try {
-        let response;
-        let currentUserId;
-
-        // 1. Obtener los datos locales del usuario logueado
-        const storedUserStr = await AsyncStorage.getItem('user');
-        const token = await AsyncStorage.getItem('token');
-
-        if (storedUserStr) {
-            currentUserId = JSON.parse(storedUserStr)._id;
-        }
-
-        // Si no hay token ni usuario guardado, no podemos pedir "/auth/profile"
-        if (!userId && !token) {
-            setLoading(false);
-            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-            return;
-        }
-
-        // 2. Realizar la petición del perfil principal
-        if (userId) {
-            response = await api.get(`/usuarios/${userId}`);
-            setIsMyProfile(currentUserId === userId);
-        } else {
-            // Asegúrate de que tu servicio 'api' incluya el token en los headers. 
-            // Si no lo hace automáticamente, puedes pasarlo de manera explícita así:
-            response = await api.get("/auth/profile", {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setIsMyProfile(true);
-        }
-
-        // Validar si la respuesta es correcta antes de continuar
-        if (!response || !response.data) {
-            throw new Error("No se recibieron datos del servidor");
-        }
-
-        const profileData = response.data.data ? response.data.data : response.data;
-
-        setUser(profileData);
-        setName(profileData.name);
-        setEmail(profileData.email);
-        setDescription(profileData.description || "");
-        
-        setFavoriteAuthors(Array.isArray(profileData.favoriteAuthors) ? profileData.favoriteAuthors : []);
-        setFavoriteBooks(Array.isArray(profileData.favoriteBooks) ? profileData.favoriteBooks : []);
-        setFavoriteCategories(Array.isArray(profileData.favoriteCategories) ? profileData.favoriteCategories : []);
-
-        // 3. Peticiones de datos adicionales (Seguidores y reviews)
-        const targetId = userId || profileData._id || currentUserId;
-        
-        if (targetId && typeof targetId === 'string' && targetId.length === 24) {
-            try {
-                const [reviewsResponse, followersResponse] = await Promise.all([
-                    api.get(`/valoraciones/received/${targetId}`),
-                    api.get(`/usuarios/${targetId}/followers`)
-                ]);
-                
-                setReviews(Array.isArray(reviewsResponse.data.valoraciones) ? reviewsResponse.data.valoraciones : []);
-                setStats(reviewsResponse.data.stats || { averageRating: 0, totalReviews: 0 });
-                setFollowers(Array.isArray(followersResponse.data) ? followersResponse.data : []);
-            } catch (revError) {
-                console.error("Error cargando datos extra del perfil:", revError);
+        setLoading(true);
+        try {
+            let response;
+            let currentUserId;
+            
+            const storedUserStr = await AsyncStorage.getItem('user');
+            if (storedUserStr) {
+                currentUserId = JSON.parse(storedUserStr)._id;
             }
+
+            // Always fetch current logged-in user's details to know who they are following
+            try {
+                const loggedInRes = await api.get("/auth/profile");
+                const loggedInUser = loggedInRes.data?.data || loggedInRes.data;
+                if (loggedInUser) {
+                    setMyFollowingUsers((loggedInUser.followingUsers || []).map((u: any) => u._id || u));
+                }
+            } catch (err) {
+                console.error("Error fetching logged-in user details:", err);
+            }
+
+            if (userId) {
+                response = await api.get(`/usuarios/${userId}`);
+                setIsMyProfile(currentUserId === userId);
+            } else {
+                response = await api.get("/auth/profile");
+                setIsMyProfile(true);
+            }
+            
+            // Backend wraps responses in { success, data, message } via sendSuccess()
+            // /auth/profile and /usuarios/:id both use sendSuccess, so user is in response.data.data
+            const userData = response.data?.data || response.data;
+            
+            setUser(userData);
+            setName(userData.name);
+            setEmail(userData.email);
+            setDescription(userData.description || "");
+            
+            // Set favorites
+            setFavoriteAuthors(Array.isArray(userData.favoriteAuthors) ? userData.favoriteAuthors : []);
+            setFavoriteBooks(Array.isArray(userData.favoriteBooks) ? userData.favoriteBooks : []);
+            setFavoriteCategories(Array.isArray(userData.favoriteCategories) ? userData.favoriteCategories : []);
+
+            const targetId = userId || userData._id || currentUserId;
+            if (targetId && typeof targetId === 'string' && targetId.length === 24) {
+                try {
+                    const [reviewsResponse, followersResponse] = await Promise.all([
+                        api.get(`/valoraciones/received/${targetId}`),
+                        api.get(`/usuarios/${targetId}/followers`)
+                    ]);
+                    setReviews(Array.isArray(reviewsResponse.data.valoraciones) ? reviewsResponse.data.valoraciones : []);
+                    setStats(reviewsResponse.data.stats || { averageRating: 0, totalReviews: 0 });
+                    // getFollowers uses res.status(200).json(followers) directly (not sendSuccess)
+                    setFollowers(Array.isArray(followersResponse.data) ? followersResponse.data : []);
+                } catch (revError) {
+                    console.error("Error fetching extra profile data:", revError);
+                    // Don't fail the whole profile load if only reviews fail
+                }
+            }
+        } catch (error: any) {
+            console.error("Error fetching profile:", error);
+            const errorMsg = error.response?.data?.message || t('profile_err_loading');
+            Alert.alert(t('error'), errorMsg);
+        } finally {
+            setLoading(false);
         }
-    } catch (error: any) {
-        console.error("Error fetching profile:", error);
-        const errorMsg = error.response?.data?.message || t('profile_err_loading');
-        Alert.alert(t('error'), errorMsg);
-        setUser(null); 
-    } finally {
-        setLoading(false);
-    }
-};
+    };
+
+    const toggleFollow = async () => {
+        if (!userId) return;
+        setUpdating(true);
+        try {
+            const storedUserStr = await AsyncStorage.getItem('user');
+            if (!storedUserStr) return;
+            const currentUserId = JSON.parse(storedUserStr)._id;
+
+            let updatedFollowing: string[];
+            const isFollowing = myFollowingUsers.includes(userId);
+            if (isFollowing) {
+                updatedFollowing = myFollowingUsers.filter(id => id !== userId);
+            } else {
+                updatedFollowing = [...myFollowingUsers, userId];
+            }
+
+            const response = await api.put(`/usuarios/${currentUserId}`, {
+                followingUsers: updatedFollowing
+            });
+
+            if (response.status === 200) {
+                setMyFollowingUsers(updatedFollowing);
+                
+                // Refresh the followers count of the viewed profile
+                const followersResponse = await api.get(`/usuarios/${userId}/followers`);
+                setFollowers(Array.isArray(followersResponse.data) ? followersResponse.data : []);
+
+                // Update the logged-in user in AsyncStorage
+                const updatedUser = {
+                    ...JSON.parse(storedUserStr),
+                    followingUsers: updatedFollowing
+                };
+                await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+            }
+        } catch (error) {
+            console.error("Error toggling follow:", error);
+            Alert.alert(t('error'), "No se pudo actualizar el estado de seguimiento.");
+        } finally {
+            setUpdating(false);
+        }
+    };
 
     const handleUpdate = async () => {
         if (!name || !email) {
@@ -460,15 +495,72 @@ export default function ProfileScreen({ route }: any) {
                                 </View>
                             )}
 
-                            {isMyProfile && (
-                                <Button 
-                                    mode="contained" 
-                                    onPress={() => setIsEditing(true)}
-                                    buttonColor="#D183BA"
-                                    style={{ marginTop: 20 }}
-                                >
-                                    {t('profile_edit_btn')}
-                                </Button>
+                            {isMyProfile ? (
+                                <View style={{ marginTop: 20 }}>
+                                    <Button 
+                                        mode="contained" 
+                                        onPress={() => navigation.navigate("Retos" as never)}
+                                        buttonColor="#D183BA"
+                                        textColor="#fff"
+                                        style={{ marginBottom: 10 }}
+                                        icon={() => <Text style={{ fontSize: 16 }}>🏆</Text>}
+                                    >
+                                        {t('retos_title', 'Mis Retos')}
+                                    </Button>
+
+                                    <Button 
+                                        mode="contained" 
+                                        onPress={() => navigation.navigate("Favorites" as never)}
+                                        buttonColor="#D183BA"
+                                        textColor="#fff"
+                                        style={{ marginBottom: 10 }}
+                                        icon={() => <Text style={{ fontSize: 16 }}>❤️</Text>}
+                                    >
+                                        {t('favorites_title', 'Mis Favoritos')}
+                                    </Button>
+
+                                    <Button 
+                                        mode="outlined" 
+                                        onPress={() => navigation.navigate("Settings")}
+                                        textColor="#D183BA"
+                                        style={{ borderColor: '#D183BA', marginBottom: 10 }}
+                                        icon={() => <Text style={{ fontSize: 16 }}>⚙️</Text>}
+                                    >
+                                        {t('accessibility_settings')}
+                                    </Button>
+
+                                    <Button 
+                                        mode="outlined" 
+                                        onPress={() => setIsEditing(true)}
+                                        textColor="#D183BA"
+                                        style={{ borderColor: '#D183BA', marginBottom: 10 }}
+                                    >
+                                        {t('profile_edit_btn')}
+                                    </Button>
+
+                                    <Button
+                                        mode="outlined"
+                                        onPress={logout}
+                                        textColor="#ef4444"
+                                        style={{ borderColor: '#ef4444' }}
+                                        icon={() => <Text style={{ fontSize: 16 }}>🚪</Text>}
+                                    >
+                                        {t('logout')}
+                                    </Button>
+                                </View>
+                            ) : (
+                                <View style={{ marginTop: 20 }}>
+                                    <Button 
+                                        mode={myFollowingUsers.includes(userId) ? "outlined" : "contained"} 
+                                        onPress={toggleFollow}
+                                        loading={updating}
+                                        buttonColor={myFollowingUsers.includes(userId) ? undefined : "#D183BA"}
+                                        textColor={myFollowingUsers.includes(userId) ? "#D183BA" : "#fff"}
+                                        style={{ borderColor: '#D183BA', marginBottom: 10 }}
+                                    >
+                                        {myFollowingUsers.includes(userId) ? t('unfollow', 'Siguiendo') : t('follow', 'Seguir')}
+                                    </Button>
+                                </View>
                             )}
                         </>
                     )}
