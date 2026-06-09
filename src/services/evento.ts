@@ -1,4 +1,5 @@
 import api from './api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Usamos la nomenclatura GeoJSON precisa de tu versión web
 export interface IGeoJSONPoint {
@@ -55,7 +56,6 @@ const EventoService = {
         }
     },
 
-    // ➕ MÉTODO NUEVO: Traer todos los eventos (Para mapas o listados globales)
     getAllEventos: async (): Promise<IEvento[]> => {
         try {
             const response = await api.get("/eventos");
@@ -74,7 +74,6 @@ const EventoService = {
 
     getEvento: async (eventoId: string): Promise<IEvento> => {
         const response = await api.get(`/eventos/${eventoId}`);
-        // Manejo flexible por si la API envuelve la respuesta en .success o directo
         return response.data.success ? response.data.data : response.data.data || response.data;
     },
 
@@ -90,10 +89,19 @@ const EventoService = {
         }
     },
 
-    participateEvento: async (eventoId: string, usuarioId: string): Promise<IEvento> => {
-        const response = await api.put(`/eventos/${eventoId}/participate`, { usuarioId });
-        return response.data.success ? response.data.data : response.data.data || response.data;
-    },
+    // Prueba esto en tu EventoService si sigue fallando por temas de autenticación:
+participateEvento: async (eventoId: string, usuarioId: string): Promise<IEvento> => {
+    const token = await AsyncStorage.getItem('token'); // Recuperamos el token guardado
+    const response = await api.put(`/eventos/${eventoId}/participate`, 
+        { usuarioId }, 
+        {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }
+    );
+    return response.data.success ? response.data.data : response.data.data || response.data;
+},
 
     leaveEvento: async (eventoId: string, usuarioId: string): Promise<IEvento> => {
         const response = await api.put(`/eventos/${eventoId}/leave`, { usuarioId });

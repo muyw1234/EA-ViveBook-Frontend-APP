@@ -53,20 +53,21 @@ export default function EventDetailScreen() {
         try {
             setLoading(true);
             
-            // 1. Get the authenticated user and token from storage
             const userStr = await AsyncStorage.getItem('user');
-            const token = await AsyncStorage.getItem('token'); // Grab your stored JWT authorization token
+            const token = await AsyncStorage.getItem('token');
             
             if (userStr) {
                 const parsedUser = JSON.parse(userStr);
-                setCurrentUserId(parsedUser._id);
+                
+                const userId = parsedUser._id || parsedUser.data?._id || null;
+                
+                console.log("👤 ID de usuario detectado y asignado:", userId);
+                setCurrentUserId(userId);
             }
 
-            // 2. Fetch primary event details
             const eventData = await EventoService.getEvento(eventoId);
             setEvent(eventData);
 
-            // 3. Chain request: Fetch the public profile of the creator
             if (eventData && eventData.creator && token) {
                 const cId = typeof eventData.creator === 'string' ? eventData.creator : eventData.creator._id;
                 if (cId) {
@@ -86,14 +87,26 @@ export default function EventDetailScreen() {
     ) || false;
 
     const handleParticipate = async () => {
-        if (!event || !currentUserId) return;
+        if (!event) {
+            Alert.alert("Error de estado", "El objeto del evento no está cargado.");
+            return;
+        }
+        if (!currentUserId) {
+            Alert.alert("Error de sesión", "No se encontró tu ID de usuario en la sesión actual.");
+            return;
+        }
+
         try {
+            console.log(" Botón pulsado. Intentando unirse al evento:", event._id, "con el usuario:", currentUserId);
             setActionLoading(true);
+            
             const updatedEvent = await EventoService.participateEvento(event._id, currentUserId);
+            console.log(" Respuesta del servicio recibida:", updatedEvent);
+            
             setEvent(updatedEvent);
             Alert.alert(t('success'), t('joined_event_success'));
-        } catch (error) {
-            console.error(error);
+        } catch (error: any) {
+            console.error(" Error en handleParticipate:", error);
             Alert.alert(t('error'), t('error_joining_event'));
         } finally {
             setActionLoading(false);
@@ -153,7 +166,7 @@ export default function EventDetailScreen() {
 
     return (
         <View style={styles.container}>
-            <ScrollView contentContainerStyle={{ padding: 20 }}>
+            <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 110 }}>
                 {/* Cabecera del Evento */}
                 <Card style={styles.card} mode="elevated">
                     <Card.Content>
@@ -255,7 +268,10 @@ export default function EventDetailScreen() {
                 {isAlreadyParticipating ? (
                     <Button 
                         mode="outlined" 
-                        onPress={handleLeave}
+                        onPress={() => {
+                            console.log("👉 Click detectado en: Cancelar Participación");
+                            handleLeave();
+                        }}
                         loading={actionLoading}
                         disabled={actionLoading}
                         textColor="#b91c1c"
@@ -267,9 +283,12 @@ export default function EventDetailScreen() {
                     <Button 
                         mode="contained" 
                         buttonColor="#D183BA" 
-                        onPress={handleParticipate}
+                        onPress={() => {
+                            console.log("👉 Click detectado en: Unirse al Evento");
+                            handleParticipate();
+                        }}
                         loading={actionLoading}
-                        disabled={actionLoading}
+                        disabled={actionLoading === true} 
                         style={styles.actionButton}
                     >
                         {t('join_event')}
@@ -279,6 +298,7 @@ export default function EventDetailScreen() {
         </View>
     );
 }
+
 
 const styles = StyleSheet.create({
     container: {
