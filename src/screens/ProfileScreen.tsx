@@ -54,7 +54,8 @@ export default function ProfileScreen({ route }: any) {
             
             const storedUserStr = await AsyncStorage.getItem('user');
             if (storedUserStr) {
-                currentUserId = JSON.parse(storedUserStr)._id;
+                const parsedStorage = JSON.parse(storedUserStr);
+                currentUserId = parsedStorage._id || parsedStorage.data?._id;
             }
 
             // Always fetch current logged-in user's details to know who they are following
@@ -76,8 +77,6 @@ export default function ProfileScreen({ route }: any) {
                 setIsMyProfile(true);
             }
             
-            // Backend wraps responses in { success, data, message } via sendSuccess()
-            // /auth/profile and /usuarios/:id both use sendSuccess, so user is in response.data.data
             const userData = response.data?.data || response.data;
             
             setUser(userData);
@@ -99,11 +98,9 @@ export default function ProfileScreen({ route }: any) {
                     ]);
                     setReviews(Array.isArray(reviewsResponse.data.valoraciones) ? reviewsResponse.data.valoraciones : []);
                     setStats(reviewsResponse.data.stats || { averageRating: 0, totalReviews: 0 });
-                    // getFollowers uses res.status(200).json(followers) directly (not sendSuccess)
                     setFollowers(Array.isArray(followersResponse.data) ? followersResponse.data : []);
                 } catch (revError) {
                     console.error("Error fetching extra profile data:", revError);
-                    // Don't fail the whole profile load if only reviews fail
                 }
             }
         } catch (error: any) {
@@ -121,7 +118,14 @@ export default function ProfileScreen({ route }: any) {
         try {
             const storedUserStr = await AsyncStorage.getItem('user');
             if (!storedUserStr) return;
-            const currentUserId = JSON.parse(storedUserStr)._id;
+            
+            const parsedStorage = JSON.parse(storedUserStr);
+            const currentUserId = parsedStorage._id || parsedStorage.data?._id;
+
+            if (!currentUserId) {
+                Alert.alert(t('error'), "No se pudo identificar tu sesión de usuario.");
+                return;
+            }
 
             let updatedFollowing: string[];
             const isFollowing = myFollowingUsers.includes(userId);
@@ -144,8 +148,9 @@ export default function ProfileScreen({ route }: any) {
 
                 // Update the logged-in user in AsyncStorage
                 const updatedUser = {
-                    ...JSON.parse(storedUserStr),
-                    followingUsers: updatedFollowing
+                    ...parsedStorage,
+                    // Si estaba envuelto en .data, actualiza la propiedad interna, de lo contrario la raíz
+                    ...(parsedStorage.data ? { data: { ...parsedStorage.data, followingUsers: updatedFollowing } } : { followingUsers: updatedFollowing })
                 };
                 await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
             }
@@ -163,6 +168,11 @@ export default function ProfileScreen({ route }: any) {
             return;
         }
 
+        if (!user?._id) {
+            Alert.alert(t('error'), "ID de usuario inválido o ausente.");
+            return;
+        }
+
         setUpdating(true);
         try {
             const payload = { 
@@ -176,16 +186,18 @@ export default function ProfileScreen({ route }: any) {
 
             const response = await api.put(`/usuarios/${user._id}`, payload);
             if (response.status === 200) {
-                setUser(response.data);
+                const updatedUserData = response.data?.data || response.data;
+                
+                setUser(updatedUserData);
                 setIsEditing(false);
                 if (isMyProfile) {
-                    await AsyncStorage.setItem('user', JSON.stringify(response.data));
+                    await AsyncStorage.setItem('user', JSON.stringify(updatedUserData));
                 }
                 Alert.alert(t('success'), t('profile_success_update'));
             }
         } catch (error: any) {
             console.error("Error updating profile:", error.response?.data || error.message);
-            Alert.alert(t('error'), JSON.stringify(error.response?.data || error.message));
+            Alert.alert(t('error'), error.response?.data?.message || t('profile_err_fields'));
         } finally {
             setUpdating(false);
         }
@@ -597,132 +609,38 @@ export default function ProfileScreen({ route }: any) {
                 )}
             </View>
 
-            <Portal>
-                <Modal
-                    visible={deleteModalVisible}
-                    onDismiss={() => {
-                        if (!deleting) {
-                            setDeleteModalVisible(false);
-                            setDeleteStep('menu');
-                        }
-                    }}
-                    contentContainerStyle={styles.modalContent}
-                >
-                    {deleteStep === 'menu' && (
-                        <>
-                            <Text variant="headlineSmall" style={styles.modalTitle}>{t('delete_profile_title')}</Text>
-                            <Text variant="bodyMedium" style={{ textAlign: 'center', marginBottom: 20 }}>
-                                {t('delete_profile_msg')}
-                            </Text>
-
-                            <Button 
-                                mode="contained" 
-                                onPress={() => setDeleteStep('confirm_soft')} 
-                                buttonColor="#f59e0b"
-                                style={{ marginBottom: 10 }}
-                            >
-                                {t('delete_temp')}
-                            </Button>
-                            
-                            <Button 
-                                mode="contained" 
-                                onPress={() => setDeleteStep('confirm_perm')} 
-                                buttonColor="#e53935"
-                                style={{ marginBottom: 10 }}
-                            >
-                                {t('delete_perm')}
-                            </Button>
-
-                            <Button 
-                                mode="outlined" 
-                                onPress={() => {
-                                    setDeleteModalVisible(false);
-                                    setDeleteStep('menu');
-                                }}
-                                textColor="#64748b"
-                                style={{ borderColor: '#64748b' }}
-                            >
-                                {t('cancel')}
-                            </Button>
-                        </>
-                    )}
-
-                    {deleteStep === 'confirm_soft' && (
-                        <>
-                            <Text variant="headlineSmall" style={styles.modalTitle}>{t('delete_profile_title')}</Text>
-                            <Text variant="bodyMedium" style={{ textAlign: 'center', marginBottom: 20 }}>
-                                {t('delete_temp_confirm')}
-                            </Text>
-                            <Button mode="contained" onPress={executeSoftDelete} loading={deleting} disabled={deleting} buttonColor="#f59e0b" style={{ marginBottom: 10 }}>
-                                {t('delete_temp')}
-                            </Button>
-                            <Button mode="outlined" onPress={() => setDeleteStep('menu')} disabled={deleting} textColor="#64748b" style={{ borderColor: '#64748b' }}>
-                                {t('cancel')}
-                            </Button>
-                        </>
-                    )}
-
-                    {deleteStep === 'confirm_perm' && (
-                        <>
-                            <Text variant="headlineSmall" style={styles.modalTitle}>{t('delete_profile_title')}</Text>
-                            <Text variant="bodyMedium" style={{ textAlign: 'center', marginBottom: 20 }}>
-                                {t('delete_perm_confirm')}
-                            </Text>
-                            <Button mode="contained" onPress={executePermanentDelete} loading={deleting} disabled={deleting} buttonColor="#e53935" style={{ marginBottom: 10 }}>
-                                {t('delete_perm')}
-                            </Button>
-                            <Button mode="outlined" onPress={() => setDeleteStep('menu')} disabled={deleting} textColor="#64748b" style={{ borderColor: '#64748b' }}>
-                                {t('cancel')}
-                            </Button>
-                        </>
-                    )}
-                </Modal>
-            </Portal>
         </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
     centered: {
+        flex: 1,
         justifyContent: 'center',
-        alignItems: 'center',
+        alignItems: 'center'
     },
     header: {
         alignItems: 'center',
-        marginTop: 20,
+        marginTop: 20
     },
     ratingRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 5,
-    },
-    buttonRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: 15,
+        marginTop: 5
     },
     infoRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        marginBottom: 15
     },
     label: {
-        fontWeight: 'bold',
         color: '#666',
+        fontWeight: '500'
     },
-    modalContent: {
-        backgroundColor: 'white',
-        padding: 24,
-        margin: 20,
-        borderRadius: 16,
-    },
-    modalTitle: {
-        marginBottom: 20,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        color: '#333',
+    buttonRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 20
     }
 });

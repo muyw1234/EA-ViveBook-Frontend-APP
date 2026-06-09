@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack'; 
 import ProfileScreen from '../screens/ProfileScreen';
 import DashboardScreen from '../screens/DashboardScreen';
+import MyBooksScreen from '../screens/MyBooksScreen';
 import BuzonScreen from '../screens/BuzonScreen';
 import DiscoverScreen from '../screens/DiscoverScreen';
 import CreateEventScreen from '../screens/CreateEventScreen'; 
