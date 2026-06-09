@@ -14,6 +14,7 @@ export default function MyBooksScreen() {
   const [boughtBooks, setBoughtBooks] = useState<any[]>([]);
   const [rentedBooks, setRentedBooks] = useState<any[]>([]);
   const [reservedReservations, setReservedReservations] = useState<any[]>([]);
+  const [favoriteBooks, setFavoriteBooks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [category, setCategory] = useState('uploaded');
@@ -94,6 +95,14 @@ export default function MyBooksScreen() {
         ? resData.filter((r: any) => r.estado === 'ACEPTADA') 
         : [];
       setReservedReservations(accepted);
+
+      try {
+        const favResponse = await api.get('/usuarios/favoritos');
+        const favList = favResponse.data?.data || favResponse.data || [];
+        setFavoriteBooks(favList);
+      } catch (favErr) {
+        console.error('Error fetching favorites in MyBooksScreen:', favErr);
+      }
 
       try {
         const userStr = await AsyncStorage.getItem('user');
@@ -408,6 +417,7 @@ export default function MyBooksScreen() {
     else if (category === 'bought') baseBooks = boughtBooks;
     else if (category === 'rented') baseBooks = rentedBooks;
     else if (category === 'reserved') baseBooks = reservedReservations;
+    else if (category === 'favorites') baseBooks = favoriteBooks;
 
     // Filter by search query
     if (searchQuery.trim()) {
@@ -490,6 +500,102 @@ export default function MyBooksScreen() {
                 style={{ backgroundColor: '#f59e0b', marginLeft: 8 }}
               >
                 {t('rating_title')}
+              </Button>
+            )}
+          </Card.Actions>
+        </Card>
+      ));
+    }
+
+    if (category === 'favorites') {
+      const paginatedBooks = currentBooks.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+      return paginatedBooks.map((book: any) => (
+        <Card key={book._id} style={styles.card}>
+          <Card.Content>
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text variant="titleLarge" style={[styles.bookTitle, { flex: 1 }]} numberOfLines={2}>{book.title}</Text>
+                  <IconButton
+                    icon="heart"
+                    iconColor="#ef4444"
+                    size={24}
+                    onPress={async () => {
+                      try {
+                        setFavoriteBooks(prev => prev.filter(b => b._id !== book._id));
+                        await api.put(`/usuarios/favoritos/${book._id}`);
+                        
+                        const userStr = await AsyncStorage.getItem('user');
+                        if (userStr) {
+                          const user = JSON.parse(userStr);
+                          if (user.favoritos) {
+                            user.favoritos = user.favoritos.filter((id: string) => id !== book._id);
+                            await AsyncStorage.setItem('user', JSON.stringify(user));
+                          }
+                        }
+                      } catch (err) {
+                        console.error('Error removing favorite:', err);
+                        showAlert(t('error'), 'No se pudo quitar de favoritos.');
+                        fetchMyBooks();
+                      }
+                    }}
+                    style={{ margin: 0 }}
+                  />
+                </View>
+                {book.autor ? <Text variant="bodyMedium" style={styles.bookDetails}>{t('author_label')}: {book.autor}</Text> : null}
+                <Text variant="bodyMedium" style={styles.bookDetails}>{t('isbn_label')}: {book.isbn}</Text>
+                <Text variant="bodyMedium" style={styles.bookDetails}>{t('state_label')}: {book.estado}</Text>
+              </View>
+              <View style={styles.typeBadge}>
+                <Text style={styles.typeText}>{book.type}</Text>
+              </View>
+            </View>
+            <Text variant="titleMedium" style={styles.price}>{t('price_label')}: {book.precio}€</Text>
+          </Card.Content>
+          <Card.Actions>
+            <Button 
+              icon={() => <RNText style={{ fontSize: 16 }}>💬</RNText>}
+              mode="contained" 
+              onPress={() => handleTalkToSeller(book)}
+              style={{ backgroundColor: '#D183BA' }}
+            >
+              {t('talk_to_seller')}
+            </Button>
+            {book.type === 'VENTA' ? (
+              <Button 
+                icon={() => <RNText style={{ fontSize: 16 }}>💰</RNText>}
+                mode="contained" 
+                onPress={async () => {
+                  try {
+                    await api.post(`/libros/buy/${book._id}`);
+                    showAlert(t('success'), `${t('buy_action')}: ${book.title}`);
+                    fetchMyBooks();
+                  } catch (err) {
+                    console.error('Error buying book:', err);
+                    showAlert(t('error'), 'No se pudo comprar el libro');
+                  }
+                }}
+                style={{ backgroundColor: '#D183BA', marginLeft: 8 }}
+              >
+                {t('buy_directly')}
+              </Button>
+            ) : (
+              <Button 
+                icon={() => <RNText style={{ fontSize: 16 }}>📅</RNText>}
+                mode="contained" 
+                onPress={async () => {
+                  try {
+                    await api.post(`/libros/rent/${book._id}`);
+                    showAlert(t('success'), `${t('rent_action')}: ${book.title}`);
+                    fetchMyBooks();
+                  } catch (err) {
+                    console.error('Error renting book:', err);
+                    showAlert(t('error'), 'No se pudo alquilar el libro');
+                  }
+                }}
+                style={{ backgroundColor: '#D183BA', marginLeft: 8 }}
+              >
+                {t('rent_directly')}
               </Button>
             )}
           </Card.Actions>
@@ -626,6 +732,7 @@ export default function MyBooksScreen() {
             { value: 'bought', label: t('bought', 'Comprados'), checkedColor: '#fff', uncheckedColor: '#555' },
             { value: 'rented', label: t('rented', 'Alquilados'), checkedColor: '#fff', uncheckedColor: '#555' },
             { value: 'reserved', label: t('reserved', 'Reservados'), checkedColor: '#fff', uncheckedColor: '#555' },
+            { value: 'favorites', label: t('favorites_title', 'Favoritos'), checkedColor: '#fff', uncheckedColor: '#555' },
           ]}
           style={styles.segmented}
           theme={{ colors: { secondaryContainer: '#D183BA', onSecondaryContainer: '#ffffff' } }}
@@ -655,6 +762,7 @@ export default function MyBooksScreen() {
               { value: 'bought', label: t('bought') },
               { value: 'rented', label: t('rented') },
               { value: 'reserved', label: t('reserved') },
+              { value: 'favorites', label: t('favorites_title', 'Favoritos') },
             ]}
             style={styles.segmented}
             theme={{ colors: { secondaryContainer: '#ffffff', onSecondaryContainer: '#D6AED2' } }}
