@@ -5,7 +5,7 @@ import { AppText as Text } from '../components/AppText';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import EventoService from '../services/evento';
-import EventMap from './EventMap'; 
+import EventMap from './EventMap';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // 👈 Importa AsyncStorage
 
 let DateTimePicker: any = null;
@@ -25,43 +25,43 @@ export default function CreateEventScreen() {
   const [newEventDescription, setNewEventDescription] = useState('');
   const [newEventDate, setNewEventDate] = useState<Date>(new Date());
   const [newEventDireccionExacta, setNewEventDireccionExacta] = useState('');
-  const [newEventLocation, setNewEventLocation] = useState<[number, number] | null>([41.3851, 2.1734]);
+  const [newEventLocation, setNewEventLocation] = useState<[number, number] | null>([
+    41.3851, 2.1734,
+  ]);
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
-  const fetchUser = async () => {
-    try {
-      const userRaw = await AsyncStorage.getItem('user');
-      console.log("JSON crudo del almacenamiento:", userRaw);
-      
-      if (userRaw) {
-        const userParsed = JSON.parse(userRaw);
-        
-        if (userParsed && userParsed.data && userParsed.data._id) {
-          setCreatorId(userParsed.data._id);
-          console.log("¡ID del creador detectado con éxito! ID:", userParsed.data._id);
-          return;
-        } 
-        else if (userParsed._id) {
-          setCreatorId(userParsed._id);
-          return;
+    const fetchUser = async () => {
+      try {
+        const userRaw = await AsyncStorage.getItem('user');
+        console.log('JSON crudo del almacenamiento:', userRaw);
+
+        if (userRaw) {
+          const userParsed = JSON.parse(userRaw);
+
+          if (userParsed && userParsed.data && userParsed.data._id) {
+            setCreatorId(userParsed.data._id);
+            console.log('¡ID del creador detectado con éxito! ID:', userParsed.data._id);
+            return;
+          } else if (userParsed._id) {
+            setCreatorId(userParsed._id);
+            return;
+          }
         }
+
+        console.warn("No se encontró 'data._id' en el storage. Aplicando ID de respaldo.");
+        setCreatorId('69f0a887be8660edb4f8ead5'); // El _id real de tu usuario 'usr1'
+      } catch (error) {
+        console.error('Error leyendo el usuario del almacenamiento:', error);
+        setCreatorId('69f0a887be8660edb4f8ead5'); // ID de respaldo en caso de excepción
       }
+    };
 
-      console.warn("No se encontró 'data._id' en el storage. Aplicando ID de respaldo.");
-      setCreatorId("69f0a887be8660edb4f8ead5"); // El _id real de tu usuario 'usr1'
-
-    } catch (error) {
-      console.error("Error leyendo el usuario del almacenamiento:", error);
-      setCreatorId("69f0a887be8660edb4f8ead5"); // ID de respaldo en caso de excepción
-    }
-  };
-
-  fetchUser();
-}, []);
+    fetchUser();
+  }, []);
 
   const handleMapPress = (e: any) => {
     if (e?.nativeEvent?.coordinate) {
@@ -95,11 +95,11 @@ export default function CreateEventScreen() {
       const eventData = {
         title: newEventTitle,
         description: newEventDescription,
-        creator: creatorId, 
+        creator: creatorId,
         eventDate: newEventDate.toISOString(),
         createdDate: new Date().toISOString(),
         location: {
-          type: "Point" as const,
+          type: 'Point' as const,
           coordinates: [newEventLocation[1], newEventLocation[0]] as [number, number],
         },
         direccionExacta: newEventDireccionExacta,
@@ -107,22 +107,21 @@ export default function CreateEventScreen() {
 
       await EventoService.createEvento(eventData);
 
-      Alert.alert("¡Éxito!", "¡Evento creado con éxito!", [
+      Alert.alert('¡Éxito!', '¡Evento creado con éxito!', [
         {
-          text: "OK",
+          text: 'OK',
           onPress: () => {
-            setNewEventTitle("");
-            setNewEventDescription("");
-            setNewEventDireccionExacta("");
+            setNewEventTitle('');
+            setNewEventDescription('');
+            setNewEventDireccionExacta('');
             setNewEventLocation([41.3851, 2.1734]);
             navigation.goBack();
-          }
-        }
+          },
+        },
       ]);
-
     } catch (error) {
-      console.error("Error submitting event:", error);
-      setErrorMsg("Error al añadir el evento en el servidor.");
+      console.error('Error submitting event:', error);
+      setErrorMsg('Error al añadir el evento en el servidor.');
     } finally {
       setLoading(false);
     }
@@ -140,7 +139,6 @@ export default function CreateEventScreen() {
 
       <Card style={styles.card}>
         <Card.Content>
-          
           <TextInput
             label="Título del Evento *"
             value={newEventTitle}
@@ -165,7 +163,9 @@ export default function CreateEventScreen() {
 
           {Platform.OS === 'web' ? (
             <View style={{ marginBottom: 14 }}>
-              <Text variant="bodySmall" style={styles.labelWeb}>Fecha y Hora del Evento *</Text>
+              <Text variant="bodySmall" style={styles.labelWeb}>
+                Fecha y Hora del Evento *
+              </Text>
               <input
                 type="datetime-local"
                 value={newEventDate.toISOString().substring(0, 16)}
@@ -213,13 +213,13 @@ export default function CreateEventScreen() {
           <Text variant="bodyMedium" style={styles.mapLabel}>
             Ubicación del Evento:
           </Text>
-          
-          <EventMap 
-            latitude={newEventLocation ? newEventLocation[0] : 41.3851} 
-            longitude={newEventLocation ? newEventLocation[1] : 2.1734} 
+
+          <EventMap
+            latitude={newEventLocation ? newEventLocation[0] : 41.3851}
+            longitude={newEventLocation ? newEventLocation[1] : 2.1734}
             title={newEventTitle}
             description={newEventDireccionExacta}
-            onMapPress={handleMapPress} 
+            onMapPress={handleMapPress}
           />
 
           <View style={styles.row}>
@@ -244,23 +244,22 @@ export default function CreateEventScreen() {
               ⚠️ {errorMsg}
             </HelperText>
           )}
-
         </Card.Content>
 
         <Card.Actions style={{ padding: 16 }}>
-          <Button 
-            mode="outlined" 
-            onPress={() => navigation.goBack()} 
+          <Button
+            mode="outlined"
+            onPress={() => navigation.goBack()}
             disabled={loading}
             textColor="#7c3aed"
             style={{ marginRight: 8, borderColor: '#7c3aed' }}
           >
             Cancelar
           </Button>
-          
-          <Button 
-            mode="contained" 
-            onPress={handleSubmit} 
+
+          <Button
+            mode="contained"
+            onPress={handleSubmit}
             loading={loading}
             disabled={loading}
             buttonColor="#7c3aed"

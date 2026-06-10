@@ -14,19 +14,20 @@ La idea desenvolupada és la següent:
 
 Actualment, l’exercici està completament operatiu i inclou les funcionalitats següents:
 
-* S’ha creat un apartat específic de **reptes** dins de l’aplicació.
-* Es mostren diferents reptes relacionats amb:
+- S’ha creat un apartat específic de **reptes** dins de l’aplicació.
+- Es mostren diferents reptes relacionats amb:
 
-  * Comprar llibres.
-  * Llogar llibres.
-  * Assistir a esdeveniments.
-  * Rebre valoracions.
-  * Seguir usuaris.
-* Cada repte mostra clarament quin és l’objectiu que l’usuari ha de complir.
-* L’usuari pot veure el seu progrés en cada repte.
-* Quan un repte arriba al seu objectiu, aquest apareix com a **completat**.
-* L’usuari pot veure un historial dels reptes completats.
-* S’ha afegit una targeta de felicitació que apareix quan l’usuari ha completat tots els reptes disponibles.
+  - Comprar llibres.
+  - Llogar llibres.
+  - Assistir a esdeveniments.
+  - Rebre valoracions.
+  - Seguir usuaris.
+
+- Cada repte mostra clarament quin és l’objectiu que l’usuari ha de complir.
+- L’usuari pot veure el seu progrés en cada repte.
+- Quan un repte arriba al seu objectiu, aquest apareix com a **completat**.
+- L’usuari pot veure un historial dels reptes completats.
+- S’ha afegit una targeta de felicitació que apareix quan l’usuari ha completat tots els reptes disponibles.
 
 ## Estat actual de l’exercici
 
@@ -38,18 +39,18 @@ L’usuari pot accedir a l’apartat de reptes, consultar els objectius disponib
 
 Les parts que funcionen correctament són:
 
-* Visualització de l’apartat de reptes.
-* Visualització dels reptes disponibles.
-* Mostra de l’objectiu de cada repte.
-* Càlcul i visualització del progrés de l’usuari.
-* Reptes relacionats amb la compra de llibres.
-* Reptes relacionats amb el lloguer de llibres.
-* Reptes relacionats amb l’assistència a esdeveniments.
-* Reptes relacionats amb rebre valoracions.
-* Reptes relacionats amb seguir usuaris.
-* Marcatge automàtic dels reptes completats.
-* Historial de reptes completats.
-* Targeta de felicitació quan tots els reptes estan completats.
+- Visualització de l’apartat de reptes.
+- Visualització dels reptes disponibles.
+- Mostra de l’objectiu de cada repte.
+- Càlcul i visualització del progrés de l’usuari.
+- Reptes relacionats amb la compra de llibres.
+- Reptes relacionats amb el lloguer de llibres.
+- Reptes relacionats amb l’assistència a esdeveniments.
+- Reptes relacionats amb rebre valoracions.
+- Reptes relacionats amb seguir usuaris.
+- Marcatge automàtic dels reptes completats.
+- Historial de reptes completats.
+- Targeta de felicitació quan tots els reptes estan completats.
 
 ## Parts pendents de codificar
 
@@ -57,15 +58,16 @@ No hi ha parts principals pendents de codificar en relació amb l’abast plante
 
 Com a possibles millores futures, es podrien afegir:
 
-* Més tipus de reptes.
-* Diferents nivells de dificultat.
-* Recompenses o insígnies per completar reptes.
-* Notificacions quan l’usuari completi un repte.
-* Creació de diferents nivells d’usuari, com **Bronze**, **Plata** i **Or**, en funció del nombre de reptes aconseguits.
+- Més tipus de reptes.
+- Diferents nivells de dificultat.
+- Recompenses o insígnies per completar reptes.
+- Notificacions quan l’usuari completi un repte.
+- Creació de diferents nivells d’usuari, com **Bronze**, **Plata** i **Or**, en funció del nombre de reptes aconseguits.
+
 ## Ús de IA
 
 Durant el desenvolupament de l’exercici s’ha utilitzat IA com a suport per a les tasques següents:
 
-* Millorar la redacció i l’estructura d’aquest document README.
-* Arreglar i millorar l’estètica de l’apartat de reptes.
-* Arreglar i millorar l’estètica de la targeta de felicitació que apareix quan l’usuari completa tots els reptes.
+- Millorar la redacció i l’estructura d’aquest document README.
+- Arreglar i millorar l’estètica de l’apartat de reptes.
+- Arreglar i millorar l’estètica de la targeta de felicitació que apareix quan l’usuari completa tots els reptes.

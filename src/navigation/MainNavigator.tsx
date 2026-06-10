@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Text, View, DeviceEventEmitter } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createNativeStackNavigator } from '@react-navigation/native-stack'; 
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ProfileScreen from '../screens/ProfileScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import MyBooksScreen from '../screens/MyBooksScreen';
 import BuzonScreen from '../screens/BuzonScreen';
 import DiscoverScreen from '../screens/DiscoverScreen';
-import CreateEventScreen from '../screens/CreateEventScreen'; 
-import AddBookScreen from '../screens/AddBookScreen'; 
+import CreateEventScreen from '../screens/CreateEventScreen';
+import AddBookScreen from '../screens/AddBookScreen';
 import style from '../../styles/default.old';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
@@ -38,7 +38,7 @@ function ChatTabIcon({ size, hasUnread }: { size: number; hasUnread: boolean }) 
     </View>
   );
 }
-const Stack = createNativeStackNavigator(); 
+const Stack = createNativeStackNavigator();
 
 // 1. Contenedor de las pestañas inferiores fijas
 function BottomTabs() {
@@ -80,9 +80,9 @@ function BottomTabs() {
     <Tab.Navigator
       initialRouteName="Dashboard"
       screenOptions={{
-        tabBarActiveTintColor: "#000080",
+        tabBarActiveTintColor: '#000080',
         headerStyle: { backgroundColor: '#D6AED2' },
-        sceneStyle: style.screen
+        sceneStyle: style.screen,
       }}
     >
       <Tab.Screen
@@ -90,7 +90,7 @@ function BottomTabs() {
         component={DashboardScreen}
         options={{
           title: t('dash_header'),
-          tabBarIcon: ({ size }) => <Text style={{ fontSize: size }}>🏠</Text>
+          tabBarIcon: ({ size }) => <Text style={{ fontSize: size }}>🏠</Text>,
         }}
       />
       <Tab.Screen
@@ -98,7 +98,7 @@ function BottomTabs() {
         component={MyBooksScreen}
         options={{
           title: t('my_books'),
-          tabBarIcon: ({ size }) => <Text style={{ fontSize: size }}>📚</Text>
+          tabBarIcon: ({ size }) => <Text style={{ fontSize: size }}>📚</Text>,
         }}
       />
       <Tab.Screen
@@ -106,7 +106,7 @@ function BottomTabs() {
         component={DiscoverScreen}
         options={{
           title: t('discover_title', { defaultValue: 'Descubrir' }),
-          tabBarIcon: ({ size }) => <Text style={{ fontSize: size }}>🧭</Text>
+          tabBarIcon: ({ size }) => <Text style={{ fontSize: size }}>🧭</Text>,
         }}
       />
       <Tab.Screen
@@ -114,7 +114,7 @@ function BottomTabs() {
         component={BuzonScreen}
         options={{
           title: 'Chats',
-          tabBarIcon: ({ size }) => <ChatTabIcon size={size} hasUnread={hasUnread} />
+          tabBarIcon: ({ size }) => <ChatTabIcon size={size} hasUnread={hasUnread} />,
         }}
       />
       <Tab.Screen
@@ -122,7 +122,7 @@ function BottomTabs() {
         component={ProfileScreen}
         options={{
           title: t('profile_title'),
-          tabBarIcon: ({ size }) => <Text style={{ fontSize: size }}>👤</Text>
+          tabBarIcon: ({ size }) => <Text style={{ fontSize: size }}>👤</Text>,
         }}
       />
     </Tab.Navigator>
@@ -135,19 +135,19 @@ export default function MainNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {/* Tu vista con el menú inferior */}
       <Stack.Screen name="MainTabs" component={BottomTabs} />
-      
+
       {/* Pantalla para Crear Eventos */}
-      <Stack.Screen 
-        name="CreateEventScreen" 
-        component={CreateEventScreen} 
-        options={{ headerShown: true, title: 'Crear Nuevo Evento' }} 
+      <Stack.Screen
+        name="CreateEventScreen"
+        component={CreateEventScreen}
+        options={{ headerShown: true, title: 'Crear Nuevo Evento' }}
       />
 
       {/* Pantalla para Añadir Libros formalizada en este Stack */}
-      <Stack.Screen 
-        name="AddBook" 
-        component={AddBookScreen} 
-        options={{ headerShown: true, title: 'Añadir Nuevo Libro' }} 
+      <Stack.Screen
+        name="AddBook"
+        component={AddBookScreen}
+        options={{ headerShown: true, title: 'Añadir Nuevo Libro' }}
       />
     </Stack.Navigator>
   );

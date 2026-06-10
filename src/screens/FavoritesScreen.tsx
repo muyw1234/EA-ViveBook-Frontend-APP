@@ -1,6 +1,27 @@
 import React, { useState, useCallback } from 'react';
-import { View, ScrollView, StyleSheet, ActivityIndicator, Alert, FlatList, Dimensions, Text as RNText, Platform } from 'react-native';
-import { Card, Button, Menu, Divider, IconButton, Chip, useTheme, Portal, Modal, TextInput } from 'react-native-paper';
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Dimensions,
+  Text as RNText,
+  Platform,
+} from 'react-native';
+import {
+  Card,
+  Button,
+  Menu,
+  Divider,
+  IconButton,
+  Chip,
+  useTheme,
+  Portal,
+  Modal,
+  TextInput,
+} from 'react-native-paper';
 import { AppText as Text } from '../components/AppText';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
@@ -45,14 +66,17 @@ export default function FavoritesScreen() {
       // response.data.data is the array of populated books
       const favList = response.data?.data || response.data || [];
       setBooks(favList);
-      
+
       try {
         const resResponse = await api.get('/reservas/solicitadas');
         const resList = resResponse.data?.data || resResponse.data || [];
         const pendingBookIds = Array.isArray(resList)
           ? resList
-              .filter((r: any) => r.estado?.toUpperCase() === 'PENDIENTE' || r.estado?.toUpperCase() === 'ACEPTADA')
-              .map((r: any) => typeof r.libro === 'string' ? r.libro : r.libro?._id)
+              .filter(
+                (r: any) =>
+                  r.estado?.toUpperCase() === 'PENDIENTE' || r.estado?.toUpperCase() === 'ACEPTADA',
+              )
+              .map((r: any) => (typeof r.libro === 'string' ? r.libro : r.libro?._id))
               .filter(Boolean)
           : [];
         setRequestedBookIds(pendingBookIds);
@@ -65,7 +89,7 @@ export default function FavoritesScreen() {
         if (userStr) {
           const u = JSON.parse(userStr);
           setUserId(u._id);
-          
+
           const reqResponse = await api.get('/message-requests/sent');
           setMsgRequests(reqResponse.data?.data || reqResponse.data || []);
 
@@ -75,7 +99,6 @@ export default function FavoritesScreen() {
       } catch (err) {
         console.error('Error fetching user info/chats/requests:', err);
       }
-      
     } catch (error) {
       console.error('Error fetching favorite books:', error);
     } finally {
@@ -86,7 +109,7 @@ export default function FavoritesScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchFavorites();
-    }, [])
+    }, []),
   );
 
   const openMenu = (id: string) => setMenuVisible(id);
@@ -107,9 +130,14 @@ export default function FavoritesScreen() {
       return;
     }
 
-    const pending = msgRequests.find((r: any) => (r.book === book._id || r.book?._id === book._id) && r.status === 'pending');
+    const pending = msgRequests.find(
+      (r: any) => (r.book === book._id || r.book?._id === book._id) && r.status === 'pending',
+    );
     if (pending) {
-      showAlert('Solicitud enviada', 'Ya tienes una solicitud de mensaje pendiente para este libro.');
+      showAlert(
+        'Solicitud enviada',
+        'Ya tienes una solicitud de mensaje pendiente para este libro.',
+      );
       return;
     }
 
@@ -124,11 +152,11 @@ export default function FavoritesScreen() {
     try {
       await api.post('/message-requests', {
         bookId: selectedBookForRequest._id,
-        initialMessage: initialMessage.trim()
+        initialMessage: initialMessage.trim(),
       });
       showAlert('Solicitud enviada', 'Tu solicitud de mensaje ha sido enviada al vendedor.');
       setRequestModalVisible(false);
-      
+
       const reqResponse = await api.get('/message-requests/sent');
       setMsgRequests(reqResponse.data?.data || reqResponse.data || []);
     } catch (error: any) {
@@ -143,9 +171,13 @@ export default function FavoritesScreen() {
   const handleBuyOrRentDirectly = async (book: any) => {
     closeMenu();
     try {
-      const endpoint = book.type === 'VENTA' ? `/libros/buy/${book._id}` : `/libros/rent/${book._id}`;
+      const endpoint =
+        book.type === 'VENTA' ? `/libros/buy/${book._id}` : `/libros/rent/${book._id}`;
       await api.post(endpoint);
-      showAlert(t('success'), `${book.type === 'VENTA' ? t('buy_action') : t('rent_action')}: ${book.title}`);
+      showAlert(
+        t('success'),
+        `${book.type === 'VENTA' ? t('buy_action') : t('rent_action')}: ${book.title}`,
+      );
       fetchFavorites();
     } catch (error) {
       console.error('Error in direct purchase/rental:', error);
@@ -156,7 +188,7 @@ export default function FavoritesScreen() {
   const handleReserveBook = async (book: any) => {
     try {
       await api.post('/reservas', { libroId: book._id });
-      setRequestedBookIds(prev => [...prev, book._id]);
+      setRequestedBookIds((prev) => [...prev, book._id]);
       showAlert('Solicitud enviada', 'Se ha solicitado la reserva correctamente.');
     } catch (error: any) {
       const msg =
@@ -170,10 +202,10 @@ export default function FavoritesScreen() {
   const handleToggleFavorite = async (bookId: string) => {
     try {
       // Optimistic update
-      setBooks(prev => prev.filter(b => b._id !== bookId));
-      
+      setBooks((prev) => prev.filter((b) => b._id !== bookId));
+
       await api.put(`/usuarios/favoritos/${bookId}`);
-      
+
       // Update local storage user data as well
       const userStr = await AsyncStorage.getItem('user');
       if (userStr) {
@@ -191,13 +223,21 @@ export default function FavoritesScreen() {
   };
 
   const renderBookItem = ({ item: book }: { item: any }) => {
-    const hasPending = msgRequests.some((r: any) => (r.book === book._id || r.book?._id === book._id) && r.status === 'pending');
-    
+    const hasPending = msgRequests.some(
+      (r: any) => (r.book === book._id || r.book?._id === book._id) && r.status === 'pending',
+    );
+
     return (
       <Card style={isGridView ? styles.gridCard : styles.listCard}>
         <Card.Content style={isGridView ? styles.gridCardContent : undefined}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text variant={isGridView ? "titleMedium" : "titleLarge"} numberOfLines={2} style={[styles.bookTitle, { flex: 1 }]}>
+          <View
+            style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+          >
+            <Text
+              variant={isGridView ? 'titleMedium' : 'titleLarge'}
+              numberOfLines={2}
+              style={[styles.bookTitle, { flex: 1 }]}
+            >
               {book.title}
             </Text>
             <IconButton
@@ -216,22 +256,36 @@ export default function FavoritesScreen() {
           )}
           {!isGridView && (
             <>
-              <Text variant="bodyMedium" style={{ marginTop: book.isReserved ? 6 : 0 }}>{t('isbn_label')}: {book.isbn}</Text>
-              {book.autor ? <Text variant="bodyMedium">{t('author_label')}: {book.autor}</Text> : null}
-              {book.categoria ? <Text variant="bodyMedium">Categoría: {book.categoria}</Text> : null}
-              <Text variant="bodyMedium">{t('state_label')}: {book.estado}</Text>
-              <Text variant="bodySmall" style={styles.typeTag}>{book.type}</Text>
+              <Text variant="bodyMedium" style={{ marginTop: book.isReserved ? 6 : 0 }}>
+                {t('isbn_label')}: {book.isbn}
+              </Text>
+              {book.autor ? (
+                <Text variant="bodyMedium">
+                  {t('author_label')}: {book.autor}
+                </Text>
+              ) : null}
+              {book.categoria ? (
+                <Text variant="bodyMedium">Categoría: {book.categoria}</Text>
+              ) : null}
+              <Text variant="bodyMedium">
+                {t('state_label')}: {book.estado}
+              </Text>
+              <Text variant="bodySmall" style={styles.typeTag}>
+                {book.type}
+              </Text>
             </>
           )}
-          
+
           {/* Attribution Section */}
           <View style={styles.uploaderSection}>
             <Text variant="bodySmall" style={styles.uploaderLabel}>
               {t('uploaded_by')}
             </Text>
-            <RNText 
+            <RNText
               style={styles.uploaderName}
-              onPress={() => navigation.navigate('UserProfile', { userId: book.owner?._id || book.owner })}
+              onPress={() =>
+                navigation.navigate('UserProfile', { userId: book.owner?._id || book.owner })
+              }
             >
               {book.owner?.name || t('unknown')}
             </RNText>
@@ -246,31 +300,35 @@ export default function FavoritesScreen() {
             visible={menuVisible === book._id}
             onDismiss={closeMenu}
             anchor={
-              <Button 
-                mode="contained" 
-                buttonColor={book.isReserved ? "#f59e0b" : "#D183BA"} 
+              <Button
+                mode="contained"
+                buttonColor={book.isReserved ? '#f59e0b' : '#D183BA'}
                 onPress={() => openMenu(book._id)}
                 style={styles.actionButton}
                 compact
                 labelStyle={{ fontSize: isGridView ? 10 : 12 }}
               >
-                {book.isReserved ? t('reserved', 'Reservado') : (book.type === 'VENTA' ? t('buy_action') : t('rent_action'))}
+                {book.isReserved
+                  ? t('reserved', 'Reservado')
+                  : book.type === 'VENTA'
+                    ? t('buy_action')
+                    : t('rent_action')}
               </Button>
             }
             contentStyle={{ backgroundColor: 'white' }}
           >
-            <Menu.Item 
-              onPress={() => handleTalkToSeller(book)} 
-              title={hasPending ? 'Solicitud enviada' : t('talk_to_seller')} 
+            <Menu.Item
+              onPress={() => handleTalkToSeller(book)}
+              title={hasPending ? 'Solicitud enviada' : t('talk_to_seller')}
               disabled={hasPending}
               leadingIcon={() => <RNText style={{ fontSize: 18 }}>💬</RNText>}
             />
             {!book.isReserved && (
               <>
                 <Divider />
-                <Menu.Item 
-                  onPress={() => handleBuyOrRentDirectly(book)} 
-                  title={book.type === 'VENTA' ? t('buy_directly') : t('rent_directly')} 
+                <Menu.Item
+                  onPress={() => handleBuyOrRentDirectly(book)}
+                  title={book.type === 'VENTA' ? t('buy_directly') : t('rent_directly')}
                   leadingIcon={() => <RNText style={{ fontSize: 18 }}>💰</RNText>}
                 />
               </>
@@ -283,13 +341,15 @@ export default function FavoritesScreen() {
               textColor={theme.colors.primary}
               style={[
                 styles.actionButton,
-                !requestedBookIds.includes(book._id) && { borderColor: theme.colors.primary }
+                !requestedBookIds.includes(book._id) && { borderColor: theme.colors.primary },
               ]}
               compact
               labelStyle={{ fontSize: isGridView ? 10 : 12 }}
               disabled={requestedBookIds.includes(book._id)}
             >
-              {requestedBookIds.includes(book._id) ? 'Reserva solicitada' : t('request_reserve', 'Solicitar reserva')}
+              {requestedBookIds.includes(book._id)
+                ? 'Reserva solicitada'
+                : t('request_reserve', 'Solicitar reserva')}
             </Button>
           )}
         </View>
@@ -304,17 +364,13 @@ export default function FavoritesScreen() {
     if (books.length <= ITEMS_PER_PAGE) return null;
     return (
       <View style={styles.paginationContainer}>
-        <Button 
-          disabled={page === 1} 
-          onPress={() => setPage(page - 1)}
-        >
+        <Button disabled={page === 1} onPress={() => setPage(page - 1)}>
           Anterior
         </Button>
-        <RNText style={styles.pageText}>Página {page} de {totalPages}</RNText>
-        <Button 
-          disabled={page === totalPages} 
-          onPress={() => setPage(page + 1)}
-        >
+        <RNText style={styles.pageText}>
+          Página {page} de {totalPages}
+        </RNText>
+        <Button disabled={page === totalPages} onPress={() => setPage(page + 1)}>
           Siguiente
         </Button>
       </View>
@@ -332,9 +388,11 @@ export default function FavoritesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <Text variant="headlineMedium" style={styles.header}>{t('favorites_title', 'Mis Favoritos')}</Text>
+        <Text variant="headlineMedium" style={styles.header}>
+          {t('favorites_title', 'Mis Favoritos')}
+        </Text>
         <IconButton
-          icon={isGridView ? "view-list" : "view-grid"}
+          icon={isGridView ? 'view-list' : 'view-grid'}
           iconColor="#D183BA"
           size={28}
           onPress={() => setIsGridView(!isGridView)}
@@ -349,7 +407,11 @@ export default function FavoritesScreen() {
         numColumns={isGridView ? 2 : 1}
         columnWrapperStyle={isGridView ? styles.columnWrapper : undefined}
         contentContainerStyle={styles.listContent}
-        ListEmptyComponent={<Text style={styles.emptyText}>{t('no_favorites', 'No tienes ningún libro en tus favoritos todavía.')}</Text>}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>
+            {t('no_favorites', 'No tienes ningún libro en tus favoritos todavía.')}
+          </Text>
+        }
         ListFooterComponent={renderFooter}
       />
 
@@ -364,7 +426,10 @@ export default function FavoritesScreen() {
             borderRadius: 16,
           }}
         >
-          <Text variant="headlineSmall" style={{ fontWeight: 'bold', marginBottom: 12, color: '#333' }}>
+          <Text
+            variant="headlineSmall"
+            style={{ fontWeight: 'bold', marginBottom: 12, color: '#333' }}
+          >
             Hablar con el vendedor
           </Text>
           <Text variant="bodyMedium" style={{ marginBottom: 16, color: '#666' }}>
@@ -383,15 +448,15 @@ export default function FavoritesScreen() {
             activeOutlineColor="#D183BA"
           />
           <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
-            <Button 
-              onPress={() => setRequestModalVisible(false)} 
+            <Button
+              onPress={() => setRequestModalVisible(false)}
               disabled={sendingRequest}
               textColor="#666"
             >
               Cancelar
             </Button>
-            <Button 
-              mode="contained" 
+            <Button
+              mode="contained"
               onPress={handleSendRequest}
               loading={sendingRequest}
               disabled={sendingRequest}
@@ -519,5 +584,5 @@ const styles = StyleSheet.create({
     fontSize: 10,
     textTransform: 'uppercase',
     marginTop: 4,
-  }
+  },
 });

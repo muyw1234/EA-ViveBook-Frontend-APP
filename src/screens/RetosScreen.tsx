@@ -22,7 +22,7 @@ interface Reto {
 
 export default function RetosScreen() {
   const { t } = {
-    t: useTranslation().t as (key: string, defaultValue?: string) => string
+    t: useTranslation().t as (key: string, defaultValue?: string) => string,
   };
   const [retos, setRetos] = useState<Reto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +46,7 @@ export default function RetosScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchRetos();
-    }, [])
+    }, []),
   );
 
   const toggleGroup = (type: string) => {
@@ -184,12 +184,7 @@ export default function RetosScreen() {
             style={[styles.filterTab, filter === 'all' && styles.filterTabActive]}
             onPress={() => setFilter('all')}
           >
-            <Text
-              style={[
-                styles.filterText,
-                filter === 'all' && styles.filterTextActive,
-              ]}
-            >
+            <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>
               {t('retos_all', 'Todos')}
             </Text>
           </TouchableOpacity>
@@ -197,12 +192,7 @@ export default function RetosScreen() {
             style={[styles.filterTab, filter === 'pending' && styles.filterTabActive]}
             onPress={() => setFilter('pending')}
           >
-            <Text
-              style={[
-                styles.filterText,
-                filter === 'pending' && styles.filterTextActive,
-              ]}
-            >
+            <Text style={[styles.filterText, filter === 'pending' && styles.filterTextActive]}>
               {t('retos_pending', 'Pendientes')}
             </Text>
           </TouchableOpacity>
@@ -210,12 +200,7 @@ export default function RetosScreen() {
             style={[styles.filterTab, filter === 'completed' && styles.filterTabActive]}
             onPress={() => setFilter('completed')}
           >
-            <Text
-              style={[
-                styles.filterText,
-                filter === 'completed' && styles.filterTextActive,
-              ]}
-            >
+            <Text style={[styles.filterText, filter === 'completed' && styles.filterTextActive]}>
               {t('retos_completed', 'Completados')}
             </Text>
           </TouchableOpacity>
@@ -231,8 +216,8 @@ export default function RetosScreen() {
               {completedCount === totalCount && totalCount > 0
                 ? 'Ya has completado todos los retos, próximamente habrá más!'
                 : filter === 'completed' && completedCount === 0
-                ? 'Todavía no has completado ningún reto.'
-                : t('retos_empty', 'No hay retos disponibles en este momento.')}
+                  ? 'Todavía no has completado ningún reto.'
+                  : t('retos_empty', 'No hay retos disponibles en este momento.')}
             </Text>
           </View>
         ) : (
@@ -249,12 +234,7 @@ export default function RetosScreen() {
                   activeOpacity={0.8}
                   style={styles.groupHeader}
                 >
-                  <View
-                    style={[
-                      styles.groupIconBadge,
-                      { backgroundColor: getBadgeColor(type) },
-                    ]}
-                  >
+                  <View style={[styles.groupIconBadge, { backgroundColor: getBadgeColor(type) }]}>
                     <Text style={styles.groupIconEmoji}>{getIcon(type)}</Text>
                   </View>
 
@@ -263,13 +243,12 @@ export default function RetosScreen() {
                       {t(`type_${type}`, type)}
                     </Text>
                     <Text variant="bodySmall" style={styles.groupSubtitle}>
-                      {completedInGroup} / {totalInGroup} {t('retos_completed_badge', 'Completado').toLowerCase()}
+                      {completedInGroup} / {totalInGroup}{' '}
+                      {t('retos_completed_badge', 'Completado').toLowerCase()}
                     </Text>
                   </View>
 
-                  <Text style={styles.expandChevron}>
-                    {isExpanded ? '▲' : '▼'}
-                  </Text>
+                  <Text style={styles.expandChevron}>{isExpanded ? '▲' : '▼'}</Text>
                 </TouchableOpacity>
 
                 {isExpanded && (

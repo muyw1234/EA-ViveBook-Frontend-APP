@@ -1,6 +1,29 @@
 import React, { useState, useCallback } from 'react';
-import { View, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert, Text as RNText, Platform, TouchableOpacity } from 'react-native';
-import { Card, Button, Avatar, SegmentedButtons, Portal, Modal, TextInput, ProgressBar, IconButton, Menu, Searchbar, TouchableRipple } from 'react-native-paper';
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  RefreshControl,
+  Alert,
+  Text as RNText,
+  Platform,
+  TouchableOpacity,
+} from 'react-native';
+import {
+  Card,
+  Button,
+  Avatar,
+  SegmentedButtons,
+  Portal,
+  Modal,
+  TextInput,
+  ProgressBar,
+  IconButton,
+  Menu,
+  Searchbar,
+  TouchableRipple,
+} from 'react-native-paper';
 import { AppText as Text } from '../components/AppText';
 import { useTranslation } from 'react-i18next';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -49,7 +72,7 @@ export default function MyBooksScreen() {
   React.useEffect(() => {
     setPage(1);
   }, [category, searchQuery, selectedCategory]);
-  
+
   // Edit Modal State
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingBook, setEditingBook] = useState<any>(null);
@@ -59,7 +82,7 @@ export default function MyBooksScreen() {
   const [editPrice, setEditPrice] = useState('');
   const [editState, setEditState] = useState('');
   const [updating, setUpdating] = useState(false);
-  
+
   // Rating Modal State
   const [ratingModalVisible, setRatingModalVisible] = useState(false);
   const [ratingValue, setRatingValue] = useState(5);
@@ -91,8 +114,8 @@ export default function MyBooksScreen() {
 
       const reservationsResponse = await api.get('/reservas/solicitadas');
       const resData = reservationsResponse.data?.data || reservationsResponse.data;
-      const accepted = Array.isArray(resData) 
-        ? resData.filter((r: any) => r.estado === 'ACEPTADA') 
+      const accepted = Array.isArray(resData)
+        ? resData.filter((r: any) => r.estado === 'ACEPTADA')
         : [];
       setReservedReservations(accepted);
 
@@ -109,7 +132,7 @@ export default function MyBooksScreen() {
         if (userStr) {
           const u = JSON.parse(userStr);
           setUserId(u._id);
-          
+
           const reqResponse = await api.get('/message-requests/sent');
           setMsgRequests(reqResponse.data?.data || reqResponse.data || []);
 
@@ -133,7 +156,7 @@ export default function MyBooksScreen() {
   const handleTalkToSeller = async (book: any) => {
     if (!book) return;
     const ownerId = book.owner?._id || book.owner;
-    
+
     if (userId && userId === ownerId) {
       showAlert(t('error'), 'No puedes hablar contigo mismo.');
       return;
@@ -145,9 +168,14 @@ export default function MyBooksScreen() {
       return;
     }
 
-    const pending = msgRequests.find((r: any) => (r.book === book._id || r.book?._id === book._id) && r.status === 'pending');
+    const pending = msgRequests.find(
+      (r: any) => (r.book === book._id || r.book?._id === book._id) && r.status === 'pending',
+    );
     if (pending) {
-      showAlert('Solicitud enviada', 'Ya tienes una solicitud de mensaje pendiente para este libro.');
+      showAlert(
+        'Solicitud enviada',
+        'Ya tienes una solicitud de mensaje pendiente para este libro.',
+      );
       return;
     }
 
@@ -162,11 +190,11 @@ export default function MyBooksScreen() {
     try {
       await api.post('/message-requests', {
         bookId: selectedBookForRequest._id,
-        initialMessage: initialMessage.trim()
+        initialMessage: initialMessage.trim(),
       });
       showAlert('Solicitud enviada', 'Tu solicitud de mensaje ha sido enviada al vendedor.');
       setRequestModalVisible(false);
-      
+
       const reqResponse = await api.get('/message-requests/sent');
       setMsgRequests(reqResponse.data?.data || reqResponse.data || []);
     } catch (error: any) {
@@ -181,7 +209,7 @@ export default function MyBooksScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchMyBooks();
-    }, [])
+    }, []),
   );
 
   const onRefresh = () => {
@@ -215,25 +243,23 @@ export default function MyBooksScreen() {
 
   const handleDeleteBook = () => {
     const isWeb = Platform.OS === 'web';
-    const message = t('delete_book_confirm') || '¿Seguro que quieres eliminar este libro? Esta acción no se puede deshacer.';
+    const message =
+      t('delete_book_confirm') ||
+      '¿Seguro que quieres eliminar este libro? Esta acción no se puede deshacer.';
 
     if (isWeb) {
       if (window.confirm(message)) {
         performDelete();
       }
     } else {
-      Alert.alert(
-        t('delete_book') || 'Eliminar libro',
-        message,
-        [
-          { text: t('cancel') || 'Cancelar', style: 'cancel' },
-          {
-            text: t('delete') || 'Eliminar',
-            style: 'destructive',
-            onPress: performDelete,
-          },
-        ]
-      );
+      Alert.alert(t('delete_book') || 'Eliminar libro', message, [
+        { text: t('cancel') || 'Cancelar', style: 'cancel' },
+        {
+          text: t('delete') || 'Eliminar',
+          style: 'destructive',
+          onPress: performDelete,
+        },
+      ]);
     }
   };
 
@@ -251,7 +277,7 @@ export default function MyBooksScreen() {
         isbn: editIsbn,
         precio: parseFloat(editPrice),
         estado: editState,
-        type: editingBook.type // Keep original type
+        type: editingBook.type, // Keep original type
       });
       showAlert(t('success'), t('profile_success_update'));
       setEditModalVisible(false);
@@ -272,32 +298,45 @@ export default function MyBooksScreen() {
     const now = new Date().getTime();
 
     let progress = 0;
-    let statusText = "";
+    let statusText = '';
 
     if (now < start) {
       progress = 0;
       const notStartedTrans = t('rental_not_started');
-      statusText = notStartedTrans && notStartedTrans !== 'rental_not_started' ? notStartedTrans : "El alquiler todavía no ha empezado";
+      statusText =
+        notStartedTrans && notStartedTrans !== 'rental_not_started'
+          ? notStartedTrans
+          : 'El alquiler todavía no ha empezado';
     } else if (now > end) {
       progress = 1;
       const finishedTrans = t('rental_finished');
-      statusText = finishedTrans && finishedTrans !== 'rental_finished' ? finishedTrans : "Alquiler finalizado";
+      statusText =
+        finishedTrans && finishedTrans !== 'rental_finished'
+          ? finishedTrans
+          : 'Alquiler finalizado';
     } else {
       const total = end - start;
       const elapsed = now - start;
       progress = elapsed / total;
       const daysRemaining = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
       const remainingTrans = t('rental_days_remaining');
-      statusText = (remainingTrans && remainingTrans !== 'rental_days_remaining' ? remainingTrans : "Quedan X días de alquiler").replace('X', daysRemaining.toString());
+      statusText = (
+        remainingTrans && remainingTrans !== 'rental_days_remaining'
+          ? remainingTrans
+          : 'Quedan X días de alquiler'
+      ).replace('X', daysRemaining.toString());
     }
 
     return (
       <View style={styles.rentalStatusContainer}>
         <Text variant="bodySmall" style={styles.rentalDates}>
-          {new Date(book.rentalStartDate).toLocaleDateString()} - {new Date(book.rentalEndDate).toLocaleDateString()}
+          {new Date(book.rentalStartDate).toLocaleDateString()} -{' '}
+          {new Date(book.rentalEndDate).toLocaleDateString()}
         </Text>
         <ProgressBar progress={progress} color="#D183BA" style={styles.progressBar} />
-        <Text variant="labelMedium" style={styles.statusText}>{statusText}</Text>
+        <Text variant="labelMedium" style={styles.statusText}>
+          {statusText}
+        </Text>
       </View>
     );
   };
@@ -325,7 +364,10 @@ export default function MyBooksScreen() {
   const alreadyRated = (bookId: string, type: string, reservationId?: string) => {
     if (reservationId) {
       return sentRatings.some((r: any) => {
-        const rResId = r.reservationId && typeof r.reservationId === 'object' ? r.reservationId._id : r.reservationId;
+        const rResId =
+          r.reservationId && typeof r.reservationId === 'object'
+            ? r.reservationId._id
+            : r.reservationId;
         return rResId && rResId.toString() === reservationId.toString();
       });
     }
@@ -355,13 +397,13 @@ export default function MyBooksScreen() {
         setSubmittingRating(false);
         return;
       }
-      
+
       const payload: any = {
         usuarioValorado: ownerId,
         libro: targetBook._id,
         tipoOperacion: targetReservationId ? 'RESERVA' : targetBook.type, // Should be VENTA, ALQUILER or RESERVA
         puntuacion: ratingValue,
-        comentario: ratingComment
+        comentario: ratingComment,
       };
 
       if (targetReservationId) {
@@ -369,10 +411,10 @@ export default function MyBooksScreen() {
       }
 
       console.log('Sending rating payload:', payload);
-      
+
       const response = await api.post('/valoraciones', payload);
       console.log('Rating response:', response.data);
-      
+
       showAlert(t('success'), t('rating_success'));
       setRatingModalVisible(false);
 
@@ -384,7 +426,7 @@ export default function MyBooksScreen() {
       fetchMyBooks();
     } catch (error: any) {
       console.error('Error submitting rating:', error);
-      
+
       // Robust error message extraction (extracts Joi validation errors and custom messages)
       let msg = t('rating_error');
       if (error.response?.data) {
@@ -399,12 +441,16 @@ export default function MyBooksScreen() {
       } else if (error.message) {
         msg = error.message;
       }
-      
+
       // Handle MongoDB Duplicate Key Error (11000) or generic backend string errors that indicate duplicates
-      if (msg.includes('11000') || msg.toLowerCase().includes('duplicate') || error.response?.data?.error?.code === 11000) {
+      if (
+        msg.includes('11000') ||
+        msg.toLowerCase().includes('duplicate') ||
+        error.response?.data?.error?.code === 11000
+      ) {
         msg = 'Ya has valorado a este usuario por este libro.';
       }
-      
+
       showAlert(t('error'), msg);
     } finally {
       setSubmittingRating(false);
@@ -451,7 +497,9 @@ export default function MyBooksScreen() {
       return (
         <Card style={styles.emptyCard}>
           <Card.Content>
-            <Text variant="bodyLarge" style={styles.emptyText}>{t('no_books')}</Text>
+            <Text variant="bodyLarge" style={styles.emptyText}>
+              {t('no_books')}
+            </Text>
           </Card.Content>
         </Card>
       );
@@ -465,14 +513,29 @@ export default function MyBooksScreen() {
           <Card.Content>
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
-                <Text variant="titleLarge" style={styles.bookTitle}>{res.libro?.title}</Text>
-                {res.libro?.autor ? <Text variant="bodyMedium" style={styles.bookDetails}>{t('author_label')}: {res.libro.autor}</Text> : null}
-                <Text variant="bodyMedium" style={styles.bookDetails}>{t('isbn_label')}: {res.libro?.isbn}</Text>
+                <Text variant="titleLarge" style={styles.bookTitle}>
+                  {res.libro?.title}
+                </Text>
+                {res.libro?.autor ? (
+                  <Text variant="bodyMedium" style={styles.bookDetails}>
+                    {t('author_label')}: {res.libro.autor}
+                  </Text>
+                ) : null}
+                <Text variant="bodyMedium" style={styles.bookDetails}>
+                  {t('isbn_label')}: {res.libro?.isbn}
+                </Text>
                 <Text variant="bodyMedium" style={styles.bookDetails}>
                   Vendedor: {res.propietario?.name || 'Desconocido'}
                 </Text>
-                <Text variant="bodyMedium" style={[styles.bookDetails, { fontWeight: 'bold', color: '#f59e0b', marginTop: 4 }]}>
-                  Fecha Límite: {res.fechaLimite ? new Date(res.fechaLimite).toLocaleDateString() : 'Sin fecha'}
+                <Text
+                  variant="bodyMedium"
+                  style={[
+                    styles.bookDetails,
+                    { fontWeight: 'bold', color: '#f59e0b', marginTop: 4 },
+                  ]}
+                >
+                  Fecha Límite:{' '}
+                  {res.fechaLimite ? new Date(res.fechaLimite).toLocaleDateString() : 'Sin fecha'}
                 </Text>
                 <Text variant="bodyMedium" style={styles.bookDetails}>
                   Estado de Reserva: {res.estado}
@@ -484,18 +547,18 @@ export default function MyBooksScreen() {
             </View>
           </Card.Content>
           <Card.Actions>
-            <Button 
+            <Button
               icon={() => <RNText style={{ fontSize: 16 }}>💬</RNText>}
-              mode="contained" 
+              mode="contained"
               onPress={() => handleTalkToSeller(res.libro)}
               style={{ backgroundColor: '#D183BA' }}
             >
               {t('talk_to_seller')}
             </Button>
             {!alreadyRated('', '', res._id) && (
-              <Button 
+              <Button
                 icon={() => <RNText style={{ fontSize: 16 }}>⭐</RNText>}
-                mode="contained" 
+                mode="contained"
                 onPress={() => handleRateReservation(res)}
                 style={{ backgroundColor: '#f59e0b', marginLeft: 8 }}
               >
@@ -514,17 +577,29 @@ export default function MyBooksScreen() {
           <Card.Content>
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text variant="titleLarge" style={[styles.bookTitle, { flex: 1 }]} numberOfLines={2}>{book.title}</Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text
+                    variant="titleLarge"
+                    style={[styles.bookTitle, { flex: 1 }]}
+                    numberOfLines={2}
+                  >
+                    {book.title}
+                  </Text>
                   <IconButton
                     icon="heart"
                     iconColor="#ef4444"
                     size={24}
                     onPress={async () => {
                       try {
-                        setFavoriteBooks(prev => prev.filter(b => b._id !== book._id));
+                        setFavoriteBooks((prev) => prev.filter((b) => b._id !== book._id));
                         await api.put(`/usuarios/favoritos/${book._id}`);
-                        
+
                         const userStr = await AsyncStorage.getItem('user');
                         if (userStr) {
                           const user = JSON.parse(userStr);
@@ -542,29 +617,39 @@ export default function MyBooksScreen() {
                     style={{ margin: 0 }}
                   />
                 </View>
-                {book.autor ? <Text variant="bodyMedium" style={styles.bookDetails}>{t('author_label')}: {book.autor}</Text> : null}
-                <Text variant="bodyMedium" style={styles.bookDetails}>{t('isbn_label')}: {book.isbn}</Text>
-                <Text variant="bodyMedium" style={styles.bookDetails}>{t('state_label')}: {book.estado}</Text>
+                {book.autor ? (
+                  <Text variant="bodyMedium" style={styles.bookDetails}>
+                    {t('author_label')}: {book.autor}
+                  </Text>
+                ) : null}
+                <Text variant="bodyMedium" style={styles.bookDetails}>
+                  {t('isbn_label')}: {book.isbn}
+                </Text>
+                <Text variant="bodyMedium" style={styles.bookDetails}>
+                  {t('state_label')}: {book.estado}
+                </Text>
               </View>
               <View style={styles.typeBadge}>
                 <Text style={styles.typeText}>{book.type}</Text>
               </View>
             </View>
-            <Text variant="titleMedium" style={styles.price}>{t('price_label')}: {book.precio}€</Text>
+            <Text variant="titleMedium" style={styles.price}>
+              {t('price_label')}: {book.precio}€
+            </Text>
           </Card.Content>
           <Card.Actions>
-            <Button 
+            <Button
               icon={() => <RNText style={{ fontSize: 16 }}>💬</RNText>}
-              mode="contained" 
+              mode="contained"
               onPress={() => handleTalkToSeller(book)}
               style={{ backgroundColor: '#D183BA' }}
             >
               {t('talk_to_seller')}
             </Button>
             {book.type === 'VENTA' ? (
-              <Button 
+              <Button
                 icon={() => <RNText style={{ fontSize: 16 }}>💰</RNText>}
-                mode="contained" 
+                mode="contained"
                 onPress={async () => {
                   try {
                     await api.post(`/libros/buy/${book._id}`);
@@ -580,9 +665,9 @@ export default function MyBooksScreen() {
                 {t('buy_directly')}
               </Button>
             ) : (
-              <Button 
+              <Button
                 icon={() => <RNText style={{ fontSize: 16 }}>📅</RNText>}
-                mode="contained" 
+                mode="contained"
                 onPress={async () => {
                   try {
                     await api.post(`/libros/rent/${book._id}`);
@@ -608,10 +693,20 @@ export default function MyBooksScreen() {
         <Card.Content>
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
-              <Text variant="titleLarge" style={styles.bookTitle}>{book.title}</Text>
-              {book.autor ? <Text variant="bodyMedium" style={styles.bookDetails}>{t('author_label')}: {book.autor}</Text> : null}
-              <Text variant="bodyMedium" style={styles.bookDetails}>{t('isbn_label')}: {book.isbn}</Text>
-              <Text variant="bodyMedium" style={styles.bookDetails}>{t('state_label')}: {book.estado}</Text>
+              <Text variant="titleLarge" style={styles.bookTitle}>
+                {book.title}
+              </Text>
+              {book.autor ? (
+                <Text variant="bodyMedium" style={styles.bookDetails}>
+                  {t('author_label')}: {book.autor}
+                </Text>
+              ) : null}
+              <Text variant="bodyMedium" style={styles.bookDetails}>
+                {t('isbn_label')}: {book.isbn}
+              </Text>
+              <Text variant="bodyMedium" style={styles.bookDetails}>
+                {t('state_label')}: {book.estado}
+              </Text>
               {(category === 'bought' || category === 'rented') && book.owner && (
                 <Text variant="bodySmall" style={{ color: '#888', marginTop: 4 }}>
                   {t('uploaded_by')} {book.owner.name}
@@ -622,15 +717,17 @@ export default function MyBooksScreen() {
               <Text style={styles.typeText}>{book.type}</Text>
             </View>
           </View>
-          <Text variant="titleMedium" style={styles.price}>{t('price_label')}: {book.precio}€</Text>
-          
+          <Text variant="titleMedium" style={styles.price}>
+            {t('price_label')}: {book.precio}€
+          </Text>
+
           {category === 'rented' && renderRentalStatus(book)}
         </Card.Content>
         <Card.Actions>
           {category === 'uploaded' ? (
-            <Button 
+            <Button
               icon={() => <RNText style={{ fontSize: 16 }}>✏️</RNText>}
-              mode="outlined" 
+              mode="outlined"
               onPress={() => handleEditPress(book)}
               style={styles.editButton}
               textColor="#D183BA"
@@ -639,9 +736,9 @@ export default function MyBooksScreen() {
             </Button>
           ) : (
             !alreadyRated(book._id, book.type) && (
-              <Button 
+              <Button
                 icon={() => <RNText style={{ fontSize: 16 }}>⭐</RNText>}
-                mode="contained" 
+                mode="contained"
                 onPress={() => handleRateSeller(book)}
                 style={{ backgroundColor: '#f59e0b' }}
               >
@@ -657,22 +754,18 @@ export default function MyBooksScreen() {
   const renderFooter = () => {
     const currentBooks = getFilteredBooks();
     if (currentBooks.length <= ITEMS_PER_PAGE) return null;
-    
+
     const totalPages = Math.ceil(currentBooks.length / ITEMS_PER_PAGE);
 
     return (
       <View style={styles.paginationContainer}>
-        <Button 
-          disabled={page === 1} 
-          onPress={() => setPage(page - 1)}
-        >
+        <Button disabled={page === 1} onPress={() => setPage(page - 1)}>
           Anterior
         </Button>
-        <RNText style={styles.pageText}>Página {page} de {totalPages}</RNText>
-        <Button 
-          disabled={page === totalPages} 
-          onPress={() => setPage(page + 1)}
-        >
+        <RNText style={styles.pageText}>
+          Página {page} de {totalPages}
+        </RNText>
+        <Button disabled={page === totalPages} onPress={() => setPage(page + 1)}>
           Siguiente
         </Button>
       </View>
@@ -689,15 +782,17 @@ export default function MyBooksScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F5EBF4' }}>
-      <ScrollView 
+      <ScrollView
         style={styles.container}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#D183BA"]} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#D183BA']} />
         }
       >
         <View style={styles.headerContainer}>
           <RNText style={{ fontSize: 32 }}>📚</RNText>
-          <Text variant="headlineMedium" style={styles.header}>{t('my_books')}</Text>
+          <Text variant="headlineMedium" style={styles.header}>
+            {t('my_books')}
+          </Text>
         </View>
 
         <Searchbar
@@ -728,11 +823,36 @@ export default function MyBooksScreen() {
             setPage(1);
           }}
           buttons={[
-            { value: 'uploaded', label: t('uploaded', 'Subidos'), checkedColor: '#fff', uncheckedColor: '#555' },
-            { value: 'bought', label: t('bought', 'Comprados'), checkedColor: '#fff', uncheckedColor: '#555' },
-            { value: 'rented', label: t('rented', 'Alquilados'), checkedColor: '#fff', uncheckedColor: '#555' },
-            { value: 'reserved', label: t('reserved', 'Reservados'), checkedColor: '#fff', uncheckedColor: '#555' },
-            { value: 'favorites', label: t('favorites_title', 'Favoritos'), checkedColor: '#fff', uncheckedColor: '#555' },
+            {
+              value: 'uploaded',
+              label: t('uploaded', 'Subidos'),
+              checkedColor: '#fff',
+              uncheckedColor: '#555',
+            },
+            {
+              value: 'bought',
+              label: t('bought', 'Comprados'),
+              checkedColor: '#fff',
+              uncheckedColor: '#555',
+            },
+            {
+              value: 'rented',
+              label: t('rented', 'Alquilados'),
+              checkedColor: '#fff',
+              uncheckedColor: '#555',
+            },
+            {
+              value: 'reserved',
+              label: t('reserved', 'Reservados'),
+              checkedColor: '#fff',
+              uncheckedColor: '#555',
+            },
+            {
+              value: 'favorites',
+              label: t('favorites_title', 'Favoritos'),
+              checkedColor: '#fff',
+              uncheckedColor: '#555',
+            },
           ]}
           style={styles.segmented}
           theme={{ colors: { secondaryContainer: '#D183BA', onSecondaryContainer: '#ffffff' } }}
@@ -740,7 +860,7 @@ export default function MyBooksScreen() {
 
         {renderContent()}
         {renderFooter()}
-        
+
         <View style={{ height: 40 }} />
       </ScrollView>
 
@@ -751,8 +871,10 @@ export default function MyBooksScreen() {
           onDismiss={() => setIsFilterModalVisible(false)}
           contentContainerStyle={styles.modalContent}
         >
-          <Text variant="titleLarge" style={styles.modalTitle}>Filtros</Text>
-          
+          <Text variant="titleLarge" style={styles.modalTitle}>
+            Filtros
+          </Text>
+
           <Text style={styles.labelModal}>Ver libros:</Text>
           <SegmentedButtons
             value={filterCategoryType}
@@ -795,7 +917,19 @@ export default function MyBooksScreen() {
               }}
               title="Todas"
             />
-            {['Terror', 'Misterio', 'Aventura', 'Juvenil', 'Policíaco', 'Infantil', 'Autoayuda', 'Novela', 'Biografías', 'Cómics', 'Otros'].map((cat) => (
+            {[
+              'Terror',
+              'Misterio',
+              'Aventura',
+              'Juvenil',
+              'Policíaco',
+              'Infantil',
+              'Autoayuda',
+              'Novela',
+              'Biografías',
+              'Cómics',
+              'Otros',
+            ].map((cat) => (
               <Menu.Item
                 key={cat}
                 onPress={() => {
@@ -807,8 +941,8 @@ export default function MyBooksScreen() {
             ))}
           </Menu>
 
-          <Button 
-            mode="contained" 
+          <Button
+            mode="contained"
             onPress={handleApplyFilters}
             buttonColor="#D183BA"
             style={{ marginTop: 24 }}
@@ -822,8 +956,10 @@ export default function MyBooksScreen() {
           onDismiss={() => !updating && setEditModalVisible(false)}
           contentContainerStyle={styles.modalContent}
         >
-          <Text variant="headlineSmall" style={styles.modalTitle}>{t('edit_book_title')}</Text>
-          
+          <Text variant="headlineSmall" style={styles.modalTitle}>
+            {t('edit_book_title')}
+          </Text>
+
           <TextInput
             label={t('title_label')}
             value={editTitle}
@@ -843,7 +979,7 @@ export default function MyBooksScreen() {
             outlineColor="#D183BA"
             activeOutlineColor="#D183BA"
           />
-          
+
           <TextInput
             label={t('isbn_label')}
             value={editIsbn}
@@ -876,24 +1012,20 @@ export default function MyBooksScreen() {
           />
 
           <View style={styles.modalActions}>
-            <Button 
-              onPress={() => setEditModalVisible(false)} 
-              disabled={updating}
-              textColor="#666"
-            >
+            <Button onPress={() => setEditModalVisible(false)} disabled={updating} textColor="#666">
               {t('cancel')}
             </Button>
-            <Button 
-              mode="contained" 
+            <Button
+              mode="contained"
               onPress={handleDeleteBook}
               disabled={updating}
               buttonColor="#e53935"
             >
               Eliminar
             </Button>
-            <Button 
-              mode="contained" 
-              onPress={handleUpdateBook} 
+            <Button
+              mode="contained"
+              onPress={handleUpdateBook}
               loading={updating}
               disabled={updating}
               buttonColor="#D183BA"
@@ -902,17 +1034,24 @@ export default function MyBooksScreen() {
             </Button>
           </View>
         </Modal>
-        
+
         {/* Rating Modal */}
         <Modal
           visible={ratingModalVisible}
           onDismiss={() => !submittingRating && setRatingModalVisible(false)}
           contentContainerStyle={styles.modalContent}
         >
-          <Text variant="headlineSmall" style={styles.modalTitle}>{t('rating_title')}</Text>
+          <Text variant="headlineSmall" style={styles.modalTitle}>
+            {t('rating_title')}
+          </Text>
           {targetBook && (
             <Text variant="bodyMedium" style={{ textAlign: 'center', marginBottom: 15 }}>
-              {targetBook.title} {targetOwnerName ? `- ${targetOwnerName}` : (targetBook.owner?.name ? `- ${targetBook.owner.name}` : '')}
+              {targetBook.title}{' '}
+              {targetOwnerName
+                ? `- ${targetOwnerName}`
+                : targetBook.owner?.name
+                  ? `- ${targetBook.owner.name}`
+                  : ''}
             </Text>
           )}
 
@@ -923,7 +1062,9 @@ export default function MyBooksScreen() {
                 onPress={() => setRatingValue(star)}
                 style={{ padding: 5 }}
               >
-                <RNText style={{ fontSize: 32, color: star <= ratingValue ? '#f59e0b' : '#cbd5e1' }}>
+                <RNText
+                  style={{ fontSize: 32, color: star <= ratingValue ? '#f59e0b' : '#cbd5e1' }}
+                >
                   {star <= ratingValue ? '★' : '☆'}
                 </RNText>
               </TouchableOpacity>
@@ -943,16 +1084,16 @@ export default function MyBooksScreen() {
           />
 
           <View style={styles.modalActions}>
-            <Button 
-              onPress={() => setRatingModalVisible(false)} 
+            <Button
+              onPress={() => setRatingModalVisible(false)}
               disabled={submittingRating}
               textColor="#666"
             >
               {t('cancel')}
             </Button>
-            <Button 
-              mode="contained" 
-              onPress={submitRating} 
+            <Button
+              mode="contained"
+              onPress={submitRating}
               loading={submittingRating}
               disabled={submittingRating}
               buttonColor="#D183BA"
@@ -973,7 +1114,10 @@ export default function MyBooksScreen() {
             borderRadius: 16,
           }}
         >
-          <Text variant="headlineSmall" style={{ fontWeight: 'bold', marginBottom: 12, color: '#333' }}>
+          <Text
+            variant="headlineSmall"
+            style={{ fontWeight: 'bold', marginBottom: 12, color: '#333' }}
+          >
             Hablar con el vendedor
           </Text>
           <Text variant="bodyMedium" style={{ marginBottom: 16, color: '#666' }}>
@@ -992,15 +1136,15 @@ export default function MyBooksScreen() {
             activeOutlineColor="#D183BA"
           />
           <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
-            <Button 
-              onPress={() => setRequestModalVisible(false)} 
+            <Button
+              onPress={() => setRequestModalVisible(false)}
               disabled={sendingRequest}
               textColor="#666"
             >
               Cancelar
             </Button>
-            <Button 
-              mode="contained" 
+            <Button
+              mode="contained"
               onPress={handleSendRequest}
               loading={sendingRequest}
               disabled={sendingRequest}
@@ -1151,5 +1295,5 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#333',
     marginTop: 12,
-  }
+  },
 });

@@ -8,12 +8,10 @@ export default function AccessibilityMenu() {
 
   return (
     <View style={{ padding: 20 }}>
-      <Text style={{ fontSize: 20, marginBottom: 10 }}>
-        {t('accessibility_settings')}
-      </Text>
-      
+      <Text style={{ fontSize: 20, marginBottom: 10 }}>{t('accessibility_settings')}</Text>
+
       <Text style={{ marginBottom: 10 }}>{t('lang_label')}</Text>
-      
+
       <Button title="Español" onPress={() => changeLanguage('es')} />
       <Button title="Català" onPress={() => changeLanguage('ca')} />
       <Button title="English" onPress={() => changeLanguage('en')} />

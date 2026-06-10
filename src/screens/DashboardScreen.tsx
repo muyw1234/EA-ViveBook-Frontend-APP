@@ -2,12 +2,12 @@ import React from 'react';
 import { View, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { Button, Card, Searchbar, IconButton } from 'react-native-paper';
 import { AppText as Text } from '../components/AppText';
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../services/api';
-import * as Location from 'expo-location'; 
+import * as Location from 'expo-location';
 import { MultiEventMap } from './EventMap';
 
 interface MapMarkerData {
@@ -18,13 +18,15 @@ interface MapMarkerData {
 }
 
 function getKilometersDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const R = 6371; 
+  const R = 6371;
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
@@ -33,14 +35,17 @@ export default function DashboardScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const [searchQuery, setSearchQuery] = React.useState('');
-  
+
   const [followingItems, setFollowingItems] = React.useState<any[]>([]);
   const [followingPage, setFollowingPage] = React.useState(1);
   const itemsPerPage = 5;
 
   const [eventMarkers, setEventMarkers] = React.useState<MapMarkerData[]>([]);
-  
-  const [userLocation, setUserLocation] = React.useState<{ latitude: number; longitude: number } | null>(null);
+
+  const [userLocation, setUserLocation] = React.useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const [loadingLocation, setLoadingLocation] = React.useState(true);
   const [locationError, setLocationError] = React.useState<string | null>(null);
 
@@ -53,7 +58,7 @@ export default function DashboardScreen() {
 
       async function requestAndFetchLocation() {
         try {
-          let { status } = await Location.requestForegroundPermissionsAsync();
+          const { status } = await Location.requestForegroundPermissionsAsync();
           if (status !== 'granted') {
             setLocationError('Permiso de ubicación denegado.');
             setUserLocation({ latitude: 41.3851, longitude: 2.1734 });
@@ -71,9 +76,9 @@ export default function DashboardScreen() {
 
           locationSubscriber = await Location.watchPositionAsync(
             {
-              accuracy: Location.Accuracy.Balanced, 
-              timeInterval: 10000, 
-              distanceInterval: 20, 
+              accuracy: Location.Accuracy.Balanced,
+              timeInterval: 10000,
+              distanceInterval: 20,
             },
             (location: Location.LocationObject) => {
               setLocationError(null);
@@ -82,13 +87,13 @@ export default function DashboardScreen() {
                 longitude: location.coords.longitude,
               });
               setLoadingLocation(false);
-            }
+            },
           );
         } catch (err) {
-          console.error("Error en geolocalización:", err);
-          
+          console.error('Error en geolocalización:', err);
+
           try {
-            let lastKnown = await Location.getLastKnownPositionAsync({});
+            const lastKnown = await Location.getLastKnownPositionAsync({});
             if (lastKnown) {
               setUserLocation({
                 latitude: lastKnown.coords.latitude,
@@ -112,11 +117,11 @@ export default function DashboardScreen() {
               locationSubscriber.remove();
             }
           } catch (e) {
-            console.warn("Expo Location descuelgue controlado:", e);
+            console.warn('Expo Location descuelgue controlado:', e);
           }
         }
       };
-    }, [])
+    }, []),
   );
 
   // 2. Efecto para volver a pedir los eventos del backend si el usuario se mueve
@@ -124,7 +129,7 @@ export default function DashboardScreen() {
     if (userLocation) {
       fetchDashboardData(userLocation);
     }
-  }, [userLocation?.latitude, userLocation?.longitude]); 
+  }, [userLocation?.latitude, userLocation?.longitude]);
 
   // 3. Petición al Servidor y filtrado de eventos vigentes y cercanos
   const fetchDashboardData = async (currentLocation: { latitude: number; longitude: number }) => {
@@ -133,40 +138,50 @@ export default function DashboardScreen() {
       const user = profileRes.data;
 
       const eventsRes = await api.get('/eventos?limit=50'); // Aumentado el límite para tener más margen de filtrado
-      
+
       let items: any[] = [];
-      let markers: MapMarkerData[] = [];
-      
+      const markers: MapMarkerData[] = [];
+
       if (user) {
         if (user.followingUsers) {
-          items = items.concat(user.followingUsers.map((u: any) => ({ type: 'user', id: u._id || u, name: u.name || "Usuario", data: u })));
+          items = items.concat(
+            user.followingUsers.map((u: any) => ({
+              type: 'user',
+              id: u._id || u,
+              name: u.name || 'Usuario',
+              data: u,
+            })),
+          );
         }
         if (user.favoriteAuthors) {
-          items = items.concat(user.favoriteAuthors.map((a: string) => ({ type: 'author', id: a, name: a })));
+          items = items.concat(
+            user.favoriteAuthors.map((a: string) => ({ type: 'author', id: a, name: a })),
+          );
         }
         if (user.favoriteCategories) {
-          items = items.concat(user.favoriteCategories.map((c: string) => ({ type: 'category', id: c, name: c })));
+          items = items.concat(
+            user.favoriteCategories.map((c: string) => ({ type: 'category', id: c, name: c })),
+          );
         }
         await AsyncStorage.setItem('user', JSON.stringify(user));
       }
 
       if (eventsRes.data && eventsRes.data.data && eventsRes.data.data.data) {
         const backendEvents = eventsRes.data.data.data;
-        const ahora = new Date(); 
-        
+        const ahora = new Date();
+
         backendEvents.forEach((e: any) => {
-          const fechaString = e.eventDate || e.date; 
+          const fechaString = e.eventDate || e.date;
           if (!fechaString) return;
 
           const fechaEvento = new Date(fechaString);
           if (fechaEvento < ahora) {
-            return; 
+            return;
           }
 
           // ─── FILTRO DE DISTANCIA GEOGRÁFICA ───
-          const hasCoordinates = e.location && 
-                                 e.location.coordinates && 
-                                 e.location.coordinates.length === 2;
+          const hasCoordinates =
+            e.location && e.location.coordinates && e.location.coordinates.length === 2;
 
           if (hasCoordinates) {
             const eventLng = e.location.coordinates[0];
@@ -176,7 +191,7 @@ export default function DashboardScreen() {
               currentLocation.latitude,
               currentLocation.longitude,
               eventLat,
-              eventLng
+              eventLng,
             );
 
             if (distanciaKM <= RADIO_MAXIMO_KM) {
@@ -184,14 +199,14 @@ export default function DashboardScreen() {
                 id: e._id,
                 longitude: eventLng,
                 latitude: eventLat,
-                title: e.title || "Evento"
+                title: e.title || 'Evento',
               });
 
               items.push({
                 type: 'event',
                 id: e._id,
                 name: e.title,
-                direccion: e.direccionExacta
+                direccion: e.direccionExacta,
               });
             }
           }
@@ -201,21 +216,27 @@ export default function DashboardScreen() {
       setFollowingItems(items);
       setEventMarkers(markers);
     } catch (error) {
-      console.error("Error fetching dashboard feed:", error);
+      console.error('Error fetching dashboard feed:', error);
     }
   };
 
-
   const onSearch = () => {
     if (searchQuery.trim()) {
-      navigation.navigate("Search", { query: searchQuery });
+      navigation.navigate('Search', { query: searchQuery });
       setSearchQuery('');
     }
   };
 
   if (loadingLocation) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5EBF4' }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: '#F5EBF4',
+        }}
+      >
         <ActivityIndicator size="large" color="#7c3aed" />
         <Text style={{ marginTop: 12, color: '#7c3aed', fontWeight: '600' }}>
           Consultando tu ubicación exacta...
@@ -226,7 +247,9 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text variant="headlineMedium" style={styles.header}>{t('dash_header')}</Text>
+      <Text variant="headlineMedium" style={styles.header}>
+        {t('dash_header')}
+      </Text>
       {/* La barra de busqueda por titulo*/}
       <Searchbar
         placeholder={t('search_placeholder')}
@@ -241,7 +264,7 @@ export default function DashboardScreen() {
             icon="tune"
             iconColor="#D183BA"
             size={24}
-            onPress={() => navigation.navigate("Search", { openFilters: true })}
+            onPress={() => navigation.navigate('Search', { openFilters: true })}
           />
         )}
       />
@@ -262,7 +285,11 @@ export default function DashboardScreen() {
           <Text variant="bodyMedium">{t('dash_sales_desc')}</Text>
         </Card.Content>
         <Card.Actions>
-          <Button mode="contained" buttonColor="#D183BA" onPress={() => navigation.navigate("BooksForSale" as never)}>
+          <Button
+            mode="contained"
+            buttonColor="#D183BA"
+            onPress={() => navigation.navigate('BooksForSale' as never)}
+          >
             {t('dash_sales_btn')}
           </Button>
         </Card.Actions>
@@ -274,7 +301,11 @@ export default function DashboardScreen() {
           <Text variant="bodyMedium">{t('dash_rent_desc')}</Text>
         </Card.Content>
         <Card.Actions>
-          <Button mode="contained" buttonColor="#D183BA" onPress={() => navigation.navigate("BooksForRent" as never)}>
+          <Button
+            mode="contained"
+            buttonColor="#D183BA"
+            onPress={() => navigation.navigate('BooksForRent' as never)}
+          >
             {t('dash_rent_btn')}
           </Button>
         </Card.Actions>
@@ -286,7 +317,11 @@ export default function DashboardScreen() {
           <Text variant="bodyMedium">{t('dash_add_desc')}</Text>
         </Card.Content>
         <Card.Actions>
-          <Button mode="contained" buttonColor="#D183BA" onPress={() => navigation.navigate("AddBook" as never)}>
+          <Button
+            mode="contained"
+            buttonColor="#D183BA"
+            onPress={() => navigation.navigate('AddBook' as never)}
+          >
             {t('dash_add_btn')}
           </Button>
         </Card.Actions>
@@ -299,14 +334,15 @@ export default function DashboardScreen() {
             {t('dash_events_title', { defaultValue: 'Eventos Cercanos a ti' })}
           </Text>
           <Text variant="bodyMedium" style={{ marginBottom: 10 }}>
-            Mostrando reuniones literarias vigentes a menos de {RADIO_MAXIMO_KM} km de tu ubicación real.
+            Mostrando reuniones literarias vigentes a menos de {RADIO_MAXIMO_KM} km de tu ubicación
+            real.
           </Text>
 
           {/* El mapa se muestra incondicionalmente siempre que tengamos las coordenadas base */}
           {userLocation ? (
             <View style={styles.mapWrapper}>
-              <MultiEventMap 
-                markers={eventMarkers} 
+              <MultiEventMap
+                markers={eventMarkers}
                 userLatitude={userLocation.latitude}
                 userLongitude={userLocation.longitude}
               />
@@ -314,13 +350,20 @@ export default function DashboardScreen() {
           ) : null}
 
           {eventMarkers.length === 0 && (
-            <Text style={{ fontStyle: 'italic', color: '#888', marginTop: 12, textAlign: 'center' }}>
-              ℹ️ No se han encontrado eventos próximos en un rango de {RADIO_MAXIMO_KM} km a la redonda. Puedes ver tu posición en el mapa.
+            <Text
+              style={{ fontStyle: 'italic', color: '#888', marginTop: 12, textAlign: 'center' }}
+            >
+              ℹ️ No se han encontrado eventos próximos en un rango de {RADIO_MAXIMO_KM} km a la
+              redonda. Puedes ver tu posición en el mapa.
             </Text>
           )}
         </Card.Content>
         <Card.Actions>
-          <Button mode="contained" buttonColor="#7c3aed" onPress={() => navigation.navigate("Discover" as never)}>
+          <Button
+            mode="contained"
+            buttonColor="#7c3aed"
+            onPress={() => navigation.navigate('Discover' as never)}
+          >
             {t('dash_events_btn', { defaultValue: 'Explorar Todos' })}
           </Button>
         </Card.Actions>
@@ -328,71 +371,98 @@ export default function DashboardScreen() {
           icon="plus"
           size={30}
           mode="contained"
-          containerColor="#7c3aed" 
+          containerColor="#7c3aed"
           iconColor="#ffffff"
-          onPress={() => navigation.navigate("CreateEventScreen")} 
+          onPress={() => navigation.navigate('CreateEventScreen')}
         />
       </Card>
 
       {/* Feed dinámico inferior */}
-      <Text variant="titleLarge" style={[styles.header, { marginTop: 10 }]}>{t('following_title')}</Text>
+      <Text variant="titleLarge" style={[styles.header, { marginTop: 10 }]}>
+        {t('following_title')}
+      </Text>
       <Card style={[styles.card, { padding: 10 }]}>
         {followingItems.length === 0 ? (
-          <Text style={{ fontStyle: 'italic', color: '#888', padding: 10 }}>{t('following_empty')}</Text>
+          <Text style={{ fontStyle: 'italic', color: '#888', padding: 10 }}>
+            {t('following_empty')}
+          </Text>
         ) : (
           <View>
-            {followingItems.slice((followingPage - 1) * itemsPerPage, followingPage * itemsPerPage).map((item, index) => (
-              <View key={`${item.type}-${item.id}-${index}`} style={styles.followingItem}>
-                <Text style={{ fontSize: 20 }}>
-                  {item.type === 'user' ? '👤 ' : item.type === 'author' ? '✍️ ' : item.type === 'event' ? '📅 ' : '🏷️ '}
-                </Text>
-                <View style={{ flex: 1, marginLeft: 10 }}>
-                  <Text variant="bodyLarge" style={{ fontWeight: item.type === 'event' ? 'bold' : 'normal' }}>{item.name}</Text>
+            {followingItems
+              .slice((followingPage - 1) * itemsPerPage, followingPage * itemsPerPage)
+              .map((item, index) => (
+                <View key={`${item.type}-${item.id}-${index}`} style={styles.followingItem}>
+                  <Text style={{ fontSize: 20 }}>
+                    {item.type === 'user'
+                      ? '👤 '
+                      : item.type === 'author'
+                        ? '✍️ '
+                        : item.type === 'event'
+                          ? '📅 '
+                          : '🏷️ '}
+                  </Text>
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text
+                      variant="bodyLarge"
+                      style={{ fontWeight: item.type === 'event' ? 'bold' : 'normal' }}
+                    >
+                      {item.name}
+                    </Text>
+                    {item.type === 'event' && (
+                      <Text variant="bodySmall" numberOfLines={1} style={{ color: '#666' }}>
+                        {item.direccion}
+                      </Text>
+                    )}
+                  </View>
+
+                  {item.type === 'user' && (
+                    <Button
+                      mode="text"
+                      compact
+                      onPress={() => navigation.navigate('Profile', { userId: item.id })}
+                    >
+                      {t('view')}
+                    </Button>
+                  )}
                   {item.type === 'event' && (
-                    <Text variant="bodySmall" numberOfLines={1} style={{ color: '#666' }}>{item.direccion}</Text>
+                    <Button
+                      mode="text"
+                      textColor="#7c3aed"
+                      compact
+                      onPress={() => navigation.navigate('EventDetail', { eventoId: item.id })}
+                    >
+                      {t('view')}
+                    </Button>
                   )}
                 </View>
-                
-                {item.type === 'user' && (
-                  <Button mode="text" compact onPress={() => navigation.navigate("Profile", { userId: item.id })}>
-                    {t('view')}
-                  </Button>
-                )}
-                {item.type === 'event' && (
-                  <Button mode="text" textColor="#7c3aed" compact onPress={() => navigation.navigate("EventDetail", { eventoId: item.id })}>
-                    {t('view')}
-                  </Button>
-                )}
-              </View>
-            ))}
-            
+              ))}
+
             {followingItems.length > itemsPerPage && (
               <View style={styles.pagination}>
-                <Button 
-                  mode="outlined" 
+                <Button
+                  mode="outlined"
                   disabled={followingPage === 1}
-                  onPress={() => setFollowingPage(prev => prev - 1)}
+                  onPress={() => setFollowingPage((prev) => prev - 1)}
                   style={styles.pageBtn}
                 >
-                  {"<"}
+                  {'<'}
                 </Button>
                 <Text style={{ alignSelf: 'center', marginHorizontal: 15 }}>
                   {followingPage} / {Math.ceil(followingItems.length / itemsPerPage)}
                 </Text>
-                <Button 
-                  mode="outlined" 
+                <Button
+                  mode="outlined"
                   disabled={followingPage >= Math.ceil(followingItems.length / itemsPerPage)}
-                  onPress={() => setFollowingPage(prev => prev + 1)}
+                  onPress={() => setFollowingPage((prev) => prev + 1)}
                   style={styles.pageBtn}
                 >
-                  {">"}
+                  {'>'}
                 </Button>
               </View>
             )}
           </View>
         )}
       </Card>
-
     </ScrollView>
   );
 }
@@ -402,8 +472,20 @@ const styles = StyleSheet.create({
   header: { marginBottom: 20, fontWeight: 'bold', color: '#D6AED2' },
   card: { marginBottom: 16, backgroundColor: '#ffffff' },
   searchBar: { marginBottom: 20, elevation: 4, backgroundColor: '#fff', borderRadius: 30 },
-  followingItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  followingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
   pagination: { flexDirection: 'row', justifyContent: 'center', marginTop: 15 },
   pageBtn: { borderColor: '#D183BA' },
-  mapWrapper: { height: 220, borderRadius: 12, overflow: 'hidden', marginTop: 10, backgroundColor: '#e5e7eb' }
+  mapWrapper: {
+    height: 220,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: 10,
+    backgroundColor: '#e5e7eb',
+  },
 });

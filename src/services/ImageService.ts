@@ -1,8 +1,8 @@
-import { Alert } from "react-native";
-import api, { cloudinary_api } from "./api";
-import axios from "axios";
-import FormData from "form-data";
-import * as ImagePicker from "expo-image-picker";
+import { Alert } from 'react-native';
+import api, { cloudinary_api } from './api';
+import axios from 'axios';
+import FormData from 'form-data';
+import * as ImagePicker from 'expo-image-picker';
 
 export interface Token {
   timestamp: number;
@@ -15,9 +15,9 @@ export interface Token {
  */
 async function getToken(): Promise<Token | undefined> {
   try {
-    return (await api.get("/image/token")).data.token;
+    return (await api.get('/image/token')).data.token;
   } catch (error) {
-    Alert.alert("ImageService", JSON.stringify(error));
+    Alert.alert('ImageService', JSON.stringify(error));
     return;
   }
 }
@@ -29,9 +29,9 @@ async function getToken(): Promise<Token | undefined> {
 async function upload(data: FormData): Promise<string | undefined> {
   const token: Token = (await getToken())!;
   // data.append('file',fileObject); // se supone que ya lo tiene
-  data.append("api_key", cloudinary_api);
-  data.append("timestamp", `${token.timestamp}`);
-  data.append("signature", token.signature);
+  data.append('api_key', cloudinary_api);
+  data.append('timestamp', `${token.timestamp}`);
+  data.append('signature', token.signature);
   try {
     const res = await await axios.post(
       `https://api.cloudinary.com/v1_1/df2qxcelv/image/upload`,
@@ -39,14 +39,14 @@ async function upload(data: FormData): Promise<string | undefined> {
       {
         // tambien tendria que extraer el cloudname en variables de entornos ...
         headers: {
-          "Content-Type": "multipart/form-data",
+          'Content-Type': 'multipart/form-data',
         },
       },
     );
 
     return res.data.secure_url;
   } catch (error) {
-    Alert.alert("ImageService", JSON.stringify(error));
+    Alert.alert('ImageService', JSON.stringify(error));
     return;
   }
 }
@@ -56,10 +56,9 @@ async function upload(data: FormData): Promise<string | undefined> {
  * @returns Devuelve la url segura de la imagen.
  */
 async function uploadOnAndroid(): Promise<string | undefined> {
-  let permissionResult =
-    await ImagePicker.requestMediaLibraryPermissionsAsync();
+  const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (permissionResult.granted === false) {
-    Alert.alert("Permission to access camera is required");
+    Alert.alert('Permission to access camera is required');
     return;
   }
   const pickerResult = await ImagePicker.launchImageLibraryAsync({
@@ -72,7 +71,7 @@ async function uploadOnAndroid(): Promise<string | undefined> {
   //     `You have selected: ${JSON.stringify(pickerResult.assets[0])}`,
   //   );
   const formData: FormData = new FormData();
-  formData.append("file", {
+  formData.append('file', {
     uri: pickerResult.assets[0].uri,
     type: pickerResult.assets[0].mimeType,
     name: pickerResult.assets[0].fileName,

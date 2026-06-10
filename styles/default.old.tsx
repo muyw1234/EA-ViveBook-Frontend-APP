@@ -1,12 +1,12 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
-    primaryButton: {
-        marginHorizontal: 8,
-        marginVertical: 8,
-    },
+  primaryButton: {
+    marginHorizontal: 8,
+    marginVertical: 8,
+  },
 
-    screen: {
-        backgroundColor: "#F5EBF4"
-    }
+  screen: {
+    backgroundColor: '#F5EBF4',
+  },
 });

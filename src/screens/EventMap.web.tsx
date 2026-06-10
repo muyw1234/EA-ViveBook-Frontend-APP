@@ -3,7 +3,7 @@ import { View, StyleSheet, Platform } from 'react-native';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 
-// @ts-ignore
+// @ts-expect-error: Leaflet no tiene tipos oficiales, pero esto es necesario para que funcione en la web
 import 'leaflet/dist/leaflet.css';
 const DefaultIcon = L.icon({
   iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
@@ -61,11 +61,7 @@ export default function EventMap({ latitude, longitude, title, onMapPress }: Eve
     <View style={styles.mapContainer}>
       {/* Comprobamos que estemos en entorno web antes de inyectar componentes del DOM */}
       {Platform.OS === 'web' ? (
-        <MapContainer 
-          center={position} 
-          zoom={14} 
-          style={{ width: '100%', height: '100%' }}
-        >
+        <MapContainer center={position} zoom={14} style={{ width: '100%', height: '100%' }}>
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -88,25 +84,18 @@ export function MultiEventMap({ markers, userLatitude, userLongitude }: MultiEve
   return (
     <View style={styles.mapContainer}>
       {Platform.OS === 'web' ? (
-        <MapContainer 
-          center={centerPosition} 
-          zoom={13} 
-          style={{ width: '100%', height: '100%' }}
-        >
+        <MapContainer center={centerPosition} zoom={13} style={{ width: '100%', height: '100%' }}>
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          
+
           {/* Ubicación del usuario actual */}
           <Marker position={[userLatitude, userLongitude]} />
 
           {/* Renderizado de eventos circundantes */}
           {markers.map((marker) => (
-            <Marker 
-              key={marker.id} 
-              position={[marker.latitude, marker.longitude]} 
-            />
+            <Marker key={marker.id} position={[marker.latitude, marker.longitude]} />
           ))}
         </MapContainer>
       ) : null}
@@ -121,6 +110,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     marginTop: 10,
-    backgroundColor: '#e5e7eb'
+    backgroundColor: '#e5e7eb',
   },
 });

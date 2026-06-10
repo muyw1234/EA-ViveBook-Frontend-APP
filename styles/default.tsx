@@ -43,7 +43,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'white',
     padding: 24,
     borderRadius: 24,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 10,
@@ -77,5 +77,5 @@ export const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 20,
-  }
+  },
 });

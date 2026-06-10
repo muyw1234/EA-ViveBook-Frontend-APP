@@ -14,7 +14,7 @@ interface EventMapProps {
   longitude: number;
   title: string;
   description: string;
-  onMapPress?: (e: any) => void;  
+  onMapPress?: (e: any) => void;
 }
 
 interface MultiEventMapProps {
@@ -23,15 +23,26 @@ interface MultiEventMapProps {
   userLongitude: number;
 }
 
-export default function EventMap({ latitude, longitude, title, description, onMapPress }: EventMapProps) {
+export default function EventMap({
+  latitude,
+  longitude,
+  title,
+  description,
+  onMapPress,
+}: EventMapProps) {
   return (
     <View style={styles.mapContainer}>
-      <MapView 
-        style={styles.map} 
+      <MapView
+        style={styles.map}
         initialRegion={{ latitude, longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
         onPress={onMapPress}
       >
-        <Marker coordinate={{ latitude, longitude }} title={title} description={description} pinColor="#7c3aed" />
+        <Marker
+          coordinate={{ latitude, longitude }}
+          title={title}
+          description={description}
+          pinColor="#7c3aed"
+        />
       </MapView>
     </View>
   );
@@ -43,17 +54,17 @@ export function MultiEventMap({ markers, userLatitude, userLongitude }: MultiEve
       <MapView
         style={styles.map}
         initialRegion={{
-          latitude: userLatitude || 41.3851, 
+          latitude: userLatitude || 41.3851,
           longitude: userLongitude || 2.1734,
           latitudeDelta: 0.06,
           longitudeDelta: 0.06,
         }}
       >
         {/* Marcador del propio Usuario */}
-        <Marker 
-          coordinate={{ latitude: userLatitude, longitude: userLongitude }} 
-          title="Mi ubicación" 
-          pinColor="#3b82f6" 
+        <Marker
+          coordinate={{ latitude: userLatitude, longitude: userLongitude }}
+          title="Mi ubicación"
+          pinColor="#3b82f6"
         />
 
         {/* Marcadores de los eventos cercanos */}
@@ -77,7 +88,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     marginTop: 10,
-    backgroundColor: '#e5e7eb'
+    backgroundColor: '#e5e7eb',
   },
   map: {
     ...StyleSheet.absoluteFillObject,

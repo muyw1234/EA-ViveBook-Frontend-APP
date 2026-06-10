@@ -6,7 +6,7 @@ import { Platform } from 'react-native';
 const SOCKET_URL = Platform.OS === 'android' ? 'http://10.0.2.2:1337' : 'http://localhost:1337';
 
 const socket = io(SOCKET_URL, {
-    autoConnect: false
+  autoConnect: false,
 });
 
 export default socket;
