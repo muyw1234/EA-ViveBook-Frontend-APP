@@ -1,7 +1,6 @@
 import { Alert, Platform } from 'react-native';
 import api, { cloudinary_api } from './api';
 import axios from 'axios';
-import FormData from 'form-data';
 import * as ImagePicker from 'expo-image-picker';
 
 export interface Token {
@@ -27,7 +26,7 @@ async function getToken(): Promise<Token | undefined> {
  * @brief Subir imagen
  * @return Devuelve la url segura de la imagen.
  */
-async function upload(data: FormData): Promise<string | undefined> {
+async function upload(data: any): Promise<string | undefined> {
   const token = await getToken();
   if (!token) return;
 
@@ -35,11 +34,7 @@ async function upload(data: FormData): Promise<string | undefined> {
   data.append('timestamp', `${token.timestamp}`);
   data.append('signature', token.signature);
   try {
-    const res = await axios.post(`https://api.cloudinary.com/v1_1/df2qxcelv/image/upload`, data, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const res = await axios.post(`https://api.cloudinary.com/v1_1/df2qxcelv/image/upload`, data);
 
     return res.data.secure_url;
   } catch (error: any) {
