@@ -42,12 +42,15 @@ export default function DashboardScreen() {
 
   const [eventMarkers, setEventMarkers] = React.useState<MapMarkerData[]>([]);
 
+  const DEFAULT_LOCATION = { latitude: 41.3851, longitude: 2.1734 };
+
   const [userLocation, setUserLocation] = React.useState<{
     latitude: number;
     longitude: number;
-  } | null>(null);
-  const [loadingLocation, setLoadingLocation] = React.useState(true);
-  const [locationError, setLocationError] = React.useState<string | null>(null);
+  }>(DEFAULT_LOCATION);
+  const [locationStatus, setLocationStatus] = React.useState<'loading' | 'success' | 'error'>(
+    'loading',
+  );
 
   const RADIO_MAXIMO_KM = 15;
 
@@ -55,41 +58,66 @@ export default function DashboardScreen() {
   useFocusEffect(
     React.useCallback(() => {
       let locationSubscriber: Location.LocationSubscription | null = null;
+      let isTimedOut = false;
+      const timeoutVal = 6000;
+
+      const timer = setTimeout(() => {
+        isTimedOut = true;
+        console.warn('Timeout de ubicación superado. Usando ubicación por defecto.');
+        setLocationStatus('error');
+        setUserLocation(DEFAULT_LOCATION);
+      }, timeoutVal);
 
       async function requestAndFetchLocation() {
         try {
           const { status } = await Location.requestForegroundPermissionsAsync();
+          if (isTimedOut) return;
+
           if (status !== 'granted') {
-            setLocationError('Permiso de ubicación denegado.');
-            setUserLocation({ latitude: 41.3851, longitude: 2.1734 });
-            setLoadingLocation(false);
+            clearTimeout(timer);
+            setLocationStatus('error');
+            setUserLocation(DEFAULT_LOCATION);
             return;
           }
 
           const servicesEnabled = await Location.hasServicesEnabledAsync();
+          if (isTimedOut) return;
+
           if (!servicesEnabled) {
-            setLocationError('Los servicios de ubicación están deshabilitados.');
-            setUserLocation({ latitude: 41.3851, longitude: 2.1734 });
-            setLoadingLocation(false);
+            clearTimeout(timer);
+            setLocationStatus('error');
+            setUserLocation(DEFAULT_LOCATION);
             return;
           }
+
+          const currentLoc = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+          if (isTimedOut) return;
+
+          clearTimeout(timer);
+          setLocationStatus('success');
+          setUserLocation({
+            latitude: currentLoc.coords.latitude,
+            longitude: currentLoc.coords.longitude,
+          });
 
           locationSubscriber = await Location.watchPositionAsync(
             {
               accuracy: Location.Accuracy.Balanced,
-              timeInterval: 10000,
-              distanceInterval: 20,
+              timeInterval: 15000,
+              distanceInterval: 50,
             },
             (location: Location.LocationObject) => {
-              setLocationError(null);
               setUserLocation({
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude,
               });
-              setLoadingLocation(false);
             },
           );
         } catch (err) {
+          if (isTimedOut) return;
+          clearTimeout(timer);
           console.error('Error en geolocalización:', err);
 
           try {
@@ -99,18 +127,21 @@ export default function DashboardScreen() {
                 latitude: lastKnown.coords.latitude,
                 longitude: lastKnown.coords.longitude,
               });
+              setLocationStatus('success');
             } else {
-              setUserLocation({ latitude: 41.3851, longitude: 2.1734 });
+              setUserLocation(DEFAULT_LOCATION);
+              setLocationStatus('error');
             }
           } catch (err2) {
-            setUserLocation({ latitude: 41.3851, longitude: 2.1734 });
+            setUserLocation(DEFAULT_LOCATION);
+            setLocationStatus('error');
           }
-          setLoadingLocation(false);
         }
       }
 
       requestAndFetchLocation();
       return () => {
+        clearTimeout(timer);
         if (locationSubscriber) {
           try {
             if (typeof locationSubscriber.remove === 'function') {
@@ -227,24 +258,6 @@ export default function DashboardScreen() {
     }
   };
 
-  if (loadingLocation) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: '#F5EBF4',
-        }}
-      >
-        <ActivityIndicator size="large" color="#7c3aed" />
-        <Text style={{ marginTop: 12, color: '#7c3aed', fontWeight: '600' }}>
-          Consultando tu ubicación exacta...
-        </Text>
-      </View>
-    );
-  }
-
   return (
     <ScrollView style={styles.container}>
       <Text variant="headlineMedium" style={styles.header}>
@@ -268,15 +281,6 @@ export default function DashboardScreen() {
           />
         )}
       />
-
-      {/* Alerta de Error de GPS (Solo aparece si falla la ubicación) */}
-      {locationError && (
-        <Card style={[styles.card, { borderColor: '#ef4444', borderWidth: 1 }]}>
-          <Card.Content>
-            <Text style={{ color: '#ef4444' }}>⚠️ {locationError}</Text>
-          </Card.Content>
-        </Card>
-      )}
 
       {/* Tarjetas de Accesos Rápidos */}
       <Card style={styles.card}>
@@ -328,15 +332,39 @@ export default function DashboardScreen() {
       </Card>
 
       {/* Sección de Eventos Literarios */}
-      <Card style={[styles.card, { borderLeftWidth: 4, borderLeftColor: '#7c3aed' }]}>
+      <Card style={[styles.card, { borderLeftWidth: 4, borderLeftColor: '#D183BA' }]}>
         <Card.Content>
-          <Text variant="titleLarge" style={{ color: '#7c3aed', fontWeight: 'bold' }}>
+          <Text variant="titleLarge" style={{ color: '#D183BA', fontWeight: 'bold' }}>
             {t('dash_events_title', { defaultValue: 'Eventos Cercanos a ti' })}
           </Text>
           <Text variant="bodyMedium" style={{ marginBottom: 10 }}>
             Mostrando reuniones literarias vigentes a menos de {RADIO_MAXIMO_KM} km de tu ubicación
             real.
           </Text>
+
+          {locationStatus === 'loading' && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+              <ActivityIndicator size="small" color="#D183BA" style={{ marginRight: 6 }} />
+              <Text style={{ fontSize: 13, color: '#D183BA', fontStyle: 'italic' }}>
+                Consultando tu ubicación exacta...
+              </Text>
+            </View>
+          )}
+
+          {locationStatus === 'error' && (
+            <View
+              style={{
+                marginBottom: 10,
+                padding: 8,
+                backgroundColor: '#f3e8ff',
+                borderRadius: 8,
+              }}
+            >
+              <Text style={{ color: '#6b21a8', fontSize: 13 }}>
+                ℹ️ Ubicación no disponible, mostrando resultados generales.
+              </Text>
+            </View>
+          )}
 
           {/* El mapa se muestra incondicionalmente siempre que tengamos las coordenadas base */}
           {userLocation ? (
@@ -361,8 +389,8 @@ export default function DashboardScreen() {
         <Card.Actions>
           <Button
             mode="contained"
-            buttonColor="#7c3aed"
-            onPress={() => navigation.navigate('Discover' as never)}
+            buttonColor="#D183BA"
+            onPress={() => navigation.navigate('ExploreEvents' as never)}
           >
             {t('dash_events_btn', { defaultValue: 'Explorar Todos' })}
           </Button>
@@ -371,7 +399,7 @@ export default function DashboardScreen() {
           icon="plus"
           size={30}
           mode="contained"
-          containerColor="#7c3aed"
+          containerColor="#D183BA"
           iconColor="#ffffff"
           onPress={() => navigation.navigate('CreateEventScreen')}
         />
@@ -427,7 +455,7 @@ export default function DashboardScreen() {
                   {item.type === 'event' && (
                     <Button
                       mode="text"
-                      textColor="#7c3aed"
+                      textColor="#D183BA"
                       compact
                       onPress={() => navigation.navigate('EventDetail', { eventoId: item.id })}
                     >

@@ -789,10 +789,21 @@ export default function MyBooksScreen() {
         }
       >
         <View style={styles.headerContainer}>
-          <RNText style={{ fontSize: 32 }}>📚</RNText>
-          <Text variant="headlineMedium" style={styles.header}>
-            {t('my_books')}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <RNText style={{ fontSize: 32 }}>📚</RNText>
+            <Text variant="headlineMedium" style={styles.header}>
+              {t('my_books')}
+            </Text>
+          </View>
+          <Button
+            mode="text"
+            onPress={() => navigation.navigate('Favorites' as never)}
+            textColor="#D183BA"
+            labelStyle={{ fontWeight: 'bold' }}
+            icon={() => <RNText style={{ fontSize: 16 }}>❤️</RNText>}
+          >
+            {t('favorites_title', 'Favoritos')}
+          </Button>
         </View>
 
         <Searchbar
@@ -1172,6 +1183,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 20,
     marginTop: 10,
   },

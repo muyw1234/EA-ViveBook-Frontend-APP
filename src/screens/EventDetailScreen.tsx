@@ -172,7 +172,7 @@ export default function EventDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 110 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 110 }}>
         {/* Cabecera del Evento */}
         <Card style={styles.card} mode="elevated">
           <Card.Content>
@@ -201,7 +201,7 @@ export default function EventDetailScreen() {
                   label={(typeof event.creator === 'string' ? 'U' : event.creator.name || 'U')
                     .substring(0, 2)
                     .toUpperCase()}
-                  style={{ backgroundColor: '#7c3aed' }}
+                  style={{ backgroundColor: '#D183BA' }}
                   labelStyle={{ fontSize: 14 }}
                 />
                 <View style={styles.creatorInfo}>
@@ -227,12 +227,14 @@ export default function EventDetailScreen() {
 
             {/* Renderizado del Mapa */}
             {hasCoordinates ? (
-              <EventMap
-                latitude={latitude}
-                longitude={longitude}
-                title={event.title}
-                description={event.direccionExacta}
-              />
+              <View style={styles.mapWrapper}>
+                <EventMap
+                  latitude={latitude}
+                  longitude={longitude}
+                  title={event.title}
+                  description={event.direccionExacta}
+                />
+              </View>
             ) : (
               <Text style={styles.noMapText}>
                 ⚠️{' '}
@@ -242,61 +244,66 @@ export default function EventDetailScreen() {
           </Card.Content>
         </Card>
 
-        <Divider style={{ marginVertical: 20 }} />
-
         {/* Sección de Participantes */}
-        <View style={styles.section}>
-          <Text variant="titleLarge" style={styles.sectionTitle}>
-            {t('participants')} ({event.participant?.length || 0})
-          </Text>
+        <Card style={styles.card} mode="elevated">
+          <Card.Content>
+            <View style={styles.section}>
+              <Text variant="titleLarge" style={styles.sectionTitle}>
+                {t('participants')} ({event.participant?.length || 0})
+              </Text>
 
-          {event.participant && event.participant.length > 0 ? (
-            event.participant.map((usuario) => {
-              const userId = typeof usuario === 'string' ? usuario : usuario._id;
-              const userName = typeof usuario === 'string' ? t('user') : usuario.name || t('user');
-              return (
-                <TouchableOpacity
-                  key={userId}
-                  style={styles.itemRow}
-                  onPress={() => navigation.navigate('UserProfile', { userId })}
-                >
-                  <View style={styles.itemLeft}>
-                    <Avatar.Text
-                      size={40}
-                      label={(userName || 'U').substring(0, 2).toUpperCase()}
-                      style={{ backgroundColor: '#D183BA' }}
-                    />
-                    <Text variant="titleMedium" style={{ marginLeft: 14 }}>
-                      {userName}
-                    </Text>
-                  </View>
-                  <Button mode="text" textColor="#64748b" compact>
-                    {t('view')}
-                  </Button>
-                </TouchableOpacity>
-              );
-            })
-          ) : (
-            <Text style={styles.emptyText}>{t('be_the_first_participant')}</Text>
-          )}
-        </View>
+              {event.participant && event.participant.length > 0 ? (
+                event.participant.map((usuario) => {
+                  const userId = typeof usuario === 'string' ? usuario : usuario._id;
+                  const userName =
+                    typeof usuario === 'string' ? t('user') : usuario.name || t('user');
+                  return (
+                    <TouchableOpacity
+                      key={userId}
+                      style={styles.itemRow}
+                      onPress={() => navigation.navigate('UserProfile', { userId })}
+                    >
+                      <View style={styles.itemLeft}>
+                        <Avatar.Text
+                          size={40}
+                          label={(userName || 'U').substring(0, 2).toUpperCase()}
+                          style={{ backgroundColor: '#D183BA' }}
+                        />
+                        <Text variant="titleMedium" style={{ marginLeft: 14 }}>
+                          {userName}
+                        </Text>
+                      </View>
+                      <Button mode="text" textColor="#64748b" compact>
+                        {t('view')}
+                      </Button>
+                    </TouchableOpacity>
+                  );
+                })
+              ) : (
+                <Text style={styles.emptyText}>{t('be_the_first_participant')}</Text>
+              )}
+            </View>
+          </Card.Content>
+        </Card>
       </ScrollView>
 
       {/* Zona del Botón de Acción Fijo Inferior */}
       <View style={styles.footer}>
         {isAlreadyParticipating ? (
           <Button
-            mode="outlined"
+            mode="contained"
+            buttonColor="#fee2e2"
             onPress={() => {
               console.log('👉 Click detectado en: Cancelar Participación');
               handleLeave();
             }}
             loading={actionLoading}
             disabled={actionLoading}
-            textColor="#b91c1c"
-            style={[styles.actionButton, { borderColor: '#b91c1c' }]}
+            style={[styles.actionButton, { borderWidth: 1, borderColor: '#fca5a5' }]}
+            labelStyle={{ fontSize: 16, fontWeight: 'bold', color: '#dc2626' }}
+            icon={() => <Text style={{ fontSize: 18 }}>➖</Text>}
           >
-            {t('leave_event')}
+            {t('leave_event', 'Abandonar evento')}
           </Button>
         ) : (
           <Button
@@ -309,8 +316,10 @@ export default function EventDetailScreen() {
             loading={actionLoading}
             disabled={actionLoading === true}
             style={styles.actionButton}
+            labelStyle={{ fontSize: 16, fontWeight: 'bold', color: '#fff' }}
+            icon={() => <Text style={{ fontSize: 18 }}>➕</Text>}
           >
-            {t('join_event')}
+            {t('join_event', 'Apuntarse al evento')}
           </Button>
         )}
       </View>
@@ -321,24 +330,30 @@ export default function EventDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F5EBF4',
   },
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
   },
   card: {
-    backgroundColor: '#fcf8fa',
-    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    marginBottom: 16,
   },
   title: {
     fontWeight: 'bold',
-    color: '#333',
+    color: '#1a1a1a',
     marginBottom: 8,
   },
   date: {
-    color: '#7c3aed',
-    fontWeight: '600',
+    color: '#D183BA',
+    fontWeight: '700',
     marginBottom: 15,
   },
   description: {
@@ -355,13 +370,14 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     fontStyle: 'italic',
     marginTop: 10,
+    textAlign: 'center',
   },
   section: {
     marginBottom: 10,
   },
   sectionTitle: {
     fontWeight: 'bold',
-    color: '#555',
+    color: '#333333',
     marginBottom: 15,
   },
   itemRow: {
@@ -370,7 +386,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: '#f5ebf4',
   },
   itemLeft: {
     flexDirection: 'row',
@@ -381,33 +397,57 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     fontStyle: 'italic',
     marginTop: 5,
+    textAlign: 'center',
   },
   footer: {
-    padding: 20,
-    backgroundColor: '#fff',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: '#f5ebf4',
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   actionButton: {
-    width: '100%',
-    paddingVertical: 4,
+    flex: 1,
+    height: 52,
+    justifyContent: 'center',
+    borderRadius: 26,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
   },
   creatorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3e8ff',
-    padding: 10,
-    borderRadius: 8,
-    marginVertical: 10,
+    backgroundColor: '#f5ebf4',
+    padding: 12,
+    borderRadius: 12,
+    marginVertical: 12,
+    borderWidth: 1,
+    borderColor: '#e8d5e5',
   },
   creatorInfo: {
     marginLeft: 12,
   },
   creatorLabel: {
     color: '#6b7280',
+    fontSize: 12,
   },
   creatorName: {
     fontWeight: 'bold',
-    color: '#4c1d95',
+    color: '#D183BA',
+  },
+  mapWrapper: {
+    height: 220,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: 10,
+    backgroundColor: '#e5e7eb',
   },
 });
