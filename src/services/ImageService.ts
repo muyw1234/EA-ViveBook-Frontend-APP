@@ -14,9 +14,13 @@ export interface Token {
  */
 async function getToken(): Promise<Token | undefined> {
   try {
-    return (await api.get('/image/token')).data.token;
+    console.log('ImageService: Requesting Cloudinary upload token from backend...');
+    const res = await api.get('/image/token');
+    console.log('ImageService: Token response:', JSON.stringify(res.data));
+    return res.data.token;
   } catch (error: any) {
     const errMsg = error.response?.data?.message || error.message || JSON.stringify(error);
+    console.error('ImageService: Error fetching token:', error);
     Alert.alert('Error de Token de Imagen', `No se pudo obtener el token de firma: ${errMsg}`);
     return;
   }
@@ -28,17 +32,23 @@ async function getToken(): Promise<Token | undefined> {
  */
 async function upload(data: any): Promise<string | undefined> {
   const token = await getToken();
-  if (!token) return;
+  if (!token) {
+    console.warn('ImageService: Token is empty. Aborting upload.');
+    return;
+  }
 
   data.append('api_key', cloudinary_api);
   data.append('timestamp', `${token.timestamp}`);
   data.append('signature', token.signature);
-  try {
-    const res = await axios.post(`https://api.cloudinary.com/v1_1/df2qxcelv/image/upload`, data);
 
+  try {
+    console.log('ImageService: Sending POST request to Cloudinary...');
+    const res = await axios.post(`https://api.cloudinary.com/v1_1/df2qxcelv/image/upload`, data);
+    console.log('ImageService: Cloudinary upload successful. URL:', res.data.secure_url);
     return res.data.secure_url;
   } catch (error: any) {
     const errMsg = error.response?.data?.error?.message || error.message || JSON.stringify(error);
+    console.error('ImageService: Cloudinary POST failed:', error.response?.data || error);
     Alert.alert('Error de Cloudinary', `No se pudo subir la imagen: ${errMsg}`);
     return;
   }
@@ -49,41 +59,71 @@ async function upload(data: any): Promise<string | undefined> {
  * @returns Devuelve la url segura de la imagen.
  */
 async function uploadOnAndroid(): Promise<string | undefined> {
+  console.log('ImageService: Requesting gallery permissions...');
   const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  console.log('ImageService: Permission result:', JSON.stringify(permissionResult));
+
   if (permissionResult.granted === false) {
     Alert.alert('Permiso requerido', 'Se requiere permiso para acceder a la galería de fotos.');
     return;
   }
+
+  console.log('ImageService: Launching image library...');
   const pickerResult = await ImagePicker.launchImageLibraryAsync({
     allowsMultipleSelection: false,
   });
-  if (pickerResult.canceled === true || !pickerResult.assets || pickerResult.assets.length === 0)
+  console.log('ImageService: Picker result:', JSON.stringify(pickerResult));
+
+  if (pickerResult.canceled === true || !pickerResult.assets || pickerResult.assets.length === 0) {
+    console.log('ImageService: Image selection was canceled or empty.');
     return;
+  }
 
   const asset = pickerResult.assets[0];
+  console.log('ImageService: Selected asset details:', JSON.stringify(asset));
+
+  // Alert visual para el usuario para depurar en Web
+  Alert.alert(
+    'Depuración de Imagen',
+    `URI: ${asset.uri.substring(0, 50)}...\nFile present: ${!!asset.file}`,
+  );
+
   const formData = new FormData();
 
   if (Platform.OS === 'web') {
-    // En Web, si el objeto file real está disponible en el asset, lo usamos directamente.
-    // De lo contrario, hacemos un fetch de la URI base64/Blob para obtener el blob.
     if (asset.file) {
+      console.log('ImageService: Appending asset.file directly.');
       formData.append('file', asset.file);
-    } else {
+    } else if (asset.uri && asset.uri.startsWith('data:')) {
+      console.log('ImageService: URI is base64 data. Fetching to blob...');
       try {
         const response = await fetch(asset.uri);
         const blob = await response.blob();
         formData.append('file', blob, asset.fileName || 'profile_image.jpg');
       } catch (err: any) {
-        Alert.alert('Error de archivo', 'No se pudo leer el archivo de la imagen en Web.');
+        console.error('ImageService: Base64 fetch failed:', err);
+        Alert.alert('Error de archivo', 'No se pudo leer el archivo de la imagen base64.');
+        return;
+      }
+    } else {
+      console.log('ImageService: Web environment but no file or data URI.');
+      try {
+        const response = await fetch(asset.uri);
+        const blob = await response.blob();
+        formData.append('file', blob, asset.fileName || 'profile_image.jpg');
+      } catch (err: any) {
+        console.error('ImageService: Fetching asset.uri failed:', err);
+        Alert.alert(
+          'Error de archivo',
+          `No se pudo obtener el archivo de la imagen desde la URI: ${err.message}`,
+        );
         return;
       }
     }
   } else {
-    // En plataformas nativas (iOS y Android), construimos el objeto con fallback para mimeType y name
+    // En plataformas nativas (iOS y Android)
     const fileUri = asset.uri;
     const fileName = asset.fileName || fileUri.split('/').pop() || 'profile_image.jpg';
-
-    // Intentar deducir la extensión para el tipo
     const match = /\.(\w+)$/.exec(fileName);
     const fileType = asset.mimeType || (match ? `image/${match[1]}` : 'image/jpeg');
 
