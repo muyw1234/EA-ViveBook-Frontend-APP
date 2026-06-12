@@ -18,6 +18,7 @@ import RetosScreen from './src/screens/RetosScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import ChatRoomScreen from './src/screens/ChatRoomScreen';
 import FavoritesScreen from './src/screens/FavoritesScreen';
+import ExploreEventsScreen from './src/screens/ExploreEventsScreen';
 import { AccessibilityProvider } from './src/context/AccessibilityContext';
 import style from './styles/default.old';
 
@@ -118,6 +119,11 @@ export default function App() {
                 name="Favorites"
                 component={FavoritesScreen}
                 options={{ title: 'Mis Favoritos' }}
+              />
+              <Stack.Screen
+                name="ExploreEvents"
+                component={ExploreEventsScreen}
+                options={{ title: 'Explorar Eventos' }}
               />
             </Stack.Navigator>
           </NavigationContainer>

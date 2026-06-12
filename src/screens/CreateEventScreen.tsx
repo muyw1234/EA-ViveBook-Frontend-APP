@@ -145,8 +145,8 @@ export default function CreateEventScreen() {
             onChangeText={setNewEventTitle}
             mode="outlined"
             style={styles.input}
-            outlineColor="#7c3aed"
-            activeOutlineColor="#7c3aed"
+            outlineColor="#D183BA"
+            activeOutlineColor="#D183BA"
           />
 
           <TextInput
@@ -157,8 +157,8 @@ export default function CreateEventScreen() {
             multiline
             numberOfLines={4}
             style={styles.input}
-            outlineColor="#7c3aed"
-            activeOutlineColor="#7c3aed"
+            outlineColor="#D183BA"
+            activeOutlineColor="#D183BA"
           />
 
           {Platform.OS === 'web' ? (
@@ -182,8 +182,8 @@ export default function CreateEventScreen() {
                     value={formatLabelDate(newEventDate)}
                     mode="outlined"
                     style={styles.input}
-                    outlineColor="#7c3aed"
-                    activeOutlineColor="#7c3aed"
+                    outlineColor="#D183BA"
+                    activeOutlineColor="#D183BA"
                     right={<TextInput.Icon icon="calendar" />}
                   />
                 </View>
@@ -206,8 +206,8 @@ export default function CreateEventScreen() {
             onChangeText={setNewEventDireccionExacta}
             mode="outlined"
             style={styles.input}
-            outlineColor="#7c3aed"
-            activeOutlineColor="#7c3aed"
+            outlineColor="#D183BA"
+            activeOutlineColor="#D183BA"
           />
 
           <Text variant="bodyMedium" style={styles.mapLabel}>
@@ -251,8 +251,8 @@ export default function CreateEventScreen() {
             mode="outlined"
             onPress={() => navigation.goBack()}
             disabled={loading}
-            textColor="#7c3aed"
-            style={{ marginRight: 8, borderColor: '#7c3aed' }}
+            textColor="#D183BA"
+            style={{ marginRight: 8, borderColor: '#D183BA' }}
           >
             Cancelar
           </Button>
@@ -262,7 +262,7 @@ export default function CreateEventScreen() {
             onPress={handleSubmit}
             loading={loading}
             disabled={loading}
-            buttonColor="#7c3aed"
+            buttonColor="#D183BA"
           >
             Guardar Evento
           </Button>
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 20,
     fontWeight: 'bold',
-    color: '#7c3aed',
+    color: '#D183BA',
     textAlign: 'center',
     marginTop: 10,
   },
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   labelWeb: {
-    color: '#7c3aed',
+    color: '#D183BA',
     fontWeight: '600',
     marginBottom: 4,
     marginLeft: 4,
@@ -306,12 +306,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#7c3aed',
+    borderColor: '#D183BA',
     backgroundColor: '#fff',
     marginBottom: 14,
   },
   mapLabel: {
-    color: '#7c3aed',
+    color: '#D183BA',
     fontWeight: 'bold',
     marginBottom: 8,
     marginTop: 4,
