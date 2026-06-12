@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, StyleSheet, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import {
   TextInput,
   Button,
@@ -18,6 +18,7 @@ import api from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { styles as globalStyles } from '../../styles/default';
+import ImageService from '../services/ImageService';
 
 export default function ProfileScreen({ route }: any) {
   const { t } = useTranslation();
@@ -36,6 +37,7 @@ export default function ProfileScreen({ route }: any) {
   const [myFollowingUsers, setMyFollowingUsers] = useState<string[]>([]);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Favorites state
   const [favoriteAuthors, setFavoriteAuthors] = useState<string[]>([]);
@@ -236,6 +238,39 @@ export default function ProfileScreen({ route }: any) {
     }
   };
 
+  const handleUploadAvatar = async () => {
+    try {
+      setUploadingAvatar(true);
+      const url = await ImageService.uploadOnAndroid();
+      if (url) {
+        const payload = {
+          name,
+          email,
+          description,
+          favoriteAuthors,
+          favoriteBooks,
+          favoriteCategories,
+          avatar: url,
+        };
+
+        const response = await api.put(`/usuarios/${user._id}`, payload);
+        if (response.status === 200) {
+          const updatedUserData = response.data?.data || response.data;
+          setUser(updatedUserData);
+          if (isMyProfile) {
+            await AsyncStorage.setItem('user', JSON.stringify(updatedUserData));
+          }
+          Alert.alert(t('success'), 'Foto de perfil actualizada con éxito.');
+        }
+      }
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      Alert.alert(t('error'), 'No se pudo subir la foto de perfil.');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const handleUpdate = async () => {
     if (!name || !email) {
       Alert.alert(t('error'), t('profile_err_fields'));
@@ -256,6 +291,7 @@ export default function ProfileScreen({ route }: any) {
         favoriteAuthors,
         favoriteBooks,
         favoriteCategories,
+        avatar: user.avatar,
       };
 
       const response = await api.put(`/usuarios/${user._id}`, payload);
@@ -341,11 +377,55 @@ export default function ProfileScreen({ route }: any) {
   return (
     <ScrollView style={globalStyles.container}>
       <View style={styles.header}>
-        <Avatar.Text
-          size={80}
-          label={(name || 'U').substring(0, 2).toUpperCase()}
-          style={{ backgroundColor: '#D183BA' }}
-        />
+        <View style={{ position: 'relative' }}>
+          {user.avatar ? (
+            <Avatar.Image size={80} source={{ uri: user.avatar }} />
+          ) : (
+            <Avatar.Text
+              size={80}
+              label={(name || 'U').substring(0, 2).toUpperCase()}
+              style={{ backgroundColor: '#D183BA' }}
+            />
+          )}
+          {uploadingAvatar && (
+            <View
+              style={{
+                ...StyleSheet.absoluteFillObject,
+                backgroundColor: 'rgba(255,255,255,0.7)',
+                borderRadius: 40,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <ActivityIndicator size="small" color="#D183BA" />
+            </View>
+          )}
+          {isMyProfile && !uploadingAvatar && (
+            <TouchableOpacity
+              onPress={handleUploadAvatar}
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                right: -10,
+                backgroundColor: '#fff',
+                borderRadius: 15,
+                width: 30,
+                height: 30,
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: '#ccc',
+                elevation: 2,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.2,
+                shadowRadius: 1.41,
+              }}
+            >
+              <Text style={{ fontSize: 16 }}>✏️</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         <Text variant="headlineMedium" style={[globalStyles.title, { marginTop: 10 }]}>
           {isEditing ? t('profile_title') : name || t('loading')}
         </Text>

@@ -15,7 +15,6 @@ import api from '../services/api';
 //import { pick, keepLocalCopy } from "@react-native-documents/picker"; // https://medium.com/@paramasivam3448/migrating-from-react-native-document-picker-to-react-native-documents-picker-a-complete-guide-6cbd33266816
 //import * as DocumentPicker from "expo-document-picker"; // https://medium.com/@olusanyajolaoluwa/simplifying-document-management-with-expo-document-picker-in-react-native-debc6060c3f3
 import * as ImagePicker from 'expo-image-picker';
-import FormData from 'form-data';
 import { styles as globalStyles } from '../../styles/default';
 import ImageService from '../services/ImageService';
 import ILibro, { SellType } from '../models/Libro';
