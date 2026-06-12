@@ -38,7 +38,6 @@ export default function ProfileScreen({ route }: any) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [debugText, setDebugText] = useState<string>('Depuración: Inicia pulsando el lápiz.');
 
   // Favorites state
   const [favoriteAuthors, setFavoriteAuthors] = useState<string[]>([]);
@@ -242,12 +241,8 @@ export default function ProfileScreen({ route }: any) {
   const handleUploadAvatar = async () => {
     try {
       setUploadingAvatar(true);
-      setDebugText('Iniciando selección de imagen...');
-      const url = await ImageService.uploadOnAndroid((status: string) => {
-        setDebugText(status);
-      });
+      const url = await ImageService.uploadOnAndroid();
       if (url) {
-        setDebugText('Imagen subida a Cloudinary. Guardando en backend...');
         const payload = {
           name,
           email,
@@ -265,22 +260,11 @@ export default function ProfileScreen({ route }: any) {
           if (isMyProfile) {
             await AsyncStorage.setItem('user', JSON.stringify(updatedUserData));
           }
-          setDebugText('¡Foto actualizada con éxito en base de datos!');
           Alert.alert(t('success'), 'Foto de perfil actualizada con éxito.');
-        } else {
-          setDebugText(`Error del backend: Código ${response.status}`);
         }
-      } else {
-        setDebugText((prev) => {
-          if (prev.includes('Error') || prev.includes('Excepción') || prev.includes('denegado')) {
-            return prev;
-          }
-          return 'La subida a Cloudinary no devolvió una URL.';
-        });
       }
     } catch (error: any) {
       console.error('Error uploading avatar:', error);
-      setDebugText(`Excepción: ${error.message || JSON.stringify(error)}`);
       Alert.alert(t('error'), 'No se pudo subir la foto de perfil.');
     } finally {
       setUploadingAvatar(false);
@@ -464,18 +448,6 @@ export default function ProfileScreen({ route }: any) {
             {t('followers', { defaultValue: 'Seguidores' })}
           </Text>
         </View>
-
-        <Text
-          style={{
-            color: '#7c3aed',
-            fontWeight: 'bold',
-            margin: 10,
-            textAlign: 'center',
-            fontSize: 13,
-          }}
-        >
-          {debugText}
-        </Text>
       </View>
 
       <Card style={[globalStyles.card, { margin: 20 }]}>
