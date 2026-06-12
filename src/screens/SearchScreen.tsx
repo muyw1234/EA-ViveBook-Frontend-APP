@@ -45,6 +45,7 @@ export default function SearchScreen({ route }: any) {
 
   const theme = useTheme();
   const [searchQuery, setSearchQuery] = useState(initialQuery);
+  const [activeSearchTerm, setActiveSearchTerm] = useState(initialQuery);
   const [bookResults, setBookResults] = useState<any[]>([]);
   const [userResults, setUserResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -54,6 +55,7 @@ export default function SearchScreen({ route }: any) {
 
   const [isGridView, setIsGridView] = useState(false);
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const ITEMS_PER_PAGE = 5;
 
   // Draft Filters State (for modal)
@@ -147,15 +149,10 @@ export default function SearchScreen({ route }: any) {
   );
 
   useEffect(() => {
-    if (initialQuery) {
-      handleSearch(initialQuery);
-    } else {
-      fetchAllBooks();
-    }
     if (route?.params?.openFilters) {
       setIsFilterModalVisible(true);
     }
-  }, [initialQuery, route?.params?.openFilters]);
+  }, [route?.params?.openFilters]);
 
   const handleToggleFavorite = async (bookId: string) => {
     try {
@@ -192,65 +189,85 @@ export default function SearchScreen({ route }: any) {
   // Reset page when filters or search change
   useEffect(() => {
     setPage(1);
-  }, [appliedCategoria, appliedMaxPrice, appliedType, searchQuery]);
+  }, [appliedCategoria, appliedMaxPrice, appliedType, activeSearchTerm]);
 
-  const fetchAllBooks = async () => {
+  const fetchAllBooks = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await api.get('/libros');
-      const resData = response.data?.data || response.data;
-      const booksArray = Array.isArray(resData)
-        ? resData
-        : Array.isArray(resData?.data)
-          ? resData.data
-          : [];
+      const typeParam = appliedType ? `&type=${appliedType}` : '';
+      const catParam = appliedCategoria ? `&categoria=${appliedCategoria}` : '';
+      const priceParam = appliedMaxPrice ? `&maxPrice=${appliedMaxPrice}` : '';
+      const url = `/libros?page=${page}&limit=${ITEMS_PER_PAGE}${typeParam}${catParam}${priceParam}`;
+      const response = await api.get(url);
+      const resData = response.data?.data;
+      const booksArray = Array.isArray(resData?.data) ? resData.data : [];
       setBookResults(booksArray);
+      setTotalPages(resData?.pagination?.totalPages || 1);
     } catch (error) {
       console.error('Error fetching all books:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, appliedType, appliedCategoria, appliedMaxPrice]);
 
-  const handleSearch = async (query: string) => {
-    if (!query.trim()) return;
+  const handleSearch = useCallback(
+    async (query: string) => {
+      if (!query.trim()) return;
 
-    setLoading(true);
-    console.log(`Searching for book and user: ${query}`);
-    api
-      .get(`/libros/search?term=${query}&page=1&limit=10`)
-      .then((res) => {
-        const resData = res.data?.data || res.data;
-        const booksArray = Array.isArray(resData)
-          ? resData
-          : Array.isArray(resData?.data)
-            ? resData.data
-            : [];
-        setBookResults(booksArray);
-      })
-      .catch((error) => {
-        setBookResults([]);
-        console.log(`Error search libros: ${JSON.stringify(error)}`);
-      });
+      setLoading(true);
+      console.log(`Searching for book and user: ${query}`);
+      const typeParam = appliedType ? `&type=${appliedType}` : '';
+      const catParam = appliedCategoria ? `&categoria=${appliedCategoria}` : '';
+      const priceParam = appliedMaxPrice ? `&maxPrice=${appliedMaxPrice}` : '';
 
-    api
-      .get(`/usuarios/search?term=${query}&page=1&limit=10`)
-      .then((res) => {
-        const resData = res.data?.data || res.data;
-        const usersArray = Array.isArray(resData)
-          ? resData
-          : Array.isArray(resData?.data)
-            ? resData.data
-            : [];
-        setUserResults(usersArray);
-      })
-      .catch((error) => {
-        setUserResults([]);
-        console.log(`Error search usuarios: ${JSON.stringify(error)}`);
-      });
+      api
+        .get(
+          `/libros/search?term=${query}&page=${page}&limit=${ITEMS_PER_PAGE}${typeParam}${catParam}${priceParam}`,
+        )
+        .then((res) => {
+          const resData = res.data?.data;
+          const booksArray = Array.isArray(resData?.data) ? resData.data : [];
+          setBookResults(booksArray);
+          setTotalPages(resData?.pagination?.totalPages || 1);
+        })
+        .catch((error) => {
+          setBookResults([]);
+          setTotalPages(1);
+          console.log(`Error search libros: ${JSON.stringify(error)}`);
+        });
 
-    setLoading(false);
-  };
+      api
+        .get(`/usuarios/search?term=${query}&page=1&limit=10`)
+        .then((res) => {
+          const resData = res.data?.data;
+          const usersArray = Array.isArray(resData?.data) ? resData.data : [];
+          setUserResults(usersArray);
+        })
+        .catch((error) => {
+          setUserResults([]);
+          console.log(`Error search usuarios: ${JSON.stringify(error)}`);
+        });
+
+      setLoading(false);
+    },
+    [page, appliedType, appliedCategoria, appliedMaxPrice],
+  );
+
+  useEffect(() => {
+    if (activeSearchTerm.trim()) {
+      handleSearch(activeSearchTerm);
+    } else {
+      fetchAllBooks();
+    }
+  }, [
+    page,
+    appliedCategoria,
+    appliedMaxPrice,
+    appliedType,
+    activeSearchTerm,
+    fetchAllBooks,
+    handleSearch,
+  ]);
 
   const openMenu = (id: string) => setMenuVisible(id);
   const closeMenu = () => setMenuVisible(null);
@@ -518,11 +535,8 @@ export default function SearchScreen({ route }: any) {
     setIsFilterModalVisible(false);
   };
 
-  const totalPages = Math.ceil(filteredBooks.length / ITEMS_PER_PAGE);
-  const paginatedBooks = filteredBooks.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
-
   const renderFooter = () => {
-    if (filteredBooks.length <= ITEMS_PER_PAGE) return null;
+    if (totalPages <= 1) return null;
     return (
       <View style={styles.paginationContainer}>
         <Button disabled={page === 1} onPress={() => setPage(page - 1)}>
@@ -552,7 +566,7 @@ export default function SearchScreen({ route }: any) {
         </View>
       )}
 
-      {filteredBooks.length > 0 && (
+      {bookResults.length > 0 && (
         <View style={styles.headerRowSection}>
           <Text variant="titleLarge" style={styles.sectionTitle}>
             Libros
@@ -572,7 +586,7 @@ export default function SearchScreen({ route }: any) {
   const renderEmptyState = () => {
     const hasFilters = appliedCategoria || appliedMaxPrice || appliedType;
 
-    if (filteredBooks.length > 0) return null;
+    if (bookResults.length > 0) return null;
 
     if (hasFilters) {
       return (
@@ -604,9 +618,18 @@ export default function SearchScreen({ route }: any) {
     <View style={styles.container}>
       <Searchbar
         placeholder={t('search_placeholder')}
-        onChangeText={setSearchQuery}
+        onChangeText={(text) => {
+          setSearchQuery(text);
+          if (!text) {
+            setActiveSearchTerm('');
+            setPage(1);
+          }
+        }}
         value={searchQuery}
-        onSubmitEditing={() => handleSearch(searchQuery)}
+        onSubmitEditing={() => {
+          setActiveSearchTerm(searchQuery);
+          setPage(1);
+        }}
         style={styles.searchBar}
         icon={() => <RNText style={{ fontSize: 20 }}>🔍</RNText>}
         right={(props) => (
@@ -626,7 +649,7 @@ export default function SearchScreen({ route }: any) {
         <FlatList
           key={isGridView ? 'grid' : 'list'}
           ListHeaderComponent={ListHeader}
-          data={paginatedBooks}
+          data={bookResults}
           renderItem={renderBookItem}
           keyExtractor={(item) => item._id}
           numColumns={isGridView ? 2 : 1}

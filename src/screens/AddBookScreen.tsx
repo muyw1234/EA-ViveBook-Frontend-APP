@@ -18,7 +18,7 @@ import * as ImagePicker from 'expo-image-picker';
 import FormData from 'form-data';
 import { styles as globalStyles } from '../../styles/default';
 import ImageService from '../services/ImageService';
-import { ILibro, SellType } from '../models/Libro';
+import ILibro, { SellType } from '../models/Libro';
 
 export default function AddBookScreen() {
   const { t } = useTranslation();

@@ -34,6 +34,8 @@ export default function ProfileScreen({ route }: any) {
   const [stats, setStats] = useState({ averageRating: 0, totalReviews: 0 });
   const [followers, setFollowers] = useState<any[]>([]);
   const [myFollowingUsers, setMyFollowingUsers] = useState<string[]>([]);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
 
   // Favorites state
   const [favoriteAuthors, setFavoriteAuthors] = useState<string[]>([]);
@@ -82,11 +84,13 @@ export default function ProfileScreen({ route }: any) {
       }
 
       // Always fetch current logged-in user's details to know who they are following
+      let followingIds: string[] = [];
       try {
         const loggedInRes = await api.get('/auth/profile');
         const loggedInUser = loggedInRes.data?.data || loggedInRes.data;
         if (loggedInUser) {
-          setMyFollowingUsers((loggedInUser.followingUsers || []).map((u: any) => u._id || u));
+          followingIds = (loggedInUser.followingUsers || []).map((u: any) => u._id || u);
+          setMyFollowingUsers(followingIds);
         }
       } catch (err) {
         console.error('Error fetching logged-in user details:', err);
@@ -94,10 +98,25 @@ export default function ProfileScreen({ route }: any) {
 
       if (userId) {
         response = await api.get(`/usuarios/${userId}`);
-        setIsMyProfile(currentUserId === userId);
+        const isMe = currentUserId === userId;
+        setIsMyProfile(isMe);
+
+        // Check notifications status if not my profile and following
+        if (!isMe && followingIds.includes(userId)) {
+          try {
+            const statusRes = await api.get(`/usuarios/${userId}/notifications/status`);
+            const statusData = statusRes.data?.data || statusRes.data;
+            setNotificationsEnabled(!!statusData.enabled);
+          } catch (err) {
+            console.error('Error fetching notifications status:', err);
+          }
+        } else {
+          setNotificationsEnabled(false);
+        }
       } else {
         response = await api.get('/auth/profile');
         setIsMyProfile(true);
+        setNotificationsEnabled(false);
       }
 
       const userData = response.data?.data || response.data;
@@ -170,6 +189,9 @@ export default function ProfileScreen({ route }: any) {
 
       if (response.status === 200) {
         setMyFollowingUsers(updatedFollowing);
+        if (!updatedFollowing.includes(userId)) {
+          setNotificationsEnabled(false);
+        }
 
         // Refresh the followers count of the viewed profile
         const followersResponse = await api.get(`/usuarios/${userId}/followers`);
@@ -190,6 +212,27 @@ export default function ProfileScreen({ route }: any) {
       Alert.alert(t('error'), 'No se pudo actualizar el estado de seguimiento.');
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const toggleNotifications = async () => {
+    if (!userId) return;
+    setLoadingNotifications(true);
+    try {
+      if (notificationsEnabled) {
+        await api.delete(`/usuarios/${userId}/notifications/disable`);
+        setNotificationsEnabled(false);
+      } else {
+        await api.post(`/usuarios/${userId}/notifications/enable`);
+        setNotificationsEnabled(true);
+      }
+    } catch (error: any) {
+      console.error('Error toggling notifications:', error);
+      const errMsg =
+        error.response?.data?.message || 'No se pudo cambiar el estado de las notificaciones.';
+      Alert.alert(t('error'), errMsg);
+    } finally {
+      setLoadingNotifications(false);
     }
   };
 
@@ -663,6 +706,26 @@ export default function ProfileScreen({ route }: any) {
                       ? t('unfollow', 'Siguiendo')
                       : t('follow', 'Seguir')}
                   </Button>
+
+                  {myFollowingUsers.includes(userId) ? (
+                    <Button
+                      mode={notificationsEnabled ? 'contained' : 'outlined'}
+                      onPress={toggleNotifications}
+                      loading={loadingNotifications}
+                      buttonColor={notificationsEnabled ? '#D183BA' : undefined}
+                      textColor={notificationsEnabled ? '#fff' : '#D183BA'}
+                      style={{ borderColor: '#D183BA', marginBottom: 10 }}
+                      icon={notificationsEnabled ? 'bell' : 'bell-outline'}
+                    >
+                      {notificationsEnabled
+                        ? 'Desactivar notificaciones'
+                        : 'Activar notificaciones'}
+                    </Button>
+                  ) : (
+                    <Button mode="outlined" disabled style={{ marginBottom: 10 }}>
+                      Sigue a este usuario para activar notificaciones
+                    </Button>
+                  )}
                 </View>
               )}
             </>

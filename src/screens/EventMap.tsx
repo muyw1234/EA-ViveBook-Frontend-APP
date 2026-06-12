@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
@@ -30,9 +30,32 @@ export default function EventMap({
   description,
   onMapPress,
 }: EventMapProps) {
+  const mapRef = useRef<MapView | null>(null);
+
+  useEffect(() => {
+    if (
+      latitude !== undefined &&
+      latitude !== null &&
+      longitude !== undefined &&
+      longitude !== null &&
+      mapRef.current
+    ) {
+      mapRef.current.animateToRegion(
+        {
+          latitude,
+          longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        },
+        1000,
+      );
+    }
+  }, [latitude, longitude]);
+
   return (
     <View style={styles.mapContainer}>
       <MapView
+        ref={mapRef}
         style={styles.map}
         initialRegion={{ latitude, longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
         onPress={onMapPress}
@@ -49,9 +72,32 @@ export default function EventMap({
 }
 
 export function MultiEventMap({ markers, userLatitude, userLongitude }: MultiEventMapProps) {
+  const mapRef = useRef<MapView | null>(null);
+
+  useEffect(() => {
+    if (
+      userLatitude !== undefined &&
+      userLatitude !== null &&
+      userLongitude !== undefined &&
+      userLongitude !== null &&
+      mapRef.current
+    ) {
+      mapRef.current.animateToRegion(
+        {
+          latitude: userLatitude,
+          longitude: userLongitude,
+          latitudeDelta: 0.06,
+          longitudeDelta: 0.06,
+        },
+        1000,
+      );
+    }
+  }, [userLatitude, userLongitude]);
+
   return (
     <View style={[styles.mapContainer, { height: 300 }]}>
       <MapView
+        ref={mapRef}
         style={styles.map}
         initialRegion={{
           latitude: userLatitude || 41.3851,
@@ -61,11 +107,16 @@ export function MultiEventMap({ markers, userLatitude, userLongitude }: MultiEve
         }}
       >
         {/* Marcador del propio Usuario */}
-        <Marker
-          coordinate={{ latitude: userLatitude, longitude: userLongitude }}
-          title="Mi ubicación"
-          pinColor="#3b82f6"
-        />
+        {userLatitude !== undefined &&
+        userLatitude !== null &&
+        userLongitude !== undefined &&
+        userLongitude !== null ? (
+          <Marker
+            coordinate={{ latitude: userLatitude, longitude: userLongitude }}
+            title="Mi ubicación"
+            pinColor="#3b82f6"
+          />
+        ) : null}
 
         {/* Marcadores de los eventos cercanos */}
         {markers.map((item) => (
