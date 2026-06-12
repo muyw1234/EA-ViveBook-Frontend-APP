@@ -15,8 +15,10 @@ export interface Token {
 async function getToken(): Promise<Token | undefined> {
   try {
     console.log('ImageService: Requesting Cloudinary upload token from backend...');
+    Alert.alert('Depuración Token', 'Solicitando token al backend...');
     const res = await api.get('/image/token');
     console.log('ImageService: Token response:', JSON.stringify(res.data));
+    Alert.alert('Depuración Token', `Token recibido: ${JSON.stringify(res.data)}`);
     return res.data.token;
   } catch (error: any) {
     const errMsg = error.response?.data?.message || error.message || JSON.stringify(error);
@@ -34,6 +36,7 @@ async function upload(data: any): Promise<string | undefined> {
   const token = await getToken();
   if (!token) {
     console.warn('ImageService: Token is empty. Aborting upload.');
+    Alert.alert('Depuración Subida', 'El token está vacío. Abortando.');
     return;
   }
 
@@ -43,8 +46,10 @@ async function upload(data: any): Promise<string | undefined> {
 
   try {
     console.log('ImageService: Sending POST request to Cloudinary...');
+    Alert.alert('Depuración Subida', 'Enviando imagen a Cloudinary...');
     const res = await axios.post(`https://api.cloudinary.com/v1_1/df2qxcelv/image/upload`, data);
     console.log('ImageService: Cloudinary upload successful. URL:', res.data.secure_url);
+    Alert.alert('Depuración Subida', `Subida exitosa. URL: ${res.data.secure_url}`);
     return res.data.secure_url;
   } catch (error: any) {
     const errMsg = error.response?.data?.error?.message || error.message || JSON.stringify(error);
