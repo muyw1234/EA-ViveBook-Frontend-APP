@@ -56,16 +56,22 @@ const EventoService = {
     }
   },
 
-  getAllEventos: async (): Promise<IEvento[]> => {
+  getAllEventos: async (
+    page?: number,
+    limit?: number,
+    upcoming?: boolean,
+    search?: string,
+    sort?: string,
+  ): Promise<{ data: IEvento[]; pagination: any }> => {
     try {
-      const response = await api.get('/eventos');
-      const data = response.data;
-
-      if (Array.isArray(data)) return data;
-      if (data && Array.isArray(data.data)) return data.data;
-      if (data && data.data && Array.isArray(data.data.data)) return data.data.data;
-
-      return [];
+      const response = await api.get('/eventos', {
+        params: { page, limit, upcoming, search, sort },
+      });
+      const data = response.data.data;
+      return {
+        data: data?.data || [],
+        pagination: data?.pagination || { total: 0, page: 1, limit: 10, totalPages: 1 },
+      };
     } catch (error) {
       console.error('Error al obtener eventos globales:', error);
       throw error;

@@ -57,26 +57,35 @@ export default function DashboardScreen() {
   // 1. Efecto para escuchar y actualizar la posición GPS en tiempo real
   useFocusEffect(
     React.useCallback(() => {
+      // Cargar datos del feed inmediatamente usando las coordenadas actuales
+      fetchDashboardData(userLocation);
+
       let locationSubscriber: Location.LocationSubscription | null = null;
       let isTimedOut = false;
-      const timeoutVal = 6000;
+      const timeoutVal = 4000; // 4 segundos de timeout para evitar esperas largas
 
       const timer = setTimeout(() => {
         isTimedOut = true;
-        console.warn('Timeout de ubicación superado. Usando ubicación por defecto.');
+        console.warn('Timeout de ubicación superado. Usando ubicación actual.');
         setLocationStatus('error');
-        setUserLocation(DEFAULT_LOCATION);
       }, timeoutVal);
 
       async function requestAndFetchLocation() {
         try {
-          const { status } = await Location.requestForegroundPermissionsAsync();
+          // Comprobar si ya se tienen permisos concedidos previamente
+          const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
+          let finalStatus = existingStatus;
+
+          if (existingStatus !== 'granted') {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            finalStatus = status;
+          }
+
           if (isTimedOut) return;
 
-          if (status !== 'granted') {
+          if (finalStatus !== 'granted') {
             clearTimeout(timer);
             setLocationStatus('error');
-            setUserLocation(DEFAULT_LOCATION);
             return;
           }
 
@@ -86,7 +95,6 @@ export default function DashboardScreen() {
           if (!servicesEnabled) {
             clearTimeout(timer);
             setLocationStatus('error');
-            setUserLocation(DEFAULT_LOCATION);
             return;
           }
 
@@ -97,10 +105,12 @@ export default function DashboardScreen() {
 
           clearTimeout(timer);
           setLocationStatus('success');
-          setUserLocation({
+
+          const newCoords = {
             latitude: currentLoc.coords.latitude,
             longitude: currentLoc.coords.longitude,
-          });
+          };
+          setUserLocation(newCoords);
 
           locationSubscriber = await Location.watchPositionAsync(
             {
@@ -119,23 +129,7 @@ export default function DashboardScreen() {
           if (isTimedOut) return;
           clearTimeout(timer);
           console.error('Error en geolocalización:', err);
-
-          try {
-            const lastKnown = await Location.getLastKnownPositionAsync({});
-            if (lastKnown) {
-              setUserLocation({
-                latitude: lastKnown.coords.latitude,
-                longitude: lastKnown.coords.longitude,
-              });
-              setLocationStatus('success');
-            } else {
-              setUserLocation(DEFAULT_LOCATION);
-              setLocationStatus('error');
-            }
-          } catch (err2) {
-            setUserLocation(DEFAULT_LOCATION);
-            setLocationStatus('error');
-          }
+          setLocationStatus('error');
         }
       }
 
@@ -152,7 +146,7 @@ export default function DashboardScreen() {
           }
         }
       };
-    }, []),
+    }, [userLocation]),
   );
 
   // 2. Efecto para volver a pedir los eventos del backend si el usuario se mueve
@@ -170,32 +164,14 @@ export default function DashboardScreen() {
 
       const eventsRes = await api.get('/eventos?limit=50'); // Aumentado el límite para tener más margen de filtrado
 
-      let items: any[] = [];
+      const items: any[] = [];
       const markers: MapMarkerData[] = [];
 
       if (user) {
-        if (user.followingUsers) {
-          items = items.concat(
-            user.followingUsers.map((u: any) => ({
-              type: 'user',
-              id: u._id || u,
-              name: u.name || 'Usuario',
-              data: u,
-            })),
-          );
-        }
-        if (user.favoriteAuthors) {
-          items = items.concat(
-            user.favoriteAuthors.map((a: string) => ({ type: 'author', id: a, name: a })),
-          );
-        }
-        if (user.favoriteCategories) {
-          items = items.concat(
-            user.favoriteCategories.map((c: string) => ({ type: 'category', id: c, name: c })),
-          );
-        }
         await AsyncStorage.setItem('user', JSON.stringify(user));
       }
+
+      const currentUserId = user?._id || user?.data?._id;
 
       if (eventsRes.data && eventsRes.data.data && eventsRes.data.data.data) {
         const backendEvents = eventsRes.data.data.data;
@@ -210,7 +186,7 @@ export default function DashboardScreen() {
             return;
           }
 
-          // ─── FILTRO DE DISTANCIA GEOGRÁFICA ───
+          // ─── FILTRO DE DISTANCIA GEOGRÁFICA PARA EL MAPA ───
           const hasCoordinates =
             e.location && e.location.coordinates && e.location.coordinates.length === 2;
 
@@ -232,14 +208,21 @@ export default function DashboardScreen() {
                 latitude: eventLat,
                 title: e.title || 'Evento',
               });
-
-              items.push({
-                type: 'event',
-                id: e._id,
-                name: e.title,
-                direccion: e.direccionExacta,
-              });
             }
+          }
+
+          // ─── FILTRO DE EVENTOS APUNTADOS PARA LA LISTA (SIGUIENDO) ───
+          const isAttending = (e.participant || [])
+            .map((p: any) => (p._id || p).toString())
+            .includes(currentUserId?.toString());
+
+          if (isAttending) {
+            items.push({
+              type: 'event',
+              id: e._id,
+              name: e.title,
+              direccion: e.direccionExacta,
+            });
           }
         });
       }
@@ -337,10 +320,6 @@ export default function DashboardScreen() {
           <Text variant="titleLarge" style={{ color: '#D183BA', fontWeight: 'bold' }}>
             {t('dash_events_title', { defaultValue: 'Eventos Cercanos a ti' })}
           </Text>
-          <Text variant="bodyMedium" style={{ marginBottom: 10 }}>
-            Mostrando reuniones literarias vigentes a menos de {RADIO_MAXIMO_KM} km de tu ubicación
-            real.
-          </Text>
 
           {locationStatus === 'loading' && (
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
@@ -411,8 +390,8 @@ export default function DashboardScreen() {
       </Text>
       <Card style={[styles.card, { padding: 10 }]}>
         {followingItems.length === 0 ? (
-          <Text style={{ fontStyle: 'italic', color: '#888', padding: 10 }}>
-            {t('following_empty')}
+          <Text style={{ fontStyle: 'italic', color: '#888', padding: 10, textAlign: 'center' }}>
+            No estás apuntado a ningún evento todavía
           </Text>
         ) : (
           <View>

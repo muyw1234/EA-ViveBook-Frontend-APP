@@ -48,6 +48,7 @@ export default function BooksForRentScreen() {
   const [menuVisible, setMenuVisible] = useState<string | null>(null);
   const [isGridView, setIsGridView] = useState(false);
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [requestedBookIds, setRequestedBookIds] = useState<string[]>([]);
   const [favoriteBookIds, setFavoriteBookIds] = useState<string[]>([]);
   const ITEMS_PER_PAGE = 5;
@@ -97,8 +98,17 @@ export default function BooksForRentScreen() {
     useCallback(() => {
       const fetchBooksAndReservations = async () => {
         try {
-          const response = await api.get('/libros/type/ALQUILER');
-          setBooks(response.data.data);
+          const response = await api.get(
+            `/libros/type/ALQUILER?page=${page}&limit=${ITEMS_PER_PAGE}`,
+          );
+          const resData = response.data?.data;
+          const booksArray = Array.isArray(resData?.data)
+            ? resData.data
+            : Array.isArray(resData)
+              ? resData
+              : [];
+          setBooks(booksArray);
+          setTotalPages(resData?.pagination?.totalPages || 1);
 
           try {
             const resResponse = await api.get('/reservas/solicitadas');
@@ -141,8 +151,6 @@ export default function BooksForRentScreen() {
           } catch (err) {
             console.error('Error fetching user info/chats/requests:', err);
           }
-
-          setPage(1);
         } catch (error) {
           console.error('Error fetching books:', error);
         } finally {
@@ -151,7 +159,7 @@ export default function BooksForRentScreen() {
       };
 
       fetchBooksAndReservations();
-    }, []),
+    }, [page]),
   );
 
   const openMenu = (id: string) => setMenuVisible(id);
@@ -215,8 +223,15 @@ export default function BooksForRentScreen() {
     try {
       await api.post(`/libros/rent/${book._id}`);
       showAlert(t('success'), `${t('rent_action')}: ${book.title}`);
-      const response = await api.get('/libros/type/ALQUILER');
-      setBooks(response.data.data);
+      const response = await api.get(`/libros/type/ALQUILER?page=${page}&limit=${ITEMS_PER_PAGE}`);
+      const resData = response.data?.data;
+      const booksArray = Array.isArray(resData?.data)
+        ? resData.data
+        : Array.isArray(resData)
+          ? resData
+          : [];
+      setBooks(booksArray);
+      setTotalPages(resData?.pagination?.totalPages || 1);
     } catch (error) {
       console.error('Error renting book:', error);
       showAlert(t('error'), t('rent_err') || 'No se pudo completar el alquiler');
@@ -363,11 +378,8 @@ export default function BooksForRentScreen() {
     );
   };
 
-  const totalPages = Math.ceil(books.length / ITEMS_PER_PAGE);
-  const paginatedBooks = books.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
-
   const renderFooter = () => {
-    if (books.length <= ITEMS_PER_PAGE) return null;
+    if (totalPages <= 1) return null;
     return (
       <View style={styles.paginationContainer}>
         <Button disabled={page === 1} onPress={() => setPage(page - 1)}>
@@ -407,7 +419,7 @@ export default function BooksForRentScreen() {
 
       <FlatList
         key={isGridView ? 'grid' : 'list'}
-        data={paginatedBooks}
+        data={books}
         renderItem={renderBookItem}
         keyExtractor={(item) => item._id}
         numColumns={isGridView ? 2 : 1}

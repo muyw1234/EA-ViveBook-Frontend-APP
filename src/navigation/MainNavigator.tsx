@@ -13,6 +13,7 @@ import style from '../../styles/default.old';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import socket from '../services/socket';
+import { usePushNotifications } from '../services/notifications';
 
 const Tab = createBottomTabNavigator();
 
@@ -131,6 +132,7 @@ function BottomTabs() {
 
 // 2. El enrutador principal que maneja los saltos a pantallas completas
 export default function MainNavigator() {
+  usePushNotifications();
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {/* Tu vista con el menú inferior */}

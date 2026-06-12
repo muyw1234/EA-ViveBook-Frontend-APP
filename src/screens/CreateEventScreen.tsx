@@ -119,9 +119,14 @@ export default function CreateEventScreen() {
           },
         },
       ]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting event:', error);
-      setErrorMsg('Error al añadir el evento en el servidor.');
+      const serverMsg = error.response?.data?.message || error.message;
+      const displayMsg = serverMsg
+        ? `No se pudo crear el evento: ${serverMsg}`
+        : 'No se pudo crear el evento.';
+      setErrorMsg(displayMsg);
+      Alert.alert('Error', displayMsg);
     } finally {
       setLoading(false);
     }

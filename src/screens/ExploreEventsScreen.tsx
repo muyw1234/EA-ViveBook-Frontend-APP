@@ -14,23 +14,21 @@ export default function ExploreEventsScreen() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const ITEMS_PER_PAGE = 5;
 
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     try {
       setLoading(true);
-      const allEvents = await EventoService.getAllEventos();
-      // Filter out past events
-      const now = new Date();
-      const upcomingEvents = allEvents.filter((e) => {
-        const date = new Date(e.eventDate);
-        return date >= now;
-      });
-      // Sort by date ascending
-      upcomingEvents.sort(
-        (a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime(),
+      const result = await EventoService.getAllEventos(
+        page,
+        ITEMS_PER_PAGE,
+        true,
+        searchQuery,
+        'eventDate',
       );
-      setEvents(upcomingEvents);
+      setEvents(result.data);
+      setTotalPages(result.pagination.totalPages || 1);
     } catch (error) {
       console.error('Error fetching events:', error);
       if (Platform.OS === 'web') {
@@ -41,31 +39,16 @@ export default function ExploreEventsScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, searchQuery, t]);
 
   useFocusEffect(
     useCallback(() => {
       fetchEvents();
-    }, []),
+    }, [fetchEvents]),
   );
 
-  const getFilteredEvents = () => {
-    if (!searchQuery.trim()) return events;
-    const query = searchQuery.toLowerCase().trim();
-    return events.filter(
-      (e) =>
-        e.title?.toLowerCase().includes(query) ||
-        e.direccionExacta?.toLowerCase().includes(query) ||
-        e.description?.toLowerCase().includes(query),
-    );
-  };
-
-  const filteredEvents = getFilteredEvents();
-  const paginatedEvents = filteredEvents.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
-  const totalPages = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE);
-
   const renderFooter = () => {
-    if (filteredEvents.length <= ITEMS_PER_PAGE) return null;
+    if (totalPages <= 1) return null;
     return (
       <View style={styles.paginationContainer}>
         <Button disabled={page === 1} onPress={() => setPage(page - 1)}>
@@ -150,7 +133,7 @@ export default function ExploreEventsScreen() {
       />
 
       <FlatList
-        data={paginatedEvents}
+        data={events}
         renderItem={renderEventItem}
         keyExtractor={(item) => item._id}
         contentContainerStyle={styles.listContent}
