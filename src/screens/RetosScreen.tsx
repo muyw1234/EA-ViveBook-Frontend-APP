@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../services/api';
 import { styles as globalStyles } from '../../styles/default';
+import { getPaginatedData } from '../utils/apiResponse';
 
 interface Reto {
   _id: string;
@@ -33,9 +34,7 @@ export default function RetosScreen() {
     try {
       setLoading(true);
       const response = await api.get('/retos/mis-retos');
-      if (response.data && Array.isArray(response.data.retos)) {
-        setRetos(response.data.retos);
-      }
+      setRetos(getPaginatedData<Reto>(response.data).data);
     } catch (error) {
       console.error('Error fetching retos:', error);
     } finally {

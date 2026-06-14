@@ -6,7 +6,6 @@ import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles as globalStyles } from '../../styles/default';
 import {
   configureGoogleSignIn,
@@ -14,6 +13,13 @@ import {
   isAppleLoginAvailable,
   loginWithApple,
 } from '../services/socialAuth';
+import { unwrapApiData } from '../utils/apiResponse';
+import { saveSession } from '../services/session';
+
+type AuthResponse = {
+  token: string;
+  user: Record<string, unknown>;
+};
 
 export default function LoginScreen() {
   const { t } = useTranslation();
@@ -48,15 +54,10 @@ export default function LoginScreen() {
       const response = await api.post('/auth/signin', { email, password });
 
       if (response.status === 200) {
-        // const { token, user } = response.data;
-        const token = response.data.data.token;
-        const user = response.data.data.user;
+        const { token, user } = unwrapApiData<AuthResponse>(response.data);
         console.log('Login successful. User:', JSON.stringify(user));
 
-        await AsyncStorage.setItem('token', token);
-        await AsyncStorage.setItem('user', JSON.stringify(user));
-
-        navigation.navigate('Main' as never);
+        await saveSession(token, user, 'Main');
       }
     } catch (error: any) {
       let message = t('err_login_failed');
@@ -112,13 +113,9 @@ export default function LoginScreen() {
       const response = await api.post('/auth/social-login', { provider, idToken, name });
 
       if (response.status === 200 || response.status === 201) {
-        const token = response.data.data.token;
-        const user = response.data.data.user;
+        const { token, user } = unwrapApiData<AuthResponse>(response.data);
 
-        await AsyncStorage.setItem('token', token);
-        await AsyncStorage.setItem('user', JSON.stringify(user));
-
-        navigation.navigate('Main' as never);
+        await saveSession(token, user, 'Main');
       }
     } catch (error: any) {
       console.log(error);

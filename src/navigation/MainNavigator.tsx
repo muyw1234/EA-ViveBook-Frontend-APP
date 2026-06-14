@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import socket from '../services/socket';
 import { usePushNotifications } from '../services/notifications';
+import { unwrapApiData } from '../utils/apiResponse';
 
 const Tab = createBottomTabNavigator();
 
@@ -70,8 +71,8 @@ function BottomTabs() {
   const checkUnread = async () => {
     try {
       const response = await api.get('/mensajes/unread-count');
-      const data = response.data?.data || response.data || {};
-      setHasUnread(data.total > 0);
+      const data = unwrapApiData<{ total?: number }>(response.data);
+      setHasUnread((data.total ?? 0) > 0);
     } catch {
       // fallo silencioso
     }

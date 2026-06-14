@@ -9,6 +9,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import api from '../services/api';
 import * as Location from 'expo-location';
 import { MultiEventMap } from './EventMap';
+import { getPaginatedData, unwrapApiData } from '../utils/apiResponse';
 
 interface MapMarkerData {
   id: string;
@@ -160,7 +161,7 @@ export default function DashboardScreen() {
   const fetchDashboardData = async (currentLocation: { latitude: number; longitude: number }) => {
     try {
       const profileRes = await api.get('/auth/profile');
-      const user = profileRes.data;
+      const user = unwrapApiData<any>(profileRes.data);
 
       const eventsRes = await api.get('/eventos?limit=50'); // Aumentado el límite para tener más margen de filtrado
 
@@ -173,8 +174,8 @@ export default function DashboardScreen() {
 
       const currentUserId = user?._id || user?.data?._id;
 
-      if (eventsRes.data && eventsRes.data.data && eventsRes.data.data.data) {
-        const backendEvents = eventsRes.data.data.data;
+      const backendEvents = getPaginatedData<any>(eventsRes.data).data;
+      if (backendEvents.length > 0) {
         const ahora = new Date();
 
         backendEvents.forEach((e: any) => {

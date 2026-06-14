@@ -19,6 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { styles as globalStyles } from '../../styles/default';
 import ImageService from '../services/ImageService';
+import { clearSession } from '../services/session';
 
 export default function ProfileScreen({ route }: any) {
   const { t } = useTranslation();
@@ -314,9 +315,7 @@ export default function ProfileScreen({ route }: any) {
   };
 
   const logout = async () => {
-    await AsyncStorage.removeItem('token');
-    await AsyncStorage.removeItem('user');
-    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+    await clearSession('logout');
   };
 
   const executeSoftDelete = async () => {

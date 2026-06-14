@@ -1,5 +1,5 @@
 import api from './api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApiCollection, getPaginatedData, unwrapApiData } from '../utils/apiResponse';
 
 // Usamos la nomenclatura GeoJSON precisa de tu versión web
 export interface IGeoJSONPoint {
@@ -46,10 +46,7 @@ const EventoService = {
   createEvento: async (eventoData: IEventoData): Promise<IEvento> => {
     try {
       const response = await api.post('/eventos', eventoData);
-      if (response.data && response.data.success) {
-        return response.data.data;
-      }
-      return response.data.data || response.data;
+      return unwrapApiData<IEvento>(response.data);
     } catch (error) {
       console.error('Error al crear el evento desde la app:', error);
       throw error;
@@ -67,11 +64,7 @@ const EventoService = {
       const response = await api.get('/eventos', {
         params: { page, limit, upcoming, search, sort },
       });
-      const data = response.data.data;
-      return {
-        data: data?.data || [],
-        pagination: data?.pagination || { total: 0, page: 1, limit: 10, totalPages: 1 },
-      };
+      return getPaginatedData<IEvento>(response.data);
     } catch (error) {
       console.error('Error al obtener eventos globales:', error);
       throw error;
@@ -80,7 +73,7 @@ const EventoService = {
 
   getEvento: async (eventoId: string): Promise<IEvento> => {
     const response = await api.get(`/eventos/${eventoId}`);
-    return response.data.success ? response.data.data : response.data.data || response.data;
+    return unwrapApiData<IEvento>(response.data);
   },
 
   getEventsAtExactLocation: async (lng: number, lat: number): Promise<IEvento[]> => {
@@ -88,7 +81,7 @@ const EventoService = {
       const response = await api.get(`/eventos/exact-location`, {
         params: { lng, lat },
       });
-      return response.data.success ? response.data.data : response.data.data || response.data;
+      return getApiCollection<IEvento>(response.data);
     } catch (error) {
       console.error('Error fetching events at exact location:', error);
       throw error;
@@ -97,22 +90,13 @@ const EventoService = {
 
   // Prueba esto en tu EventoService si sigue fallando por temas de autenticación:
   participateEvento: async (eventoId: string, usuarioId: string): Promise<IEvento> => {
-    const token = await AsyncStorage.getItem('token'); // Recuperamos el token guardado
-    const response = await api.put(
-      `/eventos/${eventoId}/participate`,
-      { usuarioId },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    );
-    return response.data.success ? response.data.data : response.data.data || response.data;
+    const response = await api.put(`/eventos/${eventoId}/participate`, { usuarioId });
+    return unwrapApiData<IEvento>(response.data);
   },
 
   leaveEvento: async (eventoId: string, usuarioId: string): Promise<IEvento> => {
     const response = await api.put(`/eventos/${eventoId}/leave`, { usuarioId });
-    return response.data.success ? response.data.data : response.data.data || response.data;
+    return unwrapApiData<IEvento>(response.data);
   },
 };
 

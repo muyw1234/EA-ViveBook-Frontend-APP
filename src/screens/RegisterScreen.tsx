@@ -6,7 +6,6 @@ import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles as globalStyles } from '../../styles/default';
 import {
   configureGoogleSignIn,
@@ -14,6 +13,13 @@ import {
   isAppleLoginAvailable,
   loginWithApple,
 } from '../services/socialAuth';
+import { unwrapApiData } from '../utils/apiResponse';
+import { saveSession } from '../services/session';
+
+type AuthResponse = {
+  token?: string;
+  user?: Record<string, unknown>;
+};
 
 export default function RegisterScreen() {
   const { t } = useTranslation();
@@ -94,15 +100,13 @@ export default function RegisterScreen() {
       });
 
       if (response.status === 201) {
-        const dataObj = response.data?.data || response.data;
+        const dataObj = unwrapApiData<AuthResponse>(response.data);
         const { token, user } = dataObj;
 
         // Si el backend devuelve token y usuario, iniciamos sesión automáticamente
         if (token && user) {
-          await AsyncStorage.setItem('token', token);
-          await AsyncStorage.setItem('user', JSON.stringify(user));
+          await saveSession(token, user, 'Discover');
           Alert.alert(t('success'), t('msg_reg_success'));
-          navigation.navigate('Discover' as never);
         } else {
           Alert.alert(t('success'), t('msg_reg_success'));
           navigation.navigate('Login' as never);
@@ -161,13 +165,13 @@ export default function RegisterScreen() {
       const response = await api.post('/auth/social-login', { provider, idToken, name });
 
       if (response.status === 200 || response.status === 201) {
-        const token = response.data.data.token;
-        const user = response.data.data.user;
+        const { token, user } = unwrapApiData<AuthResponse>(response.data);
 
-        await AsyncStorage.setItem('token', token);
-        await AsyncStorage.setItem('user', JSON.stringify(user));
-
-        navigation.navigate('Discover' as never);
+        if (token && user) {
+          await saveSession(token, user, 'Discover');
+        } else {
+          throw new Error(t('err_reg_problem'));
+        }
       }
     } catch (error: any) {
       console.log(error);

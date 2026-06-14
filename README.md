@@ -1,5 +1,21 @@
 # ViveBooks - Apartat de reptes
 
+## Configuració de connexió
+
+Les connexions HTTP i Socket.IO comparteixen la configuració definida a
+`src/config/environment.ts`.
+
+- Android Emulator utilitza per defecte `http://10.0.2.2:1337`.
+- iOS Simulator i Web utilitzen per defecte `http://localhost:1337`.
+- Un dispositiu físic o una build desplegada ha de definir `EXPO_PUBLIC_API_URL` i
+  `EXPO_PUBLIC_SOCKET_URL`.
+
+Es pot partir de `.env.example` per definir aquestes variables. En un dispositiu físic cal
+utilitzar una adreça accessible des del dispositiu, no `localhost`.
+
+Les respostes del Backend es normalitzen mitjançant `src/utils/apiResponse.ts`, que soporta
+tant respostes directes com el contracte `{ success, status, message, data }`.
+
 ## Abast de l’exercici
 
 En aquest exercici s’ha implementat una nova funcionalitat a l’aplicació **ViveBooks**: un apartat de **reptes** per als usuaris.

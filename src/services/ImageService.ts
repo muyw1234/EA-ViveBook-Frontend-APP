@@ -2,6 +2,7 @@ import { Alert, Platform } from 'react-native';
 import api, { cloudinary_api } from './api';
 import axios from 'axios';
 import * as ImagePicker from 'expo-image-picker';
+import { unwrapApiData } from '../utils/apiResponse';
 
 export interface Token {
   timestamp: number;
@@ -15,7 +16,8 @@ export interface Token {
 async function getToken(): Promise<Token | undefined> {
   try {
     const res = await api.get('/image/token');
-    return res.data.token;
+    const data = unwrapApiData<Token | { token: Token }>(res.data);
+    return 'token' in data ? data.token : data;
   } catch (error: any) {
     const errMsg = error.response?.data?.message || error.message || JSON.stringify(error);
     Alert.alert('Error de Token de Imagen', `No se pudo obtener el token de firma: ${errMsg}`);

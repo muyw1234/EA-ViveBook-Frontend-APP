@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 import { styles as globalStyles } from '../../styles/default';
+import { getPaginatedData, unwrapApiData } from '../utils/apiResponse';
 
 const ALL_CATEGORIES = [
   'Terror',
@@ -67,23 +68,13 @@ export default function DiscoverScreen() {
 
       // Filter out current user from users list
       if (usersRes.data) {
-        const resData = usersRes.data.data || usersRes.data;
-        const usersList = Array.isArray(resData)
-          ? resData
-          : Array.isArray(resData?.data)
-            ? resData.data
-            : [];
+        const usersList = getPaginatedData<any>(usersRes.data).data;
         const currentId = userStr ? JSON.parse(userStr)._id : null;
         setUsers(usersList.filter((u: any) => u._id !== currentId));
       }
 
       if (authorsRes.data) {
-        const resAuthorsData = authorsRes.data.data || authorsRes.data;
-        const backendAuthors = Array.isArray(resAuthorsData)
-          ? resAuthorsData
-          : Array.isArray(resAuthorsData?.data)
-            ? resAuthorsData.data
-            : [];
+        const backendAuthors = getPaginatedData<any>(authorsRes.data).data;
         const combined = [...PREDEFINED_AUTHORS];
         backendAuthors.forEach((ba: any) => {
           const name = ba.fullName || ba.name;
@@ -114,7 +105,8 @@ export default function DiscoverScreen() {
       };
       const response = await api.put(`/usuarios/${currentUser._id}`, payload);
       if (response.status === 200) {
-        await AsyncStorage.setItem('user', JSON.stringify(response.data));
+        const updatedUser = unwrapApiData<Record<string, unknown>>(response.data);
+        await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
       }
     } catch (error) {
       console.error('Error saving discover preferences:', error);

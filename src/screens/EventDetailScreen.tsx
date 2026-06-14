@@ -8,7 +8,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import EventoService, { IEvento } from '../services/evento';
 import { styles as globalStyles } from '../../styles/default';
 import EventMap from './EventMap';
-import axios from 'axios';
+import api from '../services/api';
+import { unwrapApiData } from '../utils/apiResponse';
 
 export default function EventDetailScreen() {
   const { t } = useTranslation();
@@ -32,17 +33,14 @@ export default function EventDetailScreen() {
     }
   }, [eventoId]);
 
-  const fetchCreatorProfile = async (creatorId: string, userToken: string) => {
+  const fetchCreatorProfile = async (creatorId: string) => {
     try {
-      const response = await axios.get(`http://localhost:8081/usuarios/${creatorId}`, {
-        headers: {
-          Authorization: `Bearer ${userToken}`,
-        },
-      });
+      const response = await api.get(`/usuarios/${creatorId}`);
 
       if (response.data) {
-        console.log('Creator profile loaded:', response.data);
-        setCreatorProfile(response.data); // Save to state if you want to use it elsewhere
+        const profile = unwrapApiData<Record<string, unknown>>(response.data);
+        console.log('Creator profile loaded:', profile);
+        setCreatorProfile(profile);
       }
     } catch (error) {
       console.error('Error fetching creator profile:', error);
@@ -54,7 +52,6 @@ export default function EventDetailScreen() {
       setLoading(true);
 
       const userStr = await AsyncStorage.getItem('user');
-      const token = await AsyncStorage.getItem('token');
 
       if (userStr) {
         const parsedUser = JSON.parse(userStr);
@@ -68,11 +65,11 @@ export default function EventDetailScreen() {
       const eventData = await EventoService.getEvento(eventoId);
       setEvent(eventData);
 
-      if (eventData && eventData.creator && token) {
+      if (eventData && eventData.creator) {
         const cId =
           typeof eventData.creator === 'string' ? eventData.creator : eventData.creator._id;
         if (cId) {
-          await fetchCreatorProfile(cId, token);
+          await fetchCreatorProfile(cId);
         }
       }
     } catch (error) {

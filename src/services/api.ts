@@ -1,13 +1,9 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-import { Platform } from 'react-native';
-
-const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:1337' : 'http://localhost:1337';
-//const API_URL = Platform.OS === 'android' ? 'http://192.168.42.2:9000' : 'http://localhost:9000';
+import { environment } from '../config/environment';
+import { clearSession, getValidSessionToken } from './session';
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: environment.apiUrl,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -15,13 +11,31 @@ const api = axios.create({
 
 api.interceptors.request.use(
   async (config) => {
-    const token = await AsyncStorage.getItem('token');
+    const token = await getValidSessionToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  },
+);
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const status = error.response?.status;
+    const requestUrl = String(error.config?.url ?? '');
+    const isAuthenticationRequest = ['/auth/signin', '/auth/signup', '/auth/social-login'].some(
+      (path) => requestUrl.includes(path),
+    );
+    const hadAuthenticatedRequest = Boolean(error.config?.headers?.Authorization);
+
+    if ((status === 401 || status === 403) && hadAuthenticatedRequest && !isAuthenticationRequest) {
+      await clearSession('rejected');
+    }
+
     return Promise.reject(error);
   },
 );
