@@ -29,6 +29,7 @@ import { useTranslation } from 'react-i18next';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import api from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSentReservations } from '../services/reserva';
 
 export default function MyBooksScreen() {
   const { t } = useTranslation();
@@ -112,11 +113,8 @@ export default function MyBooksScreen() {
         setRentedBooks(userData.rentedLibros || []);
       }
 
-      const reservationsResponse = await api.get('/reservas/solicitadas');
-      const resData = reservationsResponse.data?.data || reservationsResponse.data;
-      const accepted = Array.isArray(resData)
-        ? resData.filter((r: any) => r.estado === 'ACEPTADA')
-        : [];
+      const reservations = await getSentReservations();
+      const accepted = reservations.filter((reservation) => reservation.estado === 'ACEPTADA');
       setReservedReservations(accepted);
 
       try {
@@ -1132,7 +1130,7 @@ export default function MyBooksScreen() {
             Hablar con el vendedor
           </Text>
           <Text variant="bodyMedium" style={{ marginBottom: 16, color: '#666' }}>
-            Escribe un mensaje de presentación para el libro "{selectedBookForRequest?.title}":
+            {`Escribe un mensaje de presentación para el libro "${selectedBookForRequest?.title}":`}
           </Text>
           <TextInput
             label="Mensaje inicial"

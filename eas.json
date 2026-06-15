@@ -1,0 +1,32 @@
+{
+  "cli": {
+    "version": ">= 16.0.0"
+  },
+  "build": {
+    "preview": {
+      "environment": "preview",
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://ea3-api.upc.edu",
+        "EXPO_PUBLIC_SOCKET_URL": "https://ea3-api.upc.edu",
+        "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "df2qxcelv",
+        "EXPO_PUBLIC_CLOUDINARY_API_KEY": "991611377853644"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "environment": "production",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://ea3-api.upc.edu",
+        "EXPO_PUBLIC_SOCKET_URL": "https://ea3-api.upc.edu",
+        "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "df2qxcelv",
+        "EXPO_PUBLIC_CLOUDINARY_API_KEY": "991611377853644"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

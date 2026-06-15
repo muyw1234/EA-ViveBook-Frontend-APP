@@ -14,7 +14,8 @@ import {
   loginWithApple,
 } from '../services/socialAuth';
 import { unwrapApiData } from '../utils/apiResponse';
-import { saveSession } from '../services/session';
+import { consumeSessionEndReason, saveSession } from '../services/session';
+import type { SessionEndReason } from '../services/session';
 
 type AuthResponse = {
   token: string;
@@ -30,15 +31,32 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [sessionEndReason, setSessionEndReason] = useState<Exclude<
+    SessionEndReason,
+    'logout'
+  > | null>(null);
   const [appleAvailable, setAppleAvailable] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
     configureGoogleSignIn();
+
+    consumeSessionEndReason().then((reason) => {
+      if (!mounted || !reason) return;
+      setSessionEndReason(reason);
+    });
+
     const checkApple = async () => {
       const isAvailable = await isAppleLoginAvailable();
-      setAppleAvailable(isAvailable);
+      if (mounted) {
+        setAppleAvailable(isAvailable);
+      }
     };
     checkApple();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const handleLogin = async () => {
@@ -143,6 +161,16 @@ export default function LoginScreen() {
           {t('login_subtitle')}
         </Text>
 
+        {sessionEndReason ? (
+          <View style={localStyles.sessionNotice}>
+            <RNText style={localStyles.sessionNoticeText}>
+              {sessionEndReason === 'expired'
+                ? t('session_expired_message')
+                : t('session_rejected_message')}
+            </RNText>
+          </View>
+        ) : null}
+
         <TextInput
           label={t('email_label')}
           value={email}
@@ -242,3 +270,23 @@ export default function LoginScreen() {
     </LinearGradient>
   );
 }
+
+const localStyles = StyleSheet.create({
+  sessionNotice: {
+    width: '100%',
+    marginBottom: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#D183BA',
+    borderRadius: 10,
+    backgroundColor: '#F8EAF4',
+  },
+  sessionNoticeText: {
+    color: '#7A315F',
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+});

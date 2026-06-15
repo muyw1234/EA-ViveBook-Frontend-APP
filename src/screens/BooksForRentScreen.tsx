@@ -28,6 +28,7 @@ import api from '../services/api';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import { getSentReservations } from '../services/reserva';
 
 const { width } = Dimensions.get('window');
 
@@ -111,18 +112,15 @@ export default function BooksForRentScreen() {
           setTotalPages(resData?.pagination?.totalPages || 1);
 
           try {
-            const resResponse = await api.get('/reservas/solicitadas');
-            const resList = resResponse.data?.data || resResponse.data || [];
-            const pendingBookIds = Array.isArray(resList)
-              ? resList
-                  .filter(
-                    (r: any) =>
-                      r.estado?.toUpperCase() === 'PENDIENTE' ||
-                      r.estado?.toUpperCase() === 'ACEPTADA',
-                  )
-                  .map((r: any) => (typeof r.libro === 'string' ? r.libro : r.libro?._id))
-                  .filter(Boolean)
-              : [];
+            const reservations = await getSentReservations();
+            const pendingBookIds = reservations
+              .filter((reservation) => ['PENDIENTE', 'ACEPTADA'].includes(reservation.estado))
+              .map((reservation) =>
+                typeof reservation.libro === 'string'
+                  ? reservation.libro
+                  : String(reservation.libro._id || ''),
+              )
+              .filter(Boolean);
             setRequestedBookIds(pendingBookIds);
           } catch (resErr) {
             console.error('Error fetching reservations:', resErr);
@@ -447,7 +445,7 @@ export default function BooksForRentScreen() {
             Hablar con el vendedor
           </Text>
           <Text variant="bodyMedium" style={{ marginBottom: 16, color: '#666' }}>
-            Escribe un mensaje de presentación para el libro "{selectedBookForRequest?.title}":
+            {`Escribe un mensaje de presentación para el libro "${selectedBookForRequest?.title}":`}
           </Text>
           <TextInput
             label="Mensaje inicial"

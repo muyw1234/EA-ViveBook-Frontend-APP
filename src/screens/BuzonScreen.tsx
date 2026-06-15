@@ -33,6 +33,7 @@ import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import socket from '../services/socket';
 import api from '../services/api';
+import { getReceivedReservations, getSentReservations } from '../services/reserva';
 
 function SwipeableRow({
   children,
@@ -265,13 +266,12 @@ export default function BuzonScreen() {
     if (!userId) return;
     setLoadingReservas(true);
     try {
-      const receivedResponse = await api.get('/reservas/recibidas');
-      const received = receivedResponse.data?.data || receivedResponse.data;
-      setReceivedRequests(Array.isArray(received) ? received : []);
-
-      const sentResponse = await api.get('/reservas/solicitadas');
-      const sent = sentResponse.data?.data || sentResponse.data;
-      setSentRequests(Array.isArray(sent) ? sent : []);
+      const [received, sent] = await Promise.all([
+        getReceivedReservations(),
+        getSentReservations(),
+      ]);
+      setReceivedRequests(received);
+      setSentRequests(sent);
     } catch (error) {
       console.error('Error fetching reservations:', error);
     } finally {
@@ -562,7 +562,7 @@ export default function BuzonScreen() {
                   {req.initialMessage ? (
                     <View style={styles.initialMessageBox}>
                       <Text variant="bodyMedium" style={{ fontStyle: 'italic', color: '#555' }}>
-                        "{req.initialMessage}"
+                        {`"${req.initialMessage}"`}
                       </Text>
                     </View>
                   ) : null}

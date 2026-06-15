@@ -29,6 +29,7 @@ import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSentReservations } from '../services/reserva';
 
 export default function SearchScreen({ route }: any) {
   const { t } = useTranslation();
@@ -95,17 +96,15 @@ export default function SearchScreen({ route }: any) {
 
   const fetchReservations = async () => {
     try {
-      const resResponse = await api.get('/reservas/solicitadas');
-      const resList = resResponse.data?.data || resResponse.data || [];
-      const pendingBookIds = Array.isArray(resList)
-        ? resList
-            .filter(
-              (r: any) =>
-                r.estado?.toUpperCase() === 'PENDIENTE' || r.estado?.toUpperCase() === 'ACEPTADA',
-            )
-            .map((r: any) => (typeof r.libro === 'string' ? r.libro : r.libro?._id))
-            .filter(Boolean)
-        : [];
+      const reservations = await getSentReservations();
+      const pendingBookIds = reservations
+        .filter((reservation) => ['PENDIENTE', 'ACEPTADA'].includes(reservation.estado))
+        .map((reservation) =>
+          typeof reservation.libro === 'string'
+            ? reservation.libro
+            : String(reservation.libro._id || ''),
+        )
+        .filter(Boolean);
       setRequestedBookIds(pendingBookIds);
     } catch (err) {
       console.error('Error fetching reservations:', err);
@@ -764,7 +763,7 @@ export default function SearchScreen({ route }: any) {
             Hablar con el vendedor
           </Text>
           <Text variant="bodyMedium" style={{ marginBottom: 16, color: '#666' }}>
-            Escribe un mensaje de presentación para el libro "{selectedBookForRequest?.title}":
+            {`Escribe un mensaje de presentación para el libro "${selectedBookForRequest?.title}":`}
           </Text>
           <TextInput
             label="Mensaje inicial"

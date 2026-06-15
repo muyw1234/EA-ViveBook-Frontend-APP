@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TOKEN_KEY = 'token';
 const USER_KEY = 'user';
+const SESSION_END_REASON_KEY = 'sessionEndReason';
 
 export type SessionEntryRoute = 'Main' | 'Discover';
 export type SessionEndReason = 'expired' | 'rejected' | 'logout';
@@ -104,6 +105,7 @@ export async function saveSession(
     [TOKEN_KEY, token],
     [USER_KEY, JSON.stringify(user)],
   ]);
+  await AsyncStorage.removeItem(SESSION_END_REASON_KEY);
   emit({ authenticated: true, entryRoute, session });
 }
 
@@ -147,6 +149,16 @@ export async function getValidSessionToken(): Promise<string | null> {
   return token;
 }
 
+export async function consumeSessionEndReason(): Promise<Exclude<
+  SessionEndReason,
+  'logout'
+> | null> {
+  const reason = await AsyncStorage.getItem(SESSION_END_REASON_KEY);
+  await AsyncStorage.removeItem(SESSION_END_REASON_KEY);
+
+  return reason === 'expired' || reason === 'rejected' ? reason : null;
+}
+
 export async function clearSession(reason: SessionEndReason = 'logout'): Promise<void> {
   if (clearingSession) {
     return clearingSession;
@@ -154,6 +166,13 @@ export async function clearSession(reason: SessionEndReason = 'logout'): Promise
 
   clearingSession = (async () => {
     await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
+
+    if (reason === 'expired' || reason === 'rejected') {
+      await AsyncStorage.setItem(SESSION_END_REASON_KEY, reason);
+    } else {
+      await AsyncStorage.removeItem(SESSION_END_REASON_KEY);
+    }
+
     emit({ authenticated: false, reason });
   })();
 

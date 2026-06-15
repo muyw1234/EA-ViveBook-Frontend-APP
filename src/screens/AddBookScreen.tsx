@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import {
   TextInput,
   Button,
@@ -7,15 +7,12 @@ import {
   Card,
   Menu,
   TouchableRipple,
+  ActivityIndicator,
 } from 'react-native-paper';
 import { AppText as Text } from '../components/AppText';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
-//import { pick, keepLocalCopy } from "@react-native-documents/picker"; // https://medium.com/@paramasivam3448/migrating-from-react-native-document-picker-to-react-native-documents-picker-a-complete-guide-6cbd33266816
-//import * as DocumentPicker from "expo-document-picker"; // https://medium.com/@olusanyajolaoluwa/simplifying-document-management-with-expo-document-picker-in-react-native-debc6060c3f3
-import * as ImagePicker from 'expo-image-picker';
-import { styles as globalStyles } from '../../styles/default';
 import ImageService from '../services/ImageService';
 import ILibro, { SellType } from '../models/Libro';
 
@@ -35,6 +32,32 @@ export default function AddBookScreen() {
   const [rentalEndDate, setRentalEndDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [imageUrl, setImageUrl] = useState<string>('');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState('');
+
+  const handleImageUpload = async () => {
+    setUploadingImage(true);
+    setImageUploadError('');
+
+    try {
+      const url = await ImageService.uploadOnAndroid();
+      if (url) {
+        setImageUrl(url);
+      } else {
+        setImageUploadError(t('image_not_uploaded'));
+      }
+    } catch (error) {
+      console.error('Error uploading book image:', error);
+      setImageUploadError(t('image_not_uploaded'));
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImageUrl('');
+    setImageUploadError('');
+  };
 
   // Al dar click en el boton de subida
   const handleAddBook = async () => {
@@ -53,6 +76,7 @@ export default function AddBookScreen() {
         type,
         precio: parseFloat(precio),
         estado,
+        ...(imageUrl ? { imageUrl } : {}),
       };
 
       if (type === 'ALQUILER') {
@@ -122,38 +146,61 @@ export default function AddBookScreen() {
             mode="outlined"
           />
 
-          <Button
-            icon="camera"
-            mode="elevated"
-            onPress={async () => {
-              try {
-                // const result = await DocumentPicker.getDocumentAsync({
-                //   multiple: false, // Disallows the user to select any file
-                //   type: ["image/jpeg", "image/png"],
-                // });
-                // if (!result.canceled) {
-                //   const successResult =
-                //     result as DocumentPicker.DocumentPickerSuccessResult;
+          <View style={styles.imageSection}>
+            {imageUrl ? (
+              <>
+                <Text variant="labelLarge" style={styles.imageLabel}>
+                  {t('image_preview')}
+                </Text>
+                <Card.Cover source={{ uri: imageUrl }} style={styles.imagePreview} />
+                <Text variant="bodySmall" style={styles.imageSuccess}>
+                  {t('image_ready')}
+                </Text>
+                <View style={styles.imageActions}>
+                  <Button
+                    icon="image-edit"
+                    mode="outlined"
+                    onPress={handleImageUpload}
+                    disabled={uploadingImage}
+                  >
+                    {t('image_change_button')}
+                  </Button>
+                  <Button
+                    icon="delete-outline"
+                    mode="text"
+                    onPress={handleRemoveImage}
+                    disabled={uploadingImage}
+                    textColor="#A33C3C"
+                  >
+                    {t('image_remove_button')}
+                  </Button>
+                </View>
+              </>
+            ) : (
+              <Button
+                icon="camera"
+                mode="elevated"
+                onPress={handleImageUpload}
+                loading={uploadingImage}
+                disabled={uploadingImage}
+              >
+                {uploadingImage ? t('image_uploading') : t('image_upload_button')}
+              </Button>
+            )}
 
-                //   Alert.alert(
-                //     "Image Selector",
-                //     `You have selected: ${JSON.stringify(result.assets[0].)}`,
-                //   );
-                //   // const formData : FormData = new FormData();
-                //   // formData.append('file', result.assets[0].file!);
-                //   // const url = await ImageService.upload(formData);
-                //   // setImageUrl(url!);
-                // }
+            {uploadingImage && imageUrl ? (
+              <View style={styles.imageStatus}>
+                <ActivityIndicator size="small" color="#A33C3C" />
+                <Text variant="bodySmall">{t('image_uploading')}</Text>
+              </View>
+            ) : null}
 
-                const url = await ImageService.uploadOnAndroid(); // todo refactorizado :)
-                setImageUrl(url!);
-              } catch (error) {
-                Alert.alert('Image Selector', `Error selecting a image: ${error}`);
-              }
-            }}
-          >
-            Subir foto
-          </Button>
+            {imageUploadError ? (
+              <Text variant="bodySmall" style={styles.imageError}>
+                {imageUploadError}
+              </Text>
+            ) : null}
+          </View>
 
           <Menu
             visible={menuVisible}
@@ -272,6 +319,7 @@ export default function AddBookScreen() {
             mode="contained"
             onPress={handleAddBook}
             loading={loading}
+            disabled={loading || uploadingImage}
             style={styles.button}
             buttonColor="#D183BA"
           >
@@ -300,6 +348,33 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 12,
+  },
+  imageSection: {
+    gap: 10,
+    marginBottom: 16,
+  },
+  imageLabel: {
+    color: '#7B141E',
+  },
+  imagePreview: {
+    height: 280,
+    backgroundColor: '#F3C7BD',
+  },
+  imageActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  imageStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  imageSuccess: {
+    color: '#39734D',
+  },
+  imageError: {
+    color: '#A33C3C',
   },
   label: {
     marginBottom: 8,

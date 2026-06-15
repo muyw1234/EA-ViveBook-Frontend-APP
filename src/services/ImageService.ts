@@ -1,8 +1,9 @@
 import { Alert, Platform } from 'react-native';
-import api, { cloudinary_api } from './api';
+import api from './api';
 import axios from 'axios';
 import * as ImagePicker from 'expo-image-picker';
 import { unwrapApiData } from '../utils/apiResponse';
+import { environment } from '../config/environment';
 
 export interface Token {
   timestamp: number;
@@ -30,17 +31,29 @@ async function getToken(): Promise<Token | undefined> {
  * @return Devuelve la url segura de la imagen.
  */
 async function upload(data: any): Promise<string | undefined> {
+  const { apiKey, cloudName } = environment.cloudinary;
+  if (!apiKey || !cloudName) {
+    Alert.alert(
+      'Configuración de Cloudinary',
+      'Faltan EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME o EXPO_PUBLIC_CLOUDINARY_API_KEY.',
+    );
+    return;
+  }
+
   const token = await getToken();
   if (!token) {
     return;
   }
 
-  data.append('api_key', cloudinary_api);
+  data.append('api_key', apiKey);
   data.append('timestamp', `${token.timestamp}`);
   data.append('signature', token.signature);
 
   try {
-    const res = await axios.post(`https://api.cloudinary.com/v1_1/df2qxcelv/image/upload`, data);
+    const res = await axios.post(
+      `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/upload`,
+      data,
+    );
     return res.data.secure_url;
   } catch (error: any) {
     const errMsg = error.response?.data?.error?.message || error.message || JSON.stringify(error);

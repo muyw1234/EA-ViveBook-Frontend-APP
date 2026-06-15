@@ -6,7 +6,17 @@ import { defineConfig } from 'eslint/config';
 import eslintPluginPrettier from 'eslint-plugin-prettier/recommended';
 
 export default defineConfig([
-  { ignores: ['node_modules/**'] },
+  {
+    ignores: [
+      'node_modules/**',
+      '.expo/**',
+      'dist/**',
+      'web-build/**',
+      'coverage/**',
+      'android/**',
+      'ios/**',
+    ],
+  },
   {
     files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     plugins: { js },
@@ -17,6 +27,11 @@ export default defineConfig([
   pluginReact.configs.flat.recommended,
   eslintPluginPrettier,
   {
+    settings: {
+      react: {
+        version: 'detect',
+      },
+    },
     rules: {
       'react/jsx-uses-react': 'off',
       'react/react-in-jsx-scope': 'off',

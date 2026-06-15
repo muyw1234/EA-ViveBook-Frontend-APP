@@ -13,6 +13,44 @@ Les connexions HTTP i Socket.IO comparteixen la configuració definida a
 Es pot partir de `.env.example` per definir aquestes variables. En un dispositiu físic cal
 utilitzar una adreça accessible des del dispositiu, no `localhost`.
 
+La càrrega directa d'imatges a Cloudinary requereix també
+`EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME` i `EXPO_PUBLIC_CLOUDINARY_API_KEY`. Són dades públiques;
+la `API Secret` de Cloudinary ha de romandre exclusivament al `.env` del Backend.
+
+## Builds amb EAS
+
+`eas.json` defineix dos perfils remots:
+
+- `preview`: genera una distribució interna; en Android produeix un APK instal·lable.
+- `production`: genera els artefactes destinats a les botigues.
+
+Els dos perfils utilitzen `https://ea3-api.upc.edu` per a HTTP i Socket.IO, i incorporen les
+credencials públiques de Cloudinary. El `.env` local continua utilitzant `localhost`.
+
+Abans de la primera build cal iniciar sessió a Expo i vincular el projecte una sola vegada:
+
+```powershell
+npx eas-cli@latest login
+npm run eas:configure
+```
+
+La configuració afegirà l'identificador EAS del projecte a la configuració Expo. Després es pot
+generar un APK intern amb:
+
+```powershell
+npm run build:preview:android
+```
+
+Per generar artefactes de producció:
+
+```powershell
+npm run build:production:android
+npm run build:production:ios
+```
+
+La build d'iOS requereix un compte d'Apple Developer. La build de producció d'Android genera
+normalment un AAB per a Google Play.
+
 Les respostes del Backend es normalitzen mitjançant `src/utils/apiResponse.ts`, que soporta
 tant respostes directes com el contracte `{ success, status, message, data }`.
 
