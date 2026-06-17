@@ -10,8 +10,6 @@ import { styles as globalStyles } from '../../styles/default';
 import {
   configureGoogleSignIn,
   loginWithGoogle,
-  isAppleLoginAvailable,
-  loginWithApple,
 } from '../services/socialAuth';
 import { unwrapApiData } from '../utils/apiResponse';
 import { consumeSessionEndReason, saveSession } from '../services/session';
@@ -35,7 +33,6 @@ export default function LoginScreen() {
     SessionEndReason,
     'logout'
   > | null>(null);
-  const [appleAvailable, setAppleAvailable] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -45,14 +42,6 @@ export default function LoginScreen() {
       if (!mounted || !reason) return;
       setSessionEndReason(reason);
     });
-
-    const checkApple = async () => {
-      const isAvailable = await isAppleLoginAvailable();
-      if (mounted) {
-        setAppleAvailable(isAvailable);
-      }
-    };
-    checkApple();
 
     return () => {
       mounted = false;
@@ -119,13 +108,6 @@ export default function LoginScreen() {
         const userInfo: any = await loginWithGoogle();
         idToken = userInfo?.data?.idToken || userInfo?.idToken || '';
         if (!idToken) throw new Error('No Google ID Token');
-      } else if (provider === 'apple') {
-        const credential = await loginWithApple();
-        idToken = credential.identityToken || '';
-        if (!idToken) throw new Error('No Apple Identity Token');
-        if (credential.fullName?.givenName) {
-          name = `${credential.fullName.givenName} ${credential.fullName.familyName || ''}`.trim();
-        }
       }
 
       const response = await api.post('/auth/social-login', { provider, idToken, name });
@@ -227,7 +209,7 @@ export default function LoginScreen() {
         <View
           style={{
             flexDirection: 'row',
-            justifyContent: 'space-between',
+            justifyContent: 'center',
             marginTop: 10,
             marginBottom: 10,
             width: '100%',
@@ -238,23 +220,11 @@ export default function LoginScreen() {
               mode="outlined"
               onPress={() => handleSocialLogin('google')}
               disabled={loading}
-              style={{ flex: 1, marginRight: appleAvailable ? 5 : 0, borderColor: '#D183BA' }}
+              style={{ flex: 1, borderColor: '#D183BA' }}
               textColor="#D183BA"
               icon={() => <RNText style={{ fontSize: 18 }}>G</RNText>}
             >
               Google
-            </Button>
-          )}
-          {appleAvailable && (
-            <Button
-              mode="outlined"
-              onPress={() => handleSocialLogin('apple')}
-              disabled={loading}
-              style={{ flex: 1, marginLeft: 5, borderColor: '#D183BA' }}
-              textColor="#D183BA"
-              icon={() => <RNText style={{ fontSize: 18 }}></RNText>}
-            >
-              Apple
             </Button>
           )}
         </View>
