@@ -10,8 +10,6 @@ import { styles as globalStyles } from '../../styles/default';
 import {
   configureGoogleSignIn,
   loginWithGoogle,
-  isAppleLoginAvailable,
-  loginWithApple,
 } from '../services/socialAuth';
 import { unwrapApiData } from '../utils/apiResponse';
 import { saveSession } from '../services/session';
@@ -34,15 +32,9 @@ export default function RegisterScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [appleAvailable, setAppleAvailable] = useState(false);
 
   useEffect(() => {
     configureGoogleSignIn();
-    const checkApple = async () => {
-      const isAvailable = await isAppleLoginAvailable();
-      setAppleAvailable(isAvailable);
-    };
-    checkApple();
   }, []);
 
   // Real-time password requirement checks
@@ -153,13 +145,6 @@ export default function RegisterScreen() {
         const userInfo: any = await loginWithGoogle();
         idToken = userInfo?.data?.idToken || userInfo?.idToken || '';
         if (!idToken) throw new Error('No Google ID Token');
-      } else if (provider === 'apple') {
-        const credential = await loginWithApple();
-        idToken = credential.identityToken || '';
-        if (!idToken) throw new Error('No Apple Identity Token');
-        if (credential.fullName?.givenName) {
-          name = `${credential.fullName.givenName} ${credential.fullName.familyName || ''}`.trim();
-        }
       }
 
       const response = await api.post('/auth/social-login', { provider, idToken, name });
@@ -357,7 +342,7 @@ export default function RegisterScreen() {
           <View
             style={{
               flexDirection: 'row',
-              justifyContent: 'space-between',
+              justifyContent: 'center',
               marginTop: 10,
               marginBottom: 10,
               width: '100%',
@@ -368,23 +353,11 @@ export default function RegisterScreen() {
                 mode="outlined"
                 onPress={() => handleSocialLogin('google')}
                 disabled={loading}
-                style={{ flex: 1, marginRight: appleAvailable ? 5 : 0, borderColor: '#D183BA' }}
+                style={{ flex: 1, borderColor: '#D183BA' }}
                 textColor="#D183BA"
                 icon={() => <RNText style={{ fontSize: 18 }}>G</RNText>}
               >
                 Google
-              </Button>
-            )}
-            {appleAvailable && (
-              <Button
-                mode="outlined"
-                onPress={() => handleSocialLogin('apple')}
-                disabled={loading}
-                style={{ flex: 1, marginLeft: 5, borderColor: '#D183BA' }}
-                textColor="#D183BA"
-                icon={() => <RNText style={{ fontSize: 18 }}></RNText>}
-              >
-                Apple
               </Button>
             )}
           </View>
