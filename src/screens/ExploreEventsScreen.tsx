@@ -1,5 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, StyleSheet, FlatList, ActivityIndicator, Platform, Alert, TouchableOpacity } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  Platform,
+  Alert,
+  TouchableOpacity,
+} from 'react-native';
 import { Card, Button, Searchbar } from 'react-native-paper';
 import { AppText as Text } from '../components/AppText';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -13,7 +21,7 @@ export default function ExploreEventsScreen() {
   const [events, setEvents] = useState<IEvento[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   const [timeFilter, setTimeFilter] = useState<'upcoming' | 'expired'>('upcoming');
 
   const [page, setPage] = useState(1);
@@ -27,23 +35,22 @@ export default function ExploreEventsScreen() {
   const fetchEvents = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       const result = await EventoService.getAllEventos(
         page,
         ITEMS_PER_PAGE,
-        timeFilter, 
+        timeFilter,
         searchQuery,
         'eventDate',
       );
 
       if (result && result.data) {
-        setEvents(result.data || []); 
-        setTotalPages(result.pagination?.totalPages || 1); 
+        setEvents(result.data || []);
+        setTotalPages(result.pagination?.totalPages || 1);
       } else {
         setEvents([]);
         setTotalPages(1);
       }
-
     } catch (error) {
       console.error('Error fetching events:', error);
       if (Platform.OS === 'web') {
@@ -55,7 +62,6 @@ export default function ExploreEventsScreen() {
       setLoading(false);
     }
   }, [page, searchQuery, timeFilter, t]);
-
 
   useFocusEffect(
     useCallback(() => {
@@ -175,8 +181,8 @@ export default function ExploreEventsScreen() {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <Text style={styles.emptyText}>
-              {timeFilter === 'upcoming' 
-                ? 'No se han encontrado eventos literarios activos.' 
+              {timeFilter === 'upcoming'
+                ? 'No se han encontrado eventos literarios activos.'
                 : 'No hay eventos expirados en el archivo.'}
             </Text>
           }

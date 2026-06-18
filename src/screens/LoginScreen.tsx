@@ -7,10 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import { styles as globalStyles } from '../../styles/default';
-import {
-  configureGoogleSignIn,
-  loginWithGoogle,
-} from '../services/socialAuth';
+import { configureGoogleSignIn, loginWithGoogle } from '../services/socialAuth';
 import { unwrapApiData } from '../utils/apiResponse';
 import { consumeSessionEndReason, saveSession } from '../services/session';
 import type { SessionEndReason } from '../services/session';
@@ -103,7 +100,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       let idToken = '';
-      let name = '';
+      const name = '';
       if (provider === 'google') {
         const userInfo: any = await loginWithGoogle();
         idToken = userInfo?.data?.idToken || userInfo?.idToken || '';
