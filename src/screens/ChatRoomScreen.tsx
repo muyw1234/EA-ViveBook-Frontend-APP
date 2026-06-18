@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, FlatList, StyleSheet, KeyboardAvoidingView, Platform, DeviceEventEmitter } from 'react-native';
+import {
+  View,
+  FlatList,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  DeviceEventEmitter,
+} from 'react-native';
 import { TextInput, IconButton, Surface } from 'react-native-paper';
 import { AppText as Text } from '../components/AppText';
 import { useRoute } from '@react-navigation/native';
@@ -142,18 +149,63 @@ export default function ChatRoomScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5E4F0' },
-  listContent: { padding: 10 },
-  messageContainer: { marginVertical: 5, maxWidth: '80%' },
-  myMessage: { alignSelf: 'flex-end' },
-  theirMessage: { alignSelf: 'flex-start' },
-  senderName: { fontSize: 12, fontWeight: 'bold', color: '#D183BA', marginBottom: 2, marginLeft: 4 },
-  bubble: { padding: 10, borderRadius: 15, elevation: 1 },
-  myBubble: { backgroundColor: '#D183BA', borderBottomRightRadius: 2 },
-  theirBubble: { backgroundColor: 'white', borderBottomLeftRadius: 2 },
-  myText: { color: 'white' },
-  theirText: { color: 'black' },
-  timestamp: { fontSize: 10, color: '#888', marginTop: 2, alignSelf: 'flex-end' },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', padding: 8, backgroundColor: 'white' },
-  input: { flex: 1, marginRight: 8 },
+  container: {
+    flex: 1,
+    backgroundColor: '#F5E4F0',
+  },
+  listContent: {
+    padding: 10,
+  },
+  messageContainer: {
+    marginVertical: 5,
+    maxWidth: '80%',
+  },
+  myMessage: {
+    alignSelf: 'flex-end',
+  },
+  theirMessage: {
+    alignSelf: 'flex-start',
+  },
+  senderName: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#D183BA',
+    marginBottom: 2,
+    marginLeft: 4,
+  },
+  bubble: {
+    padding: 10,
+    borderRadius: 15,
+    elevation: 1,
+  },
+  myBubble: {
+    backgroundColor: '#D183BA',
+    borderBottomRightRadius: 2,
+  },
+  theirBubble: {
+    backgroundColor: 'white',
+    borderBottomLeftRadius: 2,
+  },
+  myText: {
+    color: 'white',
+  },
+  theirText: {
+    color: 'black',
+  },
+  timestamp: {
+    fontSize: 10,
+    color: '#888',
+    marginTop: 2,
+    alignSelf: 'flex-end',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    backgroundColor: 'white',
+  },
+  input: {
+    flex: 1,
+    marginRight: 8,
+  },
 });

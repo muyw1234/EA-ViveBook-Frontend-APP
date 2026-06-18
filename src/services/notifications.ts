@@ -8,11 +8,12 @@ import api from './api';
 
 // Configura cómo debe comportarse la notificación cuando la app está abierta (primer plano)
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }) as any,
+  handleNotification: async () =>
+    ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }) as any,
 });
 
 export function usePushNotifications() {

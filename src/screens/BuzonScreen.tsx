@@ -43,7 +43,6 @@ function SwipeableRow({
   onDelete: () => void;
   style?: any;
 }) {
-  
   const translateX = useRef(new Animated.Value(0)).current;
   const deleteButtonWidth = 80;
 
@@ -153,7 +152,7 @@ export default function BuzonScreen() {
   // States
   const [userId, setUserId] = useState<string | null>(null);
 
-  // Private Chats, Message Requests and Event Chats states
+  // Private Chats and Message Requests states
   const [privateChats, setPrivateChats] = useState<any[]>([]);
   const [eventChats, setEventChats] = useState<any[]>([]); // ✨ Nuevo estado para chats grupales/eventos
   const [receivedMsgRequests, setReceivedMsgRequests] = useState<any[]>([]);
@@ -505,7 +504,9 @@ export default function BuzonScreen() {
         {eventChats.length === 0 ? (
           <Card style={[styles.emptyChatsCard, { marginBottom: 20 }]}>
             <Card.Content>
-              <Text style={styles.emptyText}>No estás inscrito en ningún evento con chat activo.</Text>
+              <Text style={styles.emptyText}>
+                No estás inscrito en ningún evento con chat activo.
+              </Text>
             </Card.Content>
           </Card>
         ) : (
@@ -515,10 +516,17 @@ export default function BuzonScreen() {
               return (
                 <TouchableOpacity
                   key={chat._id}
-                  onPress={() => navigation.navigate('ChatRoom', { chatId: chat._id, isEventChat: true })}
+                  onPress={() =>
+                    navigation.navigate('ChatRoom', { chatId: chat._id, isEventChat: true })
+                  }
                   activeOpacity={0.7}
                 >
-                  <Card style={[styles.chatCard, { backgroundColor: '#FDF2FA', borderColor: '#EED6EA', borderWidth: 1 }]}>
+                  <Card
+                    style={[
+                      styles.chatCard,
+                      { backgroundColor: '#FDF2FA', borderColor: '#EED6EA', borderWidth: 1 },
+                    ]}
+                  >
                     <Card.Content style={styles.chatCardContent}>
                       <Avatar.Icon
                         size={44}
@@ -527,7 +535,10 @@ export default function BuzonScreen() {
                         color="white"
                       />
                       <View style={styles.chatTextContainer}>
-                        <Text variant="titleMedium" style={[styles.chatPartnerName, { color: '#4A2A43' }]}>
+                        <Text
+                          variant="titleMedium"
+                          style={[styles.chatPartnerName, { color: '#4A2A43' }]}
+                        >
                           {eventTitle}
                         </Text>
                         <Text variant="bodySmall" numberOfLines={1} style={styles.chatBookTitle}>
