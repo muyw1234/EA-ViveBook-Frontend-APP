@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  FlatList,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  DeviceEventEmitter,
-} from 'react-native';
+import { View, FlatList, StyleSheet, KeyboardAvoidingView, Platform, DeviceEventEmitter } from 'react-native';
 import { TextInput, IconButton, Surface } from 'react-native-paper';
 import { AppText as Text } from '../components/AppText';
 import { useRoute } from '@react-navigation/native';
@@ -18,18 +11,19 @@ import { useTranslation } from 'react-i18next';
 export default function ChatRoomScreen() {
   const { t } = useTranslation();
   const route = useRoute();
-  const { chatId } = route.params as { chatId: string };
+  const { chatId, isEventChat } = route.params as { chatId: string; isEventChat: boolean };
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
 
-  const markAsRead = async () => {
+  const markAsRead = async (idObtenido: string) => {
+    if (!idObtenido || idObtenido === 'reservas' || idObtenido === 'eventos') return;
     try {
-      await api.patch(`/chats/${chatId}/read`);
+      await api.patch(`/chats/${idObtenido}/read`);
       DeviceEventEmitter.emit('unread_change');
     } catch (error) {
-      console.error('Error marking messages as read:', error);
+      console.error('Error al marcar como leído:', error);
     }
   };
 
@@ -40,23 +34,20 @@ export default function ChatRoomScreen() {
         const user = JSON.parse(userStr);
         setUserId(user._id);
 
-        if (!socket.connected) {
-          socket.connect();
-        }
+        if (!socket.connected) socket.connect();
 
         socket.emit('register_user', user._id);
         socket.emit('join_chat', chatId);
 
         try {
           const response = await api.get(`/chats/${chatId}/messages`);
-          setMessages(response.data?.data || response.data || []);
-          setTimeout(() => flatListRef.current?.scrollToEnd(), 100);
+          const mensajesArray = response.data?.data || response.data || [];
+          setMessages(Array.isArray(mensajesArray) ? mensajesArray : []);
+          setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 200);
         } catch (error) {
-          console.error(t('chat_error_load'));
+          console.error(t('chat_error_load'), error);
         }
-
-        // Mark messages as read when opening chat
-        markAsRead();
+        markAsRead(chatId);
       }
     };
 
@@ -68,10 +59,8 @@ export default function ChatRoomScreen() {
           if (prev.some((m) => m._id === message._id)) return prev;
           return [...prev, message];
         });
-        setTimeout(() => flatListRef.current?.scrollToEnd(), 100);
-
-        // Mark incoming messages as read since we are currently viewing the chat
-        markAsRead();
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+        markAsRead(chatId);
       }
     };
 
@@ -91,6 +80,7 @@ export default function ChatRoomScreen() {
         chatId,
         senderId: userId,
         content: newMessage.trim(),
+        isEventChat: isEventChat,
       });
       setNewMessage('');
     }
@@ -125,7 +115,7 @@ export default function ChatRoomScreen() {
         keyExtractor={(item) => item._id}
         renderItem={renderMessage}
         contentContainerStyle={styles.listContent}
-        onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
+        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
       <View style={styles.inputContainer}>
         <TextInput
@@ -152,63 +142,18 @@ export default function ChatRoomScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5E4F0',
-  },
-  listContent: {
-    padding: 10,
-  },
-  messageContainer: {
-    marginVertical: 5,
-    maxWidth: '80%',
-  },
-  myMessage: {
-    alignSelf: 'flex-end',
-  },
-  theirMessage: {
-    alignSelf: 'flex-start',
-  },
-  senderName: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#D183BA',
-    marginBottom: 2,
-    marginLeft: 4,
-  },
-  bubble: {
-    padding: 10,
-    borderRadius: 15,
-    elevation: 1,
-  },
-  myBubble: {
-    backgroundColor: '#D183BA',
-    borderBottomRightRadius: 2,
-  },
-  theirBubble: {
-    backgroundColor: 'white',
-    borderBottomLeftRadius: 2,
-  },
-  myText: {
-    color: 'white',
-  },
-  theirText: {
-    color: 'black',
-  },
-  timestamp: {
-    fontSize: 10,
-    color: '#888',
-    marginTop: 2,
-    alignSelf: 'flex-end',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 8,
-    backgroundColor: 'white',
-  },
-  input: {
-    flex: 1,
-    marginRight: 8,
-  },
+  container: { flex: 1, backgroundColor: '#F5E4F0' },
+  listContent: { padding: 10 },
+  messageContainer: { marginVertical: 5, maxWidth: '80%' },
+  myMessage: { alignSelf: 'flex-end' },
+  theirMessage: { alignSelf: 'flex-start' },
+  senderName: { fontSize: 12, fontWeight: 'bold', color: '#D183BA', marginBottom: 2, marginLeft: 4 },
+  bubble: { padding: 10, borderRadius: 15, elevation: 1 },
+  myBubble: { backgroundColor: '#D183BA', borderBottomRightRadius: 2 },
+  theirBubble: { backgroundColor: 'white', borderBottomLeftRadius: 2 },
+  myText: { color: 'white' },
+  theirText: { color: 'black' },
+  timestamp: { fontSize: 10, color: '#888', marginTop: 2, alignSelf: 'flex-end' },
+  inputContainer: { flexDirection: 'row', alignItems: 'center', padding: 8, backgroundColor: 'white' },
+  input: { flex: 1, marginRight: 8 },
 });

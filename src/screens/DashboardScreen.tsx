@@ -147,7 +147,7 @@ export default function DashboardScreen() {
           }
         }
       };
-    }, [userLocation]),
+    }, []),
   );
 
   // 2. Efecto para volver a pedir los eventos del backend si el usuario se mueve

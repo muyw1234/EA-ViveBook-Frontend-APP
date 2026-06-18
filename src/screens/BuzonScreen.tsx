@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   StyleSheet,
-  FlatList,
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
@@ -44,6 +43,7 @@ function SwipeableRow({
   onDelete: () => void;
   style?: any;
 }) {
+  
   const translateX = useRef(new Animated.Value(0)).current;
   const deleteButtonWidth = 80;
 
@@ -153,8 +153,9 @@ export default function BuzonScreen() {
   // States
   const [userId, setUserId] = useState<string | null>(null);
 
-  // Private Chats and Message Requests states
+  // Private Chats, Message Requests and Event Chats states
   const [privateChats, setPrivateChats] = useState<any[]>([]);
+  const [eventChats, setEventChats] = useState<any[]>([]); // ✨ Nuevo estado para chats grupales/eventos
   const [receivedMsgRequests, setReceivedMsgRequests] = useState<any[]>([]);
   const [sentMsgRequests, setSentMsgRequests] = useState<any[]>([]);
   const [loadingChats, setLoadingChats] = useState(false);
@@ -245,9 +246,21 @@ export default function BuzonScreen() {
   const fetchMessageRequestsAndChats = async () => {
     if (!userId) return;
     try {
+      // 1. Chats privados normales
       const chatsRes = await api.get('/chats');
       setPrivateChats(chatsRes.data?.data || chatsRes.data || []);
 
+      // 2. ✨ Petición de chats de eventos integrada en el Buzón
+      try {
+        const resEventos = await api.get('/chats/eventos/mis-chats');
+        setEventChats(resEventos.data?.data || resEventos.data || []);
+      } catch (eventError) {
+        console.log('Intentando ruta alternativa para eventos...');
+        const resEventosAlt = await api.get('/chats/mis-chats');
+        setEventChats(resEventosAlt.data?.data || resEventosAlt.data || []);
+      }
+
+      // 3. Solicitudes de mensajes recibidas y enviadas
       const receivedRes = await api.get('/message-requests/received');
       setReceivedMsgRequests(receivedRes.data?.data || receivedRes.data || []);
 
@@ -447,7 +460,6 @@ export default function BuzonScreen() {
   };
 
   const renderChatSection = () => {
-    // Find notices (sent requests that are accepted or denied)
     const notices = sentMsgRequests.filter((req) => req.status !== 'pending');
 
     return (
@@ -485,6 +497,51 @@ export default function BuzonScreen() {
             <IconButton icon="chevron-right" iconColor="#D183BA" size={24} />
           </Card.Content>
         </Card>
+
+        {/* ✨ NUEVA SECCIÓN: Chats de Eventos / Canales Grupales */}
+        <Text variant="titleMedium" style={styles.sectionHeader}>
+          Chats de Eventos
+        </Text>
+        {eventChats.length === 0 ? (
+          <Card style={[styles.emptyChatsCard, { marginBottom: 20 }]}>
+            <Card.Content>
+              <Text style={styles.emptyText}>No estás inscrito en ningún evento con chat activo.</Text>
+            </Card.Content>
+          </Card>
+        ) : (
+          <View style={{ marginBottom: 20 }}>
+            {eventChats.map((chat: any) => {
+              const eventTitle = chat.evento?.title || chat.evento?.name || 'Evento';
+              return (
+                <TouchableOpacity
+                  key={chat._id}
+                  onPress={() => navigation.navigate('ChatRoom', { chatId: chat._id, isEventChat: true })}
+                  activeOpacity={0.7}
+                >
+                  <Card style={[styles.chatCard, { backgroundColor: '#FDF2FA', borderColor: '#EED6EA', borderWidth: 1 }]}>
+                    <Card.Content style={styles.chatCardContent}>
+                      <Avatar.Icon
+                        size={44}
+                        icon="account-group"
+                        style={{ backgroundColor: '#B36FA0' }}
+                        color="white"
+                      />
+                      <View style={styles.chatTextContainer}>
+                        <Text variant="titleMedium" style={[styles.chatPartnerName, { color: '#4A2A43' }]}>
+                          {eventTitle}
+                        </Text>
+                        <Text variant="bodySmall" numberOfLines={1} style={styles.chatBookTitle}>
+                          {chat.participants?.length || 0} miembros en el grupo
+                        </Text>
+                      </View>
+                      <IconButton icon="volume-high" iconColor="#B36FA0" size={24} />
+                    </Card.Content>
+                  </Card>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
 
         {/* Avisos de solicitudes de chat */}
         {notices.length > 0 && (

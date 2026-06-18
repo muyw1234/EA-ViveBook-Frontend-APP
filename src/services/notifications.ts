@@ -8,12 +8,11 @@ import api from './api';
 
 // Configura cómo debe comportarse la notificación cuando la app está abierta (primer plano)
 Notifications.setNotificationHandler({
-  handleNotification: async () =>
-    ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }) as any,
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }) as any,
 });
 
 export function usePushNotifications() {
@@ -93,6 +92,11 @@ export function usePushNotifications() {
 }
 
 async function registerForPushNotificationsAsync(): Promise<string | undefined> {
+  if (Platform.OS === 'web') {
+    console.log('[Push] Entorno Web detectado. Saltando registro de notificaciones push.');
+    return undefined;
+  }
+
   let token: string | undefined;
 
   if (Platform.OS === 'android') {
