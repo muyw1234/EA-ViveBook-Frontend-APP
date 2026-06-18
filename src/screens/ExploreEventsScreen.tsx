@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, FlatList, ActivityIndicator, Platform, Alert } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, StyleSheet, FlatList, ActivityIndicator, Platform, Alert, TouchableOpacity } from 'react-native';
 import { Card, Button, Searchbar } from 'react-native-paper';
 import { AppText as Text } from '../components/AppText';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -13,22 +13,37 @@ export default function ExploreEventsScreen() {
   const [events, setEvents] = useState<IEvento[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const [timeFilter, setTimeFilter] = useState<'upcoming' | 'expired'>('upcoming');
+
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const ITEMS_PER_PAGE = 5;
 
+  useEffect(() => {
+    setPage(1);
+  }, [timeFilter]);
+
   const fetchEvents = useCallback(async () => {
     try {
       setLoading(true);
+      
       const result = await EventoService.getAllEventos(
         page,
         ITEMS_PER_PAGE,
-        true,
+        timeFilter, 
         searchQuery,
         'eventDate',
       );
-      setEvents(result.data);
-      setTotalPages(result.pagination.totalPages || 1);
+
+      if (result && result.data) {
+        setEvents(result.data || []); 
+        setTotalPages(result.pagination?.totalPages || 1); 
+      } else {
+        setEvents([]);
+        setTotalPages(1);
+      }
+
     } catch (error) {
       console.error('Error fetching events:', error);
       if (Platform.OS === 'web') {
@@ -39,7 +54,8 @@ export default function ExploreEventsScreen() {
     } finally {
       setLoading(false);
     }
-  }, [page, searchQuery, t]);
+  }, [page, searchQuery, timeFilter, t]);
+
 
   useFocusEffect(
     useCallback(() => {
@@ -111,18 +127,11 @@ export default function ExploreEventsScreen() {
     );
   };
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#D183BA" />
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
+      {/* BARRA DE BÚSQUEDA */}
       <Searchbar
-        placeholder="Buscar eventos por título o dirección..."
+        placeholder="Buscar eventos..."
         onChangeText={(text) => {
           setSearchQuery(text);
           setPage(1);
@@ -132,16 +141,48 @@ export default function ExploreEventsScreen() {
         icon={() => <Text style={{ fontSize: 20 }}>🔍</Text>}
       />
 
-      <FlatList
-        data={events}
-        renderItem={renderEventItem}
-        keyExtractor={(item) => item._id}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No se han encontrado eventos literarios activos.</Text>
-        }
-        ListFooterComponent={renderFooter}
-      />
+      {/* --- NUEVO SELECTOR DE PESTAÑAS (TABS) --- */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tabButton, timeFilter === 'upcoming' && styles.activeTabButton]}
+          onPress={() => setTimeFilter('upcoming')}
+        >
+          <Text style={[styles.tabText, timeFilter === 'upcoming' && styles.activeTabText]}>
+            Próximos
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabButton, timeFilter === 'expired' && styles.activeTabButton]}
+          onPress={() => setTimeFilter('expired')}
+        >
+          <Text style={[styles.tabText, timeFilter === 'expired' && styles.activeTabText]}>
+            Expirados
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* LISTADO DE EVENTOS */}
+      {loading ? (
+        <View style={styles.centerInline}>
+          <ActivityIndicator size="large" color="#D183BA" />
+        </View>
+      ) : (
+        <FlatList
+          data={events}
+          renderItem={renderEventItem}
+          keyExtractor={(item) => item._id}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>
+              {timeFilter === 'upcoming' 
+                ? 'No se han encontrado eventos literarios activos.' 
+                : 'No hay eventos expirados en el archivo.'}
+            </Text>
+          }
+          ListFooterComponent={renderFooter}
+        />
+      )}
     </View>
   );
 }
@@ -152,11 +193,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5EBF4',
     padding: 16,
   },
-  center: {
+  centerInline: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5EBF4',
   },
   searchBar: {
     marginBottom: 16,
@@ -164,6 +204,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 30,
   },
+  /* --- NUEVOS ESTILOS DEL SELECTOR --- */
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#e9ecef',
+    borderRadius: 25,
+    padding: 4,
+    marginBottom: 16,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 21,
+  },
+  activeTabButton: {
+    backgroundColor: '#D183BA',
+  },
+  tabText: {
+    fontWeight: '600',
+    color: '#6c757d',
+  },
+  activeTabText: {
+    color: '#ffffff',
+  },
+  /* ---------------------------------- */
   listContent: {
     paddingBottom: 24,
   },
