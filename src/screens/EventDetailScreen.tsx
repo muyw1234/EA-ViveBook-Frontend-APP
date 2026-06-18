@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import EventoService, { IEvento } from '../services/evento';
 import { styles as globalStyles } from '../../styles/default';
-import EventMap from './EventMap';
+import { MultiEventMap } from './EventMap';
 import api from '../services/api';
 import { unwrapApiData } from '../utils/apiResponse';
 
@@ -225,11 +225,18 @@ export default function EventDetailScreen() {
             {/* Renderizado del Mapa */}
             {hasCoordinates ? (
               <View style={styles.mapWrapper}>
-                <EventMap
-                  latitude={latitude}
-                  longitude={longitude}
-                  title={event.title}
-                  description={event.direccionExacta}
+                <MultiEventMap
+                  markers={[
+                    {
+                      id: event._id,
+                      latitude,
+                      longitude,
+                      title: event.title,
+                      direccionExacta: event.direccionExacta,
+                    },
+                  ]}
+                  userLatitude={latitude}
+                  userLongitude={longitude}
                 />
               </View>
             ) : (

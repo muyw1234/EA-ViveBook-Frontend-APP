@@ -16,6 +16,7 @@ interface MapMarkerData {
   latitude: number;
   longitude: number;
   title: string;
+  eventDate?: string;
 }
 
 function getKilometersDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -58,12 +59,11 @@ export default function DashboardScreen() {
   // 1. Efecto para escuchar y actualizar la posición GPS en tiempo real
   useFocusEffect(
     React.useCallback(() => {
-      // Cargar datos del feed inmediatamente usando las coordenadas actuales
       fetchDashboardData(userLocation);
 
       let locationSubscriber: Location.LocationSubscription | null = null;
       let isTimedOut = false;
-      const timeoutVal = 4000; // 4 segundos de timeout para evitar esperas largas
+      const timeoutVal = 4000;
 
       const timer = setTimeout(() => {
         isTimedOut = true;
@@ -73,7 +73,6 @@ export default function DashboardScreen() {
 
       async function requestAndFetchLocation() {
         try {
-          // Comprobar si ya se tienen permisos concedidos previamente
           const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
           let finalStatus = existingStatus;
 
@@ -147,7 +146,7 @@ export default function DashboardScreen() {
           }
         }
       };
-    }, [userLocation]),
+    }, []),
   );
 
   // 2. Efecto para volver a pedir los eventos del backend si el usuario se mueve
@@ -163,7 +162,7 @@ export default function DashboardScreen() {
       const profileRes = await api.get('/auth/profile');
       const user = unwrapApiData<any>(profileRes.data);
 
-      const eventsRes = await api.get('/eventos?limit=50'); // Aumentado el límite para tener más margen de filtrado
+      const eventsRes = await api.get('/eventos?limit=50');
 
       const items: any[] = [];
       const markers: MapMarkerData[] = [];
@@ -187,7 +186,6 @@ export default function DashboardScreen() {
             return;
           }
 
-          // ─── FILTRO DE DISTANCIA GEOGRÁFICA PARA EL MAPA ───
           const hasCoordinates =
             e.location && e.location.coordinates && e.location.coordinates.length === 2;
 
@@ -208,11 +206,11 @@ export default function DashboardScreen() {
                 longitude: eventLng,
                 latitude: eventLat,
                 title: e.title || 'Evento',
+                eventDate: e.eventDate || e.date,
               });
             }
           }
 
-          // ─── FILTRO DE EVENTOS APUNTADOS PARA LA LISTA (SIGUIENDO) ───
           const isAttending = (e.participant || [])
             .map((p: any) => (p._id || p).toString())
             .includes(currentUserId?.toString());
@@ -223,6 +221,7 @@ export default function DashboardScreen() {
               id: e._id,
               name: e.title,
               direccion: e.direccionExacta,
+              eventDate: e.eventDate || e.date,
             });
           }
         });
@@ -242,12 +241,17 @@ export default function DashboardScreen() {
     }
   };
 
+  // Función para manejar el clic en el marcador del mapa
+  const handleMarkerPress = (eventoId: string) => {
+    navigation.navigate('EventDetail', { eventoId });
+  };
+
   return (
     <ScrollView style={styles.container}>
       <Text variant="headlineMedium" style={styles.header}>
         {t('dash_header')}
       </Text>
-      {/* La barra de busqueda por titulo*/}
+
       <Searchbar
         placeholder={t('search_placeholder')}
         onChangeText={setSearchQuery}
@@ -346,13 +350,13 @@ export default function DashboardScreen() {
             </View>
           )}
 
-          {/* El mapa se muestra incondicionalmente siempre que tengamos las coordenadas base */}
           {userLocation ? (
             <View style={styles.mapWrapper}>
               <MultiEventMap
                 markers={eventMarkers}
                 userLatitude={userLocation.latitude}
                 userLongitude={userLocation.longitude}
+                onMarkerPress={handleMarkerPress}
               />
             </View>
           ) : null}

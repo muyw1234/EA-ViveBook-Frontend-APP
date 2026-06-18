@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
 // Leaflet CSS necesario para el entorno web
@@ -18,6 +18,8 @@ export interface MapMarkerData {
   latitude: number;
   longitude: number;
   title: string;
+  eventDate?: string;
+  direccionExacta?: string;
 }
 
 interface EventMapProps {
@@ -32,19 +34,14 @@ interface MultiEventMapProps {
   markers: MapMarkerData[];
   userLatitude: number;
   userLongitude: number;
+  onMarkerPress?: (id: string) => void;
 }
 
 // Componente para actualizar dinámicamente la vista del mapa Leaflet
 function ChangeView({ center }: { center: [number, number] }) {
   const map = useMap();
   useEffect(() => {
-    if (
-      center &&
-      center[0] !== undefined &&
-      center[0] !== null &&
-      center[1] !== undefined &&
-      center[1] !== null
-    ) {
+    if (center && typeof center[0] === 'number' && typeof center[1] === 'number') {
       map.setView(center, map.getZoom());
     }
   }, [center, map]);
@@ -70,13 +67,20 @@ function MapEventsHandler({ onMapPress }: { onMapPress?: (e: any) => void }) {
   return null;
 }
 
-// MAPA INDIVIDUAL INTERACTIVO PARA LA CREACIÓN EN WEB
-export default function EventMap({ latitude, longitude, title, onMapPress }: EventMapProps) {
-  const position: [number, number] = [latitude, longitude];
+export default function EventMap({
+  latitude,
+  longitude,
+  title,
+  description,
+  onMapPress,
+}: EventMapProps) {
+  // Aseguramos fallback numérico si no se envían datos iniciales
+  const safeLat = typeof latitude === 'number' ? latitude : 41.3851;
+  const safeLng = typeof longitude === 'number' ? longitude : 2.1734;
+  const position: [number, number] = [safeLat, safeLng];
 
   return (
     <View style={styles.mapContainer}>
-      {/* Comprobamos que estemos en entorno web antes de inyectar componentes del DOM */}
       {Platform.OS === 'web' ? (
         <MapContainer center={position} zoom={14} style={{ width: '100%', height: '100%' }}>
           <ChangeView center={position} />
@@ -85,7 +89,6 @@ export default function EventMap({ latitude, longitude, title, onMapPress }: Eve
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <Marker position={position} />
-          {/* Controlador de clicks en la web */}
           <MapEventsHandler onMapPress={onMapPress} />
         </MapContainer>
       ) : null}
@@ -93,35 +96,131 @@ export default function EventMap({ latitude, longitude, title, onMapPress }: Eve
   );
 }
 
-// MAPA MULTI-EVENTO WEB
-export function MultiEventMap({ markers, userLatitude, userLongitude }: MultiEventMapProps) {
-  const finalLat = userLatitude || 41.3851;
-  const finalLng = userLongitude || 2.1734;
-  const centerLat = markers.length > 0 ? markers[0].latitude : finalLat;
-  const centerLng = markers.length > 0 ? markers[0].longitude : finalLng;
+export function MultiEventMap({
+  markers,
+  userLatitude,
+  userLongitude,
+  onMarkerPress,
+}: MultiEventMapProps) {
+  const finalLat = typeof userLatitude === 'number' ? userLatitude : 41.3851;
+  const finalLng = typeof userLongitude === 'number' ? userLongitude : 2.1734;
+
+  // Filtramos marcadores corruptos o vacíos que puedan romper Leaflet
+  const validMarkers = (markers || []).filter(
+    (m) => m && typeof m.latitude === 'number' && typeof m.longitude === 'number',
+  );
+
+  const centerLat = validMarkers.length > 0 ? validMarkers[0].latitude : finalLat;
+  const centerLng = validMarkers.length > 0 ? validMarkers[0].longitude : finalLng;
   const centerPosition: [number, number] = [centerLat, centerLng];
+
+  function ProximityHoverHandler() {
+    const map = useMap();
+
+    useEffect(() => {
+      const handleMouseMove = (e: L.LeafletMouseEvent) => {
+        let closestMarker: any = null;
+        let minDistance = 0.002;
+
+        validMarkers.forEach((marker) => {
+          const latDiff = Math.abs(e.latlng.lat - marker.latitude);
+          const lngDiff = Math.abs(e.latlng.lng - marker.longitude);
+          const distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
+
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestMarker = marker;
+          }
+        });
+
+        map.eachLayer((layer: any) => {
+          if (layer instanceof L.Marker && layer.getLatLng) {
+            const latLng = layer.getLatLng();
+            if (
+              closestMarker &&
+              latLng.lat === closestMarker.latitude &&
+              latLng.lng === closestMarker.longitude
+            ) {
+              layer.openPopup();
+            }
+          }
+        });
+      };
+
+      map.on('mousemove', handleMouseMove);
+      return () => {
+        map.off('mousemove', handleMouseMove);
+      };
+    }, [map]);
+
+    return null;
+  }
+
+  const formatearFechaConGuiones = (dateString?: string) => {
+    if (!dateString) return 'xx-xx-xx';
+
+    if (dateString.includes('/')) {
+      const soloFecha = dateString.split(' ')[0];
+      const partes = soloFecha.split('/');
+      const dia = partes[0].padStart(2, '0');
+      const mes = partes[1].padStart(2, '0');
+      const anio = partes[2];
+      return `${dia}-${mes}-${anio}`;
+    }
+
+    const fecha = new Date(dateString);
+    if (isNaN(fecha.getTime())) return 'xx-xx-xx';
+
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const anio = fecha.getFullYear();
+    return `${dia}-${mes}-${anio}`;
+  };
 
   return (
     <View style={styles.mapContainer}>
       {Platform.OS === 'web' ? (
         <MapContainer center={centerPosition} zoom={13} style={{ width: '100%', height: '100%' }}>
           <ChangeView center={centerPosition} />
+          <ProximityHoverHandler />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          {/* Ubicación del usuario actual */}
-          {userLatitude !== undefined &&
-          userLatitude !== null &&
-          userLongitude !== undefined &&
-          userLongitude !== null ? (
-            <Marker position={[userLatitude, userLongitude]} />
+          {typeof userLatitude === 'number' && typeof userLongitude === 'number' ? (
+            <Marker position={[userLatitude, userLongitude]}>
+              <Popup>Estás aquí</Popup>
+            </Marker>
           ) : null}
 
-          {/* Renderizado de eventos circundantes */}
-          {markers.map((marker) => (
-            <Marker key={marker.id} position={[marker.latitude, marker.longitude]} />
+          {validMarkers.map((marker) => (
+            <Marker
+              key={marker.id}
+              position={[marker.latitude, marker.longitude]}
+              eventHandlers={{
+                click: () => {
+                  if (onMarkerPress) {
+                    onMarkerPress(marker.id);
+                  }
+                },
+              }}
+            >
+              <Popup>
+                <div
+                  style={{
+                    textAlign: 'left',
+                    whiteSpace: 'nowrap',
+                    fontFamily: 'monospace',
+                    fontSize: '12px',
+                    color: '#333',
+                  }}
+                >
+                  <div>Nombre: {marker.title}</div>
+                  <div>Fecha: {formatearFechaConGuiones(marker.eventDate)}</div>
+                </div>
+              </Popup>
+            </Marker>
           ))}
         </MapContainer>
       ) : null}
