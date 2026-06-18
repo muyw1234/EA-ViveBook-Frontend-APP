@@ -137,7 +137,7 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       let idToken = '';
-      let name = '';
+      const name = '';
       if (provider === 'google') {
         const userInfo: any = await loginWithGoogle();
         idToken = userInfo?.data?.idToken || userInfo?.idToken || '';
