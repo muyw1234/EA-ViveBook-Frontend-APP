@@ -40,6 +40,7 @@ export default defineConfig([
       '@typescript-eslint/no-require-imports': 'off',
       'no-empty': 'off',
       'no-useless-catch': 'off',
+      'prefer-const': 'off',
       'react/no-unescaped-entities': [
         'warn',
         {
