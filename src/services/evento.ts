@@ -56,13 +56,13 @@ const EventoService = {
   getAllEventos: async (
     page?: number,
     limit?: number,
-    upcoming?: boolean,
+    timeFilter?: string,
     search?: string,
     sort?: string,
   ): Promise<{ data: IEvento[]; pagination: any }> => {
     try {
       const response = await api.get('/eventos', {
-        params: { page, limit, upcoming, search, sort },
+        params: { page, limit, timeFilter, search, sort },
       });
       return getPaginatedData<IEvento>(response.data);
     } catch (error) {
