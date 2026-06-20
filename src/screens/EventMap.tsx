@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { WebView } from 'react-native-webview'; 
 
 export interface MapMarkerData {
   id: string;
@@ -140,7 +139,12 @@ export function EventMap({ latitude, longitude, title, description, onMapPress }
   );
 }
 
-export function MultiEventMap({ markers, userLatitude, userLongitude, onMarkerPress }: MultiEventMapProps) {
+export function MultiEventMap({
+  markers,
+  userLatitude,
+  userLongitude,
+  onMarkerPress,
+}: MultiEventMapProps) {
   const finalLat = userLatitude || 41.3851;
   const finalLng = userLongitude || 2.1734;
 

@@ -87,18 +87,18 @@ EA-ViveBook-Frontend-APP/
 
 ### Directorios principales
 
-| Ruta | Responsabilidad |
-| --- | --- |
-| `src/screens` | Pantallas principales de la aplicacion. |
-| `src/navigation` | Navegacion entre pantallas y tabs. |
-| `src/services` | Comunicacion con Backend, sesiones, Socket.IO, imagenes, eventos y reservas. |
-| `src/config` | Configuracion comun de entorno. |
-| `src/context` | Contextos globales, como accesibilidad. |
-| `src/components` | Componentes reutilizables. |
-| `src/models` | Tipos y modelos compartidos. |
-| `src/utils` | Utilidades comunes, normalizacion de respuestas y helpers. |
-| `styles` | Estilos compartidos. |
-| `assets` | Iconos, splash y recursos estaticos. |
+| Ruta             | Responsabilidad                                                              |
+| ---------------- | ---------------------------------------------------------------------------- |
+| `src/screens`    | Pantallas principales de la aplicacion.                                      |
+| `src/navigation` | Navegacion entre pantallas y tabs.                                           |
+| `src/services`   | Comunicacion con Backend, sesiones, Socket.IO, imagenes, eventos y reservas. |
+| `src/config`     | Configuracion comun de entorno.                                              |
+| `src/context`    | Contextos globales, como accesibilidad.                                      |
+| `src/components` | Componentes reutilizables.                                                   |
+| `src/models`     | Tipos y modelos compartidos.                                                 |
+| `src/utils`      | Utilidades comunes, normalizacion de respuestas y helpers.                   |
+| `styles`         | Estilos compartidos.                                                         |
+| `assets`         | Iconos, splash y recursos estaticos.                                         |
 
 ## Pantallas y funcionalidades
 
@@ -334,14 +334,14 @@ EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY=
 
 ### Variables disponibles
 
-| Variable | Descripcion |
-| --- | --- |
-| `EXPO_PUBLIC_API_URL` | URL base del Backend HTTP. |
-| `EXPO_PUBLIC_SOCKET_URL` | URL base para Socket.IO. |
-| `EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME` | Nombre de nube de Cloudinary. |
-| `EXPO_PUBLIC_CLOUDINARY_API_KEY` | API key publica de Cloudinary. |
-| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Client ID web para Google Sign-In. |
-| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | Client ID iOS para Google Sign-In. |
+| Variable                                  | Descripcion                                        |
+| ----------------------------------------- | -------------------------------------------------- |
+| `EXPO_PUBLIC_API_URL`                     | URL base del Backend HTTP.                         |
+| `EXPO_PUBLIC_SOCKET_URL`                  | URL base para Socket.IO.                           |
+| `EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME`       | Nombre de nube de Cloudinary.                      |
+| `EXPO_PUBLIC_CLOUDINARY_API_KEY`          | API key publica de Cloudinary.                     |
+| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`        | Client ID web para Google Sign-In.                 |
+| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`        | Client ID iOS para Google Sign-In.                 |
 | `EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY` | API key de Google Maps Android para mapas nativos. |
 
 Importante:

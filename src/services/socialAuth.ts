@@ -3,7 +3,7 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 export const configureGoogleSignIn = () => {
   if (Platform.OS === 'web') return;
-  
+
   GoogleSignin.configure({
     webClientId: '820483348384-vlhf60gqdmvo8i9vgod8c3v16ebb4dbv.apps.googleusercontent.com',
     iosClientId: '820483348384-vlhf60gqdmvo8i9vgod8c3v16ebb4dbv.apps.googleusercontent.com',
