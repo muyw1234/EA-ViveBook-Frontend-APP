@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Platform, Text } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, StyleSheet, Text } from 'react-native';
+import { WebView } from 'react-native-webview';
 
 export interface MapMarkerData {
   id: string;
@@ -25,118 +26,115 @@ interface MultiEventMapProps {
   onMarkerPress?: (id: string) => void;
 }
 
-// Helper común para formatear fechas de forma segura sin romper componentes
 const formatearFechaConGuiones = (dateString?: string) => {
   if (!dateString) return 'xx-xx-xx';
-
   if (dateString.includes('/')) {
     const soloFecha = dateString.split(' ')[0];
     const partes = soloFecha.split('/');
-    const dia = partes[0].padStart(2, '0');
-    const mes = partes[1].padStart(2, '0');
-    const anio = partes[2];
-    return `${dia}-${mes}-${anio}`;
+    return `${partes[0].padStart(2, '0')}-${partes[1].padStart(2, '0')}-${partes[2]}`;
   }
-
   const fecha = new Date(dateString);
   if (isNaN(fecha.getTime())) return 'xx-xx-xx';
-
-  const dia = String(fecha.getDate()).padStart(2, '0');
-  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-  const anio = fecha.getFullYear();
-  return `${dia}-${mes}-${anio}`;
+  return `${String(fecha.getDate()).padStart(2, '0')}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${fecha.getFullYear()}`;
 };
 
-let WebMapComponents: any = null;
-if (Platform.OS === 'web') {
-  const Leaflet = require('react-leaflet');
-  const L = require('leaflet');
-  require('leaflet/dist/leaflet.css');
+const generarHtmlLeaflet = (
+  centerLat: number,
+  centerLng: number,
+  zoom: number,
+  markersData: any[],
+  showUser: boolean,
+  userLat?: number,
+  userLng?: number,
+) => `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+      body, html, #map { margin: 0; padding: 0; height: 100%; width: 100%; background: #e5e7eb; }
+      .leaflet-popup-content { font-family: monospace; font-size: 12px; text-align: left; }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script>
+      var map = L.map('map', { zoomControl: false }).setView([${centerLat}, ${centerLng}], ${zoom});
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(map);
 
-  const DefaultIcon = L.icon({
-    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-  });
-  L.Marker.prototype.options.icon = DefaultIcon;
-
-  function ChangeView({ center }: { center: [number, number] }) {
-    const map = Leaflet.useMap();
-    useEffect(() => {
-      if (center && center[0] !== undefined && center[1] !== undefined) {
-        map.setView(center, map.getZoom());
+      // Marcador de posición del usuario azul simulado
+      ${
+        showUser && userLat && userLng
+          ? `
+        var userIcon = L.icon({
+          iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+          iconSize: [32, 32],
+          iconAnchor: [16, 32]
+        });
+        L.marker([${userLat}, ${userLng}], { icon: userIcon }).addTo(map).bindPopup('<b>Estás aquí</b>');
+      `
+          : ''
       }
-    }, [center, map]);
-    return null;
-  }
 
-  function MapEventsHandler({ onMapPress }: { onMapPress?: (e: any) => void }) {
-    Leaflet.useMapEvents({
-      click(e: any) {
-        if (onMapPress) {
-          onMapPress({
-            nativeEvent: {
-              coordinate: {
-                latitude: e.latlng.lat,
-                longitude: e.latlng.lng,
-              },
-            },
-          });
+      // Marcadores de los eventos
+      var markers = ${JSON.stringify(markersData)};
+      markers.forEach(function(m) {
+        var marker = L.marker([m.latitude, m.longitude]).addTo(map);
+        if (m.popupHtml) {
+          marker.bindPopup(m.popupHtml);
         }
-      },
-    });
-    return null;
-  }
+        // Escucha el click del marcador y lo comunica a React Native
+        marker.on('click', function() {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MARKER_CLICK', id: m.id }));
+        });
+      });
 
-  WebMapComponents = { Leaflet, L, ChangeView, MapEventsHandler };
-}
+      // Escucha el click en cualquier punto del mapa para crear coordenadas
+      map.on('click', function(e) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ 
+          type: 'MAP_CLICK', 
+          latitude: e.latlng.lat, 
+          longitude: e.latlng.lng 
+        }));
+      });
+    </script>
+  </body>
+  </html>
+`;
 
 export function EventMap({ latitude, longitude, title, description, onMapPress }: EventMapProps) {
   const safeLat = latitude || 41.3851;
   const safeLng = longitude || 2.1734;
 
-  if (Platform.OS === 'web' && WebMapComponents) {
-    const { Leaflet, ChangeView, MapEventsHandler } = WebMapComponents;
-    const position: [number, number] = [safeLat, safeLng];
+  const singleMarker = [{ latitude: safeLat, longitude: safeLng, id: 'single' }];
+  const htmlContent = generarHtmlLeaflet(safeLat, safeLng, 14, singleMarker, false);
 
-    return (
-      <View style={styles.mapContainer}>
-        <Leaflet.MapContainer center={position} zoom={14} style={{ width: '100%', height: '100%' }}>
-          <ChangeView center={position} />
-          <Leaflet.TileLayer
-            attribution="&copy; OpenStreetMap contributors"
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <Leaflet.Marker position={position} />
-          <MapEventsHandler onMapPress={onMapPress} />
-        </Leaflet.MapContainer>
-      </View>
-    );
-  }
-
-  // Fallback para móvil (React Native Maps)
-  const MapViewModule = require('react-native-maps').default;
-  const { Marker: MobileMarker } = require('react-native-maps');
+  const handleMessage = (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'MAP_CLICK' && onMapPress) {
+        onMapPress({
+          nativeEvent: { coordinate: { latitude: data.latitude, longitude: data.longitude } },
+        });
+      }
+    } catch (e) {}
+  };
 
   return (
     <View style={styles.mapContainer}>
-      <MapViewModule
-        style={styles.map}
-        initialRegion={{
-          latitude: safeLat,
-          longitude: safeLng,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        }}
-        onPress={onMapPress}
-      >
-        <MobileMarker
-          coordinate={{ latitude: safeLat, longitude: safeLng }}
-          title={title || 'Ubicación'}
-          description={description}
-        />
-      </MapViewModule>
+      <WebView
+        originWhitelist={['*']}
+        source={{ html: htmlContent }}
+        style={styles.mapFill}
+        onMessage={handleMessage}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+      />
     </View>
   );
 }
@@ -150,100 +148,46 @@ export function MultiEventMap({
   const finalLat = userLatitude || 41.3851;
   const finalLng = userLongitude || 2.1734;
 
-  if (Platform.OS === 'web' && WebMapComponents) {
-    const { Leaflet } = WebMapComponents;
-    const centerPosition: [number, number] = [finalLat, finalLng];
+  const validMarkers = (markers || []).filter(
+    (m) => m && typeof m.latitude === 'number' && typeof m.longitude === 'number',
+  );
 
-    return (
-      <View style={[styles.mapContainer, { height: 300 }]}>
-        <Leaflet.MapContainer
-          center={centerPosition}
-          zoom={13}
-          style={{ width: '100%', height: '100%' }}
-        >
-          <Leaflet.TileLayer
-            attribution="&copy; OpenStreetMap contributors"
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <Leaflet.Marker position={centerPosition}>
-            <Leaflet.Popup>Estás aquí</Leaflet.Popup>
-          </Leaflet.Marker>
+  const mappedMarkers = validMarkers.map((m) => ({
+    id: m.id,
+    latitude: m.latitude,
+    longitude: m.longitude,
+    popupHtml: `<b>Nombre:</b> ${m.title}<br/><b>Fecha:</b> ${formatearFechaConGuiones(m.eventDate)}`,
+  }));
 
-          {markers.map((marker) => (
-            <Leaflet.Marker
-              key={marker.id}
-              position={[marker.latitude, marker.longitude]}
-              eventHandlers={{
-                click: () => onMarkerPress?.(marker.id),
-              }}
-            >
-              <Leaflet.Popup>
-                <div style={{ textAlign: 'left', fontFamily: 'monospace', fontSize: '12px' }}>
-                  <div>Nombre: {marker.title}</div>
-                  <div>Fecha: {formatearFechaConGuiones(marker.eventDate)}</div>
-                </div>
-              </Leaflet.Popup>
-            </Leaflet.Marker>
-          ))}
-        </Leaflet.MapContainer>
-      </View>
-    );
-  }
+  const mobileHtml = generarHtmlLeaflet(
+    finalLat,
+    finalLng,
+    13,
+    mappedMarkers,
+    true,
+    finalLat,
+    finalLng,
+  );
 
-  const MapViewModule = require('react-native-maps').default;
-  const { Marker: MobileMarker, Callout: MobileCallout } = require('react-native-maps');
-  const mapRef = useRef<any>(null);
-
-  useEffect(() => {
-    if (userLatitude && userLongitude && mapRef.current) {
-      mapRef.current.animateToRegion(
-        {
-          latitude: userLatitude,
-          longitude: userLongitude,
-          latitudeDelta: 0.06,
-          longitudeDelta: 0.06,
-        },
-        1000,
-      );
-    }
-  }, [userLatitude, userLongitude]);
+  const handleMobileMessage = (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'MARKER_CLICK') {
+        onMarkerPress?.(data.id);
+      }
+    } catch (e) {}
+  };
 
   return (
     <View style={[styles.mapContainer, { height: 300 }]}>
-      <MapViewModule
-        ref={mapRef}
-        style={styles.map}
-        initialRegion={{
-          latitude: finalLat,
-          longitude: finalLng,
-          latitudeDelta: 0.06,
-          longitudeDelta: 0.06,
-        }}
-      >
-        <MobileMarker
-          coordinate={{ latitude: finalLat, longitude: finalLng }}
-          title="Mi ubicación"
-          pinColor="#3b82f6"
-        />
-
-        {markers.map((item) => (
-          <MobileMarker
-            key={item.id}
-            coordinate={{ latitude: item.latitude, longitude: item.longitude }}
-            pinColor="#7c3aed"
-            onCalloutPress={() => onMarkerPress?.(item.id)}
-          >
-            <MobileCallout tooltip={false}>
-              <View style={styles.calloutContainer}>
-                <Text style={styles.calloutText}>Nombre: {item.title}</Text>
-                <Text style={styles.calloutText}>
-                  Fecha: {formatearFechaConGuiones(item.eventDate)}
-                </Text>
-              </View>
-            </MobileCallout>
-          </MobileMarker>
-        ))}
-      </MapViewModule>
+      <WebView
+        originWhitelist={['*']}
+        source={{ html: mobileHtml }}
+        style={styles.mapFill}
+        onMessage={handleMobileMessage}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+      />
     </View>
   );
 }
@@ -259,18 +203,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
     backgroundColor: '#e5e7eb',
   },
-  map: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  calloutContainer: {
-    padding: 6,
-    minWidth: 140,
-    backgroundColor: '#ffffff',
-  },
-  calloutText: {
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    fontSize: 12,
-    color: '#333333',
-    lineHeight: 16,
+  mapFill: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
 });

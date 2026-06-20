@@ -23,6 +23,8 @@ import { AccessibilityProvider } from './src/context/AccessibilityContext';
 import style from './styles/default.old';
 import { restoreSession, SessionEntryRoute, subscribeToSession } from './src/services/session';
 import api from './src/services/api';
+import './src/config/firebase';
+import { usePushNotifications } from './src/services/notifications';
 
 import {
   useFonts,
@@ -36,6 +38,109 @@ import MainNavigator from './src/navigation/MainNavigator';
 const Stack = createNativeStackNavigator();
 
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ReactNativeFirebase } from '@react-native-firebase/app';
+import { Platform } from 'react-native';
+
+// Importar FCM para inicializar el handler de background
+import messaging from '@react-native-firebase/messaging';
+
+// 🔥 Inicializar el handler de mensajes en segundo plano (DEBE estar fuera de cualquier componente)
+if (Platform.OS !== 'web') {
+  messaging()
+    .getInitialNotification()
+    .then((remoteMessage) => {
+      if (remoteMessage) {
+        console.log('[FCM] App inicializada con notificación:', remoteMessage);
+      }
+    })
+    .catch((error) => {
+      console.error('[FCM] Error inicializando FCM:', error);
+    });
+}
+
+function NavigationWatcher({ sessionStatus, entryRoute, guestRoute }: any) {
+  // Aquí se ejecuta el hook. Al estar dentro de NavigationContainer,
+  //useNavigation() funcionará perfectamente sin dar errores de contexto.
+  usePushNotifications();
+
+  return (
+    <Stack.Navigator
+      key={sessionStatus}
+      initialRouteName={sessionStatus === 'authenticated' ? entryRoute : guestRoute}
+      screenOptions={{
+        contentStyle: style.screen,
+      }}
+    >
+      {sessionStatus === 'guest' ? (
+        <>
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="Login" component={LoginScreen} />
+        </>
+      ) : (
+        <>
+          <Stack.Screen name="Main" component={MainNavigator} options={{ headerShown: false }} />
+          <Stack.Screen
+            name="BooksForSale"
+            component={BooksForSaleScreen}
+            options={{ title: 'Libros en Venta' }}
+          />
+          <Stack.Screen
+            name="BooksForRent"
+            component={BooksForRentScreen}
+            options={{ title: 'Libros en Alquiler' }}
+          />
+          <Stack.Screen
+            name="AddBook"
+            component={AddBookScreen}
+            options={{ title: 'Subir Libro' }}
+          />
+          <Stack.Screen
+            name="UserProfile"
+            component={ProfileScreen}
+            options={{ title: 'Perfil de Usuario', presentation: 'modal' }}
+          />
+          <Stack.Screen
+            name="Search"
+            component={SearchScreen}
+            options={{ title: 'Búsqueda de Libros' }}
+          />
+          <Stack.Screen
+            name="EventDetail"
+            component={EventDetailScreen}
+            options={{ title: 'Detalle de Evento' }}
+          />
+          <Stack.Screen
+            name="Discover"
+            component={DiscoverScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen name="Retos" component={RetosScreen} options={{ title: 'Mis Retos' }} />
+          <Stack.Screen
+            name="Settings"
+            component={SettingsScreen}
+            options={{ title: 'Ajustes de accesibilidad' }}
+          />
+          <Stack.Screen
+            name="ChatRoom"
+            component={ChatRoomScreen}
+            options={{ title: 'Chat Privado' }}
+          />
+          <Stack.Screen
+            name="Favorites"
+            component={FavoritesScreen}
+            options={{ title: 'Mis Favoritos' }}
+          />
+          <Stack.Screen
+            name="ExploreEvents"
+            component={ExploreEventsScreen}
+            options={{ title: 'Explorar Eventos' }}
+          />
+        </>
+      )}
+    </Stack.Navigator>
+  );
+}
 
 export default function App() {
   const [sessionStatus, setSessionStatus] = useState<'loading' | 'authenticated' | 'guest'>(
@@ -108,89 +213,11 @@ export default function App() {
       <AccessibilityProvider>
         <PaperProvider theme={theme}>
           <NavigationContainer>
-            <Stack.Navigator
-              key={sessionStatus}
-              initialRouteName={sessionStatus === 'authenticated' ? entryRoute : guestRoute}
-              screenOptions={{
-                contentStyle: style.screen,
-              }}
-            >
-              {sessionStatus === 'guest' ? (
-                <>
-                  <Stack.Screen name="Home" component={HomeScreen} />
-                  <Stack.Screen name="Register" component={RegisterScreen} />
-                  <Stack.Screen name="Login" component={LoginScreen} />
-                </>
-              ) : (
-                <>
-                  <Stack.Screen
-                    name="Main"
-                    component={MainNavigator}
-                    options={{ headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="BooksForSale"
-                    component={BooksForSaleScreen}
-                    options={{ title: 'Libros en Venta' }}
-                  />
-                  <Stack.Screen
-                    name="BooksForRent"
-                    component={BooksForRentScreen}
-                    options={{ title: 'Libros en Alquiler' }}
-                  />
-                  <Stack.Screen
-                    name="AddBook"
-                    component={AddBookScreen}
-                    options={{ title: 'Subir Libro' }}
-                  />
-                  <Stack.Screen
-                    name="UserProfile"
-                    component={ProfileScreen}
-                    options={{ title: 'Perfil de Usuario', presentation: 'modal' }}
-                  />
-                  <Stack.Screen
-                    name="Search"
-                    component={SearchScreen}
-                    options={{ title: 'Búsqueda de Libros' }}
-                  />
-                  <Stack.Screen
-                    name="EventDetail"
-                    component={EventDetailScreen}
-                    options={{ title: 'Detalle de Evento' }}
-                  />
-                  <Stack.Screen
-                    name="Discover"
-                    component={DiscoverScreen}
-                    options={{ headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="Retos"
-                    component={RetosScreen}
-                    options={{ title: 'Mis Retos' }}
-                  />
-                  <Stack.Screen
-                    name="Settings"
-                    component={SettingsScreen}
-                    options={{ title: 'Ajustes de accesibilidad' }}
-                  />
-                  <Stack.Screen
-                    name="ChatRoom"
-                    component={ChatRoomScreen}
-                    options={{ title: 'Chat Privado' }}
-                  />
-                  <Stack.Screen
-                    name="Favorites"
-                    component={FavoritesScreen}
-                    options={{ title: 'Mis Favoritos' }}
-                  />
-                  <Stack.Screen
-                    name="ExploreEvents"
-                    component={ExploreEventsScreen}
-                    options={{ title: 'Explorar Eventos' }}
-                  />
-                </>
-              )}
-            </Stack.Navigator>
+            <NavigationWatcher
+              sessionStatus={sessionStatus}
+              entryRoute={entryRoute}
+              guestRoute={guestRoute}
+            />
           </NavigationContainer>
         </PaperProvider>
       </AccessibilityProvider>

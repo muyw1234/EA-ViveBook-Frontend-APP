@@ -7,10 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import { styles as globalStyles } from '../../styles/default';
-import {
-  configureGoogleSignIn,
-  loginWithGoogle,
-} from '../services/socialAuth';
+import { configureGoogleSignIn, loginWithGoogle } from '../services/socialAuth';
 import { unwrapApiData } from '../utils/apiResponse';
 import { saveSession } from '../services/session';
 
