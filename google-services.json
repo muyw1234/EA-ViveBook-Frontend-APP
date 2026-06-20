@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "870483568720",
+    "project_id": "ea-vivebook-frontend-web",
+    "storage_bucket": "ea-vivebook-frontend-web.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:870483568720:android:b5c9dcd098ff97fe82c955",
+        "android_client_info": {
+          "package_name": "com.ea.vivebook.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCc6iqJwB4HxYZdQwjp2lUmw6pMw0Mq_rY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

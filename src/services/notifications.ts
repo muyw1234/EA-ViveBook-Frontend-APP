@@ -1,154 +1,140 @@
 import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
-import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
-import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import api from './api';
 
-// Configura cómo debe comportarse la notificación cuando la app está abierta (primer plano)
+import firebase from '@react-native-firebase/app';
+import messaging from '@react-native-firebase/messaging';
+import * as Notifications from 'expo-notifications';
+
 Notifications.setNotificationHandler({
-  handleNotification: async () =>
-    ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }) as any,
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
 });
+
+if (Platform.OS !== 'web') {
+  messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+    console.log('[FCM Background Handler] Notificación recibida en segundo plano:', remoteMessage);
+  });
+}
 
 export function usePushNotifications() {
   const navigation = useNavigation<any>();
-  const notificationListener = useRef<any>(null);
-  const responseListener = useRef<any>(null);
 
   useEffect(() => {
-    // 1. Obtener y registrar el token en el backend
-    registerForPushNotificationsAsync().then(async (token) => {
-      if (token) {
-        try {
-          await api.put('/usuarios/push-token', { expoPushToken: token });
-          console.log('[Push] Token push registrado con éxito:', token);
-        } catch (error) {
-          console.warn('[Push] Error al registrar token push en backend:', error);
+    if (Platform.OS === 'web') return;
+
+    let isMounted = true;
+
+    const requestAndRegisterToken = async () => {
+      try {
+        // Pedir permisos al sistema operativo
+        const authStatus = await messaging().requestPermission();
+        const enabled =
+          authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+          authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+        if (!isMounted) return;
+
+        if (enabled) {
+          try {
+            // 🔥 Obtener el token de Firebase nativo
+            const token = await messaging().getToken();
+            if (token) {
+              await api.post('/auth/update-fcm-token', { fcmToken: token });
+              console.log('[FCM] ✅ Token nativo registrado con éxito en tu Backend:', token);
+            }
+          } catch (error) {
+            console.warn('[FCM] ⚠️ Error al obtener/registrar el token:', error);
+          }
+        } else {
+          console.warn('[FCM] ⚠️ Permisos de notificaciones no autorizados');
         }
+      } catch (error) {
+        console.error('[FCM] ❌ Error en requestAndRegisterToken:', error);
+      }
+    };
+
+    requestAndRegisterToken();
+
+    const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
+      console.log('[FCM] 📲 Notificación recibida en primer plano:', remoteMessage);
+      // Aquí puedes mostrar un diálogo o banner in-app si lo deseas
+    });
+
+    const unsubscribeNotificationOpened = messaging().onNotificationOpenedApp((remoteMessage) => {
+      console.log('[FCM] 🔔 Notificación pulsada desde segundo plano:', remoteMessage.data);
+      if (isMounted && remoteMessage.data) {
+        handleNotificationNavigation(remoteMessage.data);
       }
     });
 
-    // 2. Listener para recibir notificaciones cuando la app está abierta
-    notificationListener.current = Notifications.addNotificationReceivedListener((notification) => {
-      console.log('[Push] Notificación recibida en primer plano:', notification);
-    });
-
-    // 3. Listener para cuando el usuario pulsa (toca) la notificación
-    responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data;
-      console.log('[Push] Notificación pulsada con datos:', data);
-
-      if (data && data.type) {
-        handleNotificationNavigation(data);
-      }
-    });
+    messaging()
+      .getInitialNotification()
+      .then((remoteMessage) => {
+        if (isMounted && remoteMessage) {
+          console.log('[FCM] 🚀 App abierta desde cero por notificación:', remoteMessage.data);
+          if (remoteMessage.data) {
+            handleNotificationNavigation(remoteMessage.data);
+          }
+        }
+      })
+      .catch((error) => {
+        console.error('[FCM] ❌ Error en getInitialNotification:', error);
+      });
 
     return () => {
-      if (notificationListener.current) {
-        notificationListener.current.remove();
-      }
-      if (responseListener.current) {
-        responseListener.current.remove();
-      }
+      isMounted = false;
+      unsubscribeForeground();
+      unsubscribeNotificationOpened();
     };
   }, []);
 
   const handleNotificationNavigation = (data: any) => {
     try {
-      // Tipos: "event_joined", "new_rating", "book_favorite", "book_rented", "new_follower"
+      console.log('[FCM] 🧭 Navegando con data:', data);
+      if (!navigation) {
+        console.warn('[FCM] ⚠️ Navigation no está disponible aún');
+        return;
+      }
+
       switch (data.type) {
         case 'event_joined':
           if (data.eventId) {
             navigation.navigate('EventDetail', { eventId: data.eventId });
+            console.log('[FCM] ✅ Navegó a EventDetail');
           }
           break;
         case 'new_rating':
           navigation.navigate('Profile');
+          console.log('[FCM] ✅ Navegó a Profile');
           break;
         case 'book_favorite':
         case 'book_rented':
           navigation.navigate('MyBooks');
+          console.log('[FCM] ✅ Navegó a MyBooks');
           break;
         case 'new_follower':
           if (data.actorId) {
             navigation.navigate('UserProfile', { userId: data.actorId });
+            console.log('[FCM] ✅ Navegó a UserProfile');
           }
           break;
         case 'user_new_book':
           navigation.navigate('Discover');
+          console.log('[FCM] ✅ Navegó a Discover');
           break;
         default:
+          console.warn('[FCM] ⚠️ Tipo de notificación no manejado:', data.type);
           break;
       }
     } catch (error) {
-      console.error('[Push] Error al realizar la navegación desde la notificación:', error);
+      console.error('[FCM] ❌ Error al navegar:', error);
     }
   };
-}
-
-async function registerForPushNotificationsAsync(): Promise<string | undefined> {
-  if (Platform.OS === 'web') {
-    console.log('[Push] Entorno Web detectado. Saltando registro de notificaciones push.');
-    return undefined;
-  }
-
-  let token: string | undefined;
-
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
-    });
-  }
-
-  if (Device.isDevice) {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-
-    if (finalStatus !== 'granted') {
-      console.log('[Push] Permiso de notificaciones push denegado.');
-      return undefined;
-    }
-
-    try {
-      // Intentamos con projectId del EAS
-      const projectId =
-        Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
-
-      token = (
-        await Notifications.getExpoPushTokenAsync({
-          projectId,
-        })
-      ).data;
-    } catch (error) {
-      console.warn(
-        '[Push] Error al obtener Expo Push Token con projectId, usando fallback sin parámetros:',
-        error,
-      );
-      try {
-        token = (await Notifications.getExpoPushTokenAsync()).data;
-      } catch (fallbackError) {
-        console.error('[Push] Error absoluto al obtener el token push de Expo:', fallbackError);
-      }
-    }
-  } else {
-    console.log(
-      '[Push] Se requiere un dispositivo físico para recibir notificaciones push en desarrollo.',
-    );
-  }
-
-  return token;
 }
