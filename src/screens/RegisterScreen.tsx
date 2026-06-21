@@ -94,9 +94,11 @@ export default function RegisterScreen() {
 
         // Si el backend devuelve token y usuario, iniciamos sesión automáticamente
         if (token && user) {
+          console.log('[Register] Sign up successful. User:', JSON.stringify(user));
           await saveSession(token, user, 'Discover');
           Alert.alert(t('success'), t('msg_reg_success'));
         } else {
+          console.log('[Register] Sign up failed - token or user missing in response:', dataObj);
           Alert.alert(t('success'), t('msg_reg_success'));
           navigation.navigate('Login' as never);
         }

@@ -1,26 +1,68 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import api from './api';
 
-import firebase from '@react-native-firebase/app';
-import messaging from '@react-native-firebase/messaging';
-import * as Notifications from 'expo-notifications';
+if (Platform.OS !== 'web') {
+  try {
+    const Notifications = require('expo-notifications');
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+  } catch (error) {
+    console.warn('⚠️ expo-notifications no está disponible en este entorno (ej. Expo Go):', error);
+  }
+}
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+let messagingModule: any = null;
 
 if (Platform.OS !== 'web') {
-  messaging().setBackgroundMessageHandler(async (remoteMessage) => {
-    console.log('[FCM Background Handler] Notificación recibida en segundo plano:', remoteMessage);
-  });
+  try {
+    // Intentamos cargar de forma dinámica las dependencias nativas de Firebase
+    messagingModule = require('@react-native-firebase/messaging');
+    require('@react-native-firebase/app');
+  } catch (error) {
+    console.warn(
+      '⚠️ Firebase Nativo no está disponible. Las notificaciones push nativas no funcionarán en Expo Go.',
+    );
+  }
+}
+
+const getMessaging = () => {
+  if (Platform.OS === 'web' || !messagingModule) {
+    return null;
+  }
+  try {
+    return messagingModule.default || messagingModule;
+  } catch (e) {
+    return null;
+  }
+};
+
+const AuthorizationStatus = (messagingModule?.default || messagingModule)?.AuthorizationStatus || {
+  NOT_DETERMINED: -1,
+  DENIED: 0,
+  AUTHORIZED: 1,
+  PROVISIONAL: 2,
+};
+
+if (Platform.OS !== 'web' && getMessaging()) {
+  try {
+    getMessaging()().setBackgroundMessageHandler(async (remoteMessage: any) => {
+      console.log(
+        '[FCM Background Handler] Notificación recibida en segundo plano:',
+        remoteMessage,
+      );
+    });
+  } catch (error) {
+    console.warn('⚠️ No se pudo registrar el background message handler:', error);
+  }
 }
 
 export function usePushNotifications() {
@@ -29,22 +71,29 @@ export function usePushNotifications() {
   useEffect(() => {
     if (Platform.OS === 'web') return;
 
+    const messagingInstance = getMessaging();
+    if (!messagingInstance) {
+      console.log('[FCM] Saltando registro de notificaciones nativas en Expo Go.');
+      return;
+    }
+
     let isMounted = true;
 
     const requestAndRegisterToken = async () => {
       try {
+        const fcm = messagingInstance();
         // Pedir permisos al sistema operativo
-        const authStatus = await messaging().requestPermission();
+        const authStatus = await fcm.requestPermission();
         const enabled =
-          authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-          authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+          authStatus === AuthorizationStatus.AUTHORIZED ||
+          authStatus === AuthorizationStatus.PROVISIONAL;
 
         if (!isMounted) return;
 
         if (enabled) {
           try {
             // 🔥 Obtener el token de Firebase nativo
-            const token = await messaging().getToken();
+            const token = await fcm.getToken();
             if (token) {
               await api.post('/auth/update-fcm-token', { fcmToken: token });
               console.log('[FCM] ✅ Token nativo registrado con éxito en tu Backend:', token);
@@ -62,31 +111,38 @@ export function usePushNotifications() {
 
     requestAndRegisterToken();
 
-    const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
-      console.log('[FCM] 📲 Notificación recibida en primer plano:', remoteMessage);
-      // Aquí puedes mostrar un diálogo o banner in-app si lo deseas
-    });
+    let unsubscribeForeground: () => void = () => {};
+    let unsubscribeNotificationOpened: () => void = () => {};
 
-    const unsubscribeNotificationOpened = messaging().onNotificationOpenedApp((remoteMessage) => {
-      console.log('[FCM] 🔔 Notificación pulsada desde segundo plano:', remoteMessage.data);
-      if (isMounted && remoteMessage.data) {
-        handleNotificationNavigation(remoteMessage.data);
-      }
-    });
-
-    messaging()
-      .getInitialNotification()
-      .then((remoteMessage) => {
-        if (isMounted && remoteMessage) {
-          console.log('[FCM] 🚀 App abierta desde cero por notificación:', remoteMessage.data);
-          if (remoteMessage.data) {
-            handleNotificationNavigation(remoteMessage.data);
-          }
-        }
-      })
-      .catch((error) => {
-        console.error('[FCM] ❌ Error en getInitialNotification:', error);
+    try {
+      const fcm = messagingInstance();
+      unsubscribeForeground = fcm.onMessage(async (remoteMessage: any) => {
+        console.log('[FCM] 📲 Notificación recibida en primer plano:', remoteMessage);
       });
+
+      unsubscribeNotificationOpened = fcm.onNotificationOpenedApp((remoteMessage: any) => {
+        console.log('[FCM] 🔔 Notificación pulsada desde segundo plano:', remoteMessage.data);
+        if (isMounted && remoteMessage.data) {
+          handleNotificationNavigation(remoteMessage.data);
+        }
+      });
+
+      fcm
+        .getInitialNotification()
+        .then((remoteMessage: any) => {
+          if (isMounted && remoteMessage) {
+            console.log('[FCM] 🚀 App abierta desde cero por notificación:', remoteMessage.data);
+            if (remoteMessage.data) {
+              handleNotificationNavigation(remoteMessage.data);
+            }
+          }
+        })
+        .catch((error: any) => {
+          console.error('[FCM] ❌ Error en getInitialNotification:', error);
+        });
+    } catch (err) {
+      console.warn('[FCM] Error al inicializar escuchas de notificaciones:', err);
+    }
 
     return () => {
       isMounted = false;

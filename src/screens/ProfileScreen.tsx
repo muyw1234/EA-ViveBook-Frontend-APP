@@ -374,487 +374,604 @@ export default function ProfileScreen({ route }: any) {
   }
 
   return (
-    <ScrollView style={globalStyles.container}>
-      <View style={styles.header}>
-        <View style={{ position: 'relative' }}>
-          {user.avatar ? (
-            <Avatar.Image size={80} source={{ uri: user.avatar }} />
-          ) : (
-            <Avatar.Text
-              size={80}
-              label={(name || 'U').substring(0, 2).toUpperCase()}
-              style={{ backgroundColor: '#D183BA' }}
-            />
-          )}
-          {uploadingAvatar && (
-            <View
-              style={{
-                ...StyleSheet.absoluteFillObject,
-                backgroundColor: 'rgba(255,255,255,0.7)',
-                borderRadius: 40,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
-              <ActivityIndicator size="small" color="#D183BA" />
+    <View style={{ flex: 1 }}>
+      <ScrollView style={globalStyles.container}>
+        <View style={styles.header}>
+          <View style={{ position: 'relative' }}>
+            {user.avatar ? (
+              <Avatar.Image size={80} source={{ uri: user.avatar }} />
+            ) : (
+              <Avatar.Text
+                size={80}
+                label={(name || 'U').substring(0, 2).toUpperCase()}
+                style={{ backgroundColor: '#D183BA' }}
+              />
+            )}
+            {uploadingAvatar && (
+              <View
+                style={{
+                  ...StyleSheet.absoluteFillObject,
+                  backgroundColor: 'rgba(255,255,255,0.7)',
+                  borderRadius: 40,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <ActivityIndicator size="small" color="#D183BA" />
+              </View>
+            )}
+            {isMyProfile && !uploadingAvatar && (
+              <TouchableOpacity
+                onPress={handleUploadAvatar}
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  right: -10,
+                  backgroundColor: '#fff',
+                  borderRadius: 15,
+                  width: 30,
+                  height: 30,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderWidth: 1,
+                  borderColor: '#ccc',
+                  elevation: 2,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 1.41,
+                }}
+              >
+                <Text style={{ fontSize: 16 }}>✏️</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          <Text variant="headlineMedium" style={[globalStyles.title, { marginTop: 10 }]}>
+            {isEditing ? t('profile_title') : name || t('loading')}
+          </Text>
+          {stats.totalReviews > 0 && (
+            <View style={styles.ratingRow}>
+              <Text variant="titleMedium" style={{ color: '#f59e0b', fontWeight: 'bold' }}>
+                {'★'.repeat(Math.max(0, Math.round(stats.averageRating || 0)))}
+                {'☆'.repeat(Math.max(0, 5 - Math.round(stats.averageRating || 0)))}{' '}
+                {stats.averageRating || 0}
+              </Text>
+              <Text variant="bodySmall" style={{ marginLeft: 5, color: '#666' }}>
+                ({stats.totalReviews} {t('reviews_header').toLowerCase()})
+              </Text>
             </View>
           )}
-          {isMyProfile && !uploadingAvatar && (
-            <TouchableOpacity
-              onPress={handleUploadAvatar}
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                right: -10,
-                backgroundColor: '#fff',
-                borderRadius: 15,
-                width: 30,
-                height: 30,
-                justifyContent: 'center',
-                alignItems: 'center',
-                borderWidth: 1,
-                borderColor: '#ccc',
-                elevation: 2,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.2,
-                shadowRadius: 1.41,
-              }}
-            >
-              <Text style={{ fontSize: 16 }}>✏️</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        <Text variant="headlineMedium" style={[globalStyles.title, { marginTop: 10 }]}>
-          {isEditing ? t('profile_title') : name || t('loading')}
-        </Text>
-        {stats.totalReviews > 0 && (
+
           <View style={styles.ratingRow}>
-            <Text variant="titleMedium" style={{ color: '#f59e0b', fontWeight: 'bold' }}>
-              {'★'.repeat(Math.max(0, Math.round(stats.averageRating || 0)))}
-              {'☆'.repeat(Math.max(0, 5 - Math.round(stats.averageRating || 0)))}{' '}
-              {stats.averageRating || 0}
-            </Text>
-            <Text variant="bodySmall" style={{ marginLeft: 5, color: '#666' }}>
-              ({stats.totalReviews} {t('reviews_header').toLowerCase()})
+            <Text variant="bodyMedium" style={{ color: '#666', marginTop: 5 }}>
+              <Text style={{ fontWeight: 'bold' }}>{followers.length}</Text>{' '}
+              {t('followers', { defaultValue: 'Seguidores' })}
             </Text>
           </View>
-        )}
-
-        <View style={styles.ratingRow}>
-          <Text variant="bodyMedium" style={{ color: '#666', marginTop: 5 }}>
-            <Text style={{ fontWeight: 'bold' }}>{followers.length}</Text>{' '}
-            {t('followers', { defaultValue: 'Seguidores' })}
-          </Text>
         </View>
-      </View>
 
-      <Card style={[globalStyles.card, { margin: 20 }]}>
-        <Card.Content>
-          {isEditing ? (
-            <>
-              <TextInput
-                label={t('profile_name_label')}
-                value={name}
-                onChangeText={setName}
-                mode="flat"
-                underlineColor="transparent"
-                style={globalStyles.input}
-              />
-              <TextInput
-                label={t('profile_email_label')}
-                value={email}
-                onChangeText={setEmail}
-                mode="flat"
-                underlineColor="transparent"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                style={globalStyles.input}
-              />
-              <TextInput
-                label={t('about_me_label')}
-                value={description}
-                onChangeText={setDescription}
-                mode="flat"
-                underlineColor="transparent"
-                multiline
-                numberOfLines={4}
-                style={[globalStyles.input, { height: 100 }]}
-              />
-
-              <Text
-                variant="titleMedium"
-                style={{ marginTop: 15, marginBottom: 5, color: '#D183BA', fontWeight: 'bold' }}
-              >
-                Favoritos
-              </Text>
-
-              <Text variant="labelLarge" style={{ marginTop: 10, color: '#666' }}>
-                {t('fav_authors')}
-              </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Card style={[globalStyles.card, { margin: 20 }]}>
+          <Card.Content>
+            {isEditing ? (
+              <>
                 <TextInput
-                  value={newAuthor}
-                  onChangeText={setNewAuthor}
-                  mode="outlined"
-                  placeholder="Añadir autor..."
-                  style={[globalStyles.input, { flex: 1, marginBottom: 0, height: 40 }]}
+                  label={t('profile_name_label')}
+                  value={name}
+                  onChangeText={setName}
+                  mode="flat"
+                  underlineColor="transparent"
+                  style={globalStyles.input}
                 />
-                <Button
-                  mode="contained"
-                  onPress={() => {
-                    if (newAuthor.trim() && favoriteAuthors.length < 5) {
-                      setFavoriteAuthors([...favoriteAuthors, newAuthor.trim()]);
-                      setNewAuthor('');
-                    }
-                  }}
-                  disabled={favoriteAuthors.length >= 5 || !newAuthor.trim()}
-                  style={{ marginLeft: 10 }}
-                  buttonColor="#D183BA"
-                >
-                  +
-                </Button>
-              </View>
-              <View
-                style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10, marginBottom: 10 }}
-              >
-                {favoriteAuthors.map((author, index) => (
-                  <Chip
-                    key={index}
-                    style={{ margin: 2 }}
-                    onClose={() =>
-                      setFavoriteAuthors(favoriteAuthors.filter((_, i) => i !== index))
-                    }
-                  >
-                    {author}
-                  </Chip>
-                ))}
-              </View>
-
-              <Text variant="labelLarge" style={{ marginTop: 10, color: '#666' }}>
-                {t('fav_books')}
-              </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <TextInput
-                  value={newBook}
-                  onChangeText={setNewBook}
-                  mode="outlined"
-                  placeholder="Añadir libro..."
-                  style={[globalStyles.input, { flex: 1, marginBottom: 0, height: 40 }]}
+                  label={t('profile_email_label')}
+                  value={email}
+                  onChangeText={setEmail}
+                  mode="flat"
+                  underlineColor="transparent"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  style={globalStyles.input}
                 />
-                <Button
-                  mode="contained"
-                  onPress={() => {
-                    if (newBook.trim() && favoriteBooks.length < 5) {
-                      setFavoriteBooks([...favoriteBooks, newBook.trim()]);
-                      setNewBook('');
-                    }
-                  }}
-                  disabled={favoriteBooks.length >= 5 || !newBook.trim()}
-                  style={{ marginLeft: 10 }}
-                  buttonColor="#D183BA"
-                >
-                  +
-                </Button>
-              </View>
-              <View
-                style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10, marginBottom: 10 }}
-              >
-                {favoriteBooks.map((book, index) => (
-                  <Chip
-                    key={index}
-                    style={{ margin: 2 }}
-                    onClose={() => setFavoriteBooks(favoriteBooks.filter((_, i) => i !== index))}
-                  >
-                    {book}
-                  </Chip>
-                ))}
-              </View>
+                <TextInput
+                  label={t('about_me_label')}
+                  value={description}
+                  onChangeText={setDescription}
+                  mode="flat"
+                  underlineColor="transparent"
+                  multiline
+                  numberOfLines={4}
+                  style={[globalStyles.input, { height: 100 }]}
+                />
 
-              <Text variant="labelLarge" style={{ marginTop: 10, color: '#666' }}>
-                {t('fav_categories')}
-              </Text>
-              <Menu
-                visible={categoryMenuVisible}
-                onDismiss={() => setCategoryMenuVisible(false)}
-                anchor={
-                  <Button
+                <Text
+                  variant="titleMedium"
+                  style={{ marginTop: 15, marginBottom: 5, color: '#D183BA', fontWeight: 'bold' }}
+                >
+                  Favoritos
+                </Text>
+
+                <Text variant="labelLarge" style={{ marginTop: 10, color: '#666' }}>
+                  {t('fav_authors')}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TextInput
+                    value={newAuthor}
+                    onChangeText={setNewAuthor}
                     mode="outlined"
-                    onPress={() => setCategoryMenuVisible(true)}
-                    style={{ marginTop: 5, borderColor: '#ccc' }}
-                    textColor="#333"
-                  >
-                    {t('select_categories')}
-                  </Button>
-                }
-              >
-                {ALL_CATEGORIES.map((cat) => (
-                  <Menu.Item
-                    key={cat}
-                    title={cat}
-                    trailingIcon={favoriteCategories.includes(cat) ? 'check' : undefined}
-                    onPress={() => {
-                      if (favoriteCategories.includes(cat)) {
-                        setFavoriteCategories(favoriteCategories.filter((c) => c !== cat));
-                      } else {
-                        setFavoriteCategories([...favoriteCategories, cat]);
-                      }
-                    }}
+                    placeholder="Añadir autor..."
+                    style={[globalStyles.input, { flex: 1, marginBottom: 0, height: 40 }]}
                   />
-                ))}
-              </Menu>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 }}>
-                {favoriteCategories.map((cat) => (
-                  <Chip
-                    key={cat}
-                    style={{ margin: 2 }}
-                    onClose={() =>
-                      setFavoriteCategories(favoriteCategories.filter((c) => c !== cat))
-                    }
-                  >
-                    {cat}
-                  </Chip>
-                ))}
-              </View>
-
-              <View style={styles.buttonRow}>
-                <Button
-                  mode="contained"
-                  onPress={handleUpdate}
-                  loading={updating}
-                  buttonColor="#D183BA"
-                  style={{ flex: 1, marginRight: 5 }}
-                >
-                  {t('save')}
-                </Button>
-                <Button
-                  mode="outlined"
-                  onPress={() => {
-                    setIsEditing(false);
-                    setName(user.name);
-                    setEmail(user.email);
-                    setDescription(user.description || '');
-                    setFavoriteAuthors(user.favoriteAuthors || []);
-                    setFavoriteBooks(user.favoriteBooks || []);
-                    setFavoriteCategories(user.favoriteCategories || []);
-                    setNewAuthor('');
-                    setNewBook('');
-                  }}
-                  textColor="#64748b"
-                  style={{ flex: 1, marginLeft: 5 }}
-                >
-                  {t('cancel')}
-                </Button>
-              </View>
-
-              {isMyProfile && (
-                <Button
-                  mode="outlined"
-                  onPress={() => {
-                    setDeleteStep('menu');
-                    setDeleteModalVisible(true);
-                  }}
-                  textColor="#e53935"
-                  style={{ marginTop: 20, borderColor: '#e53935' }}
-                >
-                  {t('delete_profile_btn')}
-                </Button>
-              )}
-            </>
-          ) : (
-            <>
-              <View style={styles.infoRow}>
-                <Text variant="labelLarge" style={styles.label}>
-                  {t('profile_name_label')}
-                </Text>
-                <Text variant="bodyLarge">{user.name}</Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text variant="labelLarge" style={styles.label}>
-                  {t('profile_email_label')}
-                </Text>
-                <Text variant="bodyLarge">{user.email}</Text>
-              </View>
-              <View style={[styles.infoRow, { flexDirection: 'column', alignItems: 'flex-start' }]}>
-                <Text variant="labelLarge" style={[styles.label, { marginBottom: 5 }]}>
-                  {t('about_me_label')}
-                </Text>
-                <Text variant="bodyMedium" style={{ color: '#444' }}>
-                  {user.description || 'Sin descripción'}
-                </Text>
-              </View>
-
-              {((Array.isArray(user.favoriteAuthors) && user.favoriteAuthors.length > 0) ||
-                (Array.isArray(user.favoriteBooks) && user.favoriteBooks.length > 0) ||
-                (Array.isArray(user.favoriteCategories) && user.favoriteCategories.length > 0)) && (
-                <View style={{ marginTop: 20 }}>
-                  <Text
-                    variant="titleMedium"
-                    style={{ color: '#D183BA', fontWeight: 'bold', marginBottom: 10 }}
-                  >
-                    Favoritos
-                  </Text>
-
-                  {Array.isArray(user.favoriteAuthors) && user.favoriteAuthors.length > 0 && (
-                    <View style={{ marginBottom: 10 }}>
-                      <Text variant="labelLarge" style={styles.label}>
-                        {t('fav_authors')}
-                      </Text>
-                      <Text variant="bodyMedium">{user.favoriteAuthors.join(', ')}</Text>
-                    </View>
-                  )}
-
-                  {Array.isArray(user.favoriteBooks) && user.favoriteBooks.length > 0 && (
-                    <View style={{ marginBottom: 10 }}>
-                      <Text variant="labelLarge" style={styles.label}>
-                        {t('fav_books')}
-                      </Text>
-                      <Text variant="bodyMedium">{user.favoriteBooks.join(', ')}</Text>
-                    </View>
-                  )}
-
-                  {Array.isArray(user.favoriteCategories) && user.favoriteCategories.length > 0 && (
-                    <View style={{ marginBottom: 10 }}>
-                      <Text variant="labelLarge" style={styles.label}>
-                        {t('fav_categories')}
-                      </Text>
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 5 }}>
-                        {user.favoriteCategories.map((cat: string) => (
-                          <Chip key={cat} style={{ margin: 2 }}>
-                            {cat}
-                          </Chip>
-                        ))}
-                      </View>
-                    </View>
-                  )}
-                </View>
-              )}
-
-              {isMyProfile ? (
-                <View style={{ marginTop: 20 }}>
                   <Button
                     mode="contained"
-                    onPress={() => navigation.navigate('Retos' as never)}
+                    onPress={() => {
+                      if (newAuthor.trim() && favoriteAuthors.length < 5) {
+                        setFavoriteAuthors([...favoriteAuthors, newAuthor.trim()]);
+                        setNewAuthor('');
+                      }
+                    }}
+                    disabled={favoriteAuthors.length >= 5 || !newAuthor.trim()}
+                    style={{ marginLeft: 10 }}
                     buttonColor="#D183BA"
-                    textColor="#fff"
-                    style={{ marginBottom: 10 }}
-                    icon={() => <Text style={{ fontSize: 16 }}>🏆</Text>}
                   >
-                    {t('retos_title', 'Mis Retos')}
-                  </Button>
-                  <Button
-                    mode="outlined"
-                    onPress={() => navigation.navigate('Settings')}
-                    textColor="#D183BA"
-                    style={{ borderColor: '#D183BA', marginBottom: 10 }}
-                    icon={() => <Text style={{ fontSize: 16 }}>⚙️</Text>}
-                  >
-                    {t('accessibility_settings')}
-                  </Button>
-
-                  <Button
-                    mode="outlined"
-                    onPress={() => setIsEditing(true)}
-                    textColor="#D183BA"
-                    style={{ borderColor: '#D183BA', marginBottom: 10 }}
-                  >
-                    {t('profile_edit_btn')}
-                  </Button>
-
-                  <Button
-                    mode="outlined"
-                    onPress={logout}
-                    textColor="#ef4444"
-                    style={{ borderColor: '#ef4444' }}
-                    icon={() => <Text style={{ fontSize: 16 }}>🚪</Text>}
-                  >
-                    {t('logout')}
+                    +
                   </Button>
                 </View>
-              ) : (
-                <View style={{ marginTop: 20 }}>
-                  <Button
-                    mode={myFollowingUsers.includes(userId) ? 'outlined' : 'contained'}
-                    onPress={toggleFollow}
-                    loading={updating}
-                    buttonColor={myFollowingUsers.includes(userId) ? undefined : '#D183BA'}
-                    textColor={myFollowingUsers.includes(userId) ? '#D183BA' : '#fff'}
-                    style={{ borderColor: '#D183BA', marginBottom: 10 }}
-                  >
-                    {myFollowingUsers.includes(userId)
-                      ? t('unfollow', 'Siguiendo')
-                      : t('follow', 'Seguir')}
-                  </Button>
-
-                  {myFollowingUsers.includes(userId) ? (
-                    <Button
-                      mode={notificationsEnabled ? 'contained' : 'outlined'}
-                      onPress={toggleNotifications}
-                      loading={loadingNotifications}
-                      buttonColor={notificationsEnabled ? '#D183BA' : undefined}
-                      textColor={notificationsEnabled ? '#fff' : '#D183BA'}
-                      style={{ borderColor: '#D183BA', marginBottom: 10 }}
-                      icon={notificationsEnabled ? 'bell' : 'bell-outline'}
-                    >
-                      {notificationsEnabled
-                        ? 'Desactivar notificaciones'
-                        : 'Activar notificaciones'}
-                    </Button>
-                  ) : (
-                    <Button mode="outlined" disabled style={{ marginBottom: 10 }}>
-                      Sigue a este usuario para activar notificaciones
-                    </Button>
-                  )}
-                </View>
-              )}
-            </>
-          )}
-        </Card.Content>
-      </Card>
-
-      {/* Reviews Section */}
-      <View style={{ paddingHorizontal: 20, paddingBottom: 40 }}>
-        <Text variant="titleLarge" style={{ marginBottom: 15, fontWeight: 'bold' }}>
-          {t('reviews_header')}
-        </Text>
-        {reviews.length === 0 ? (
-          <Text style={{ color: '#888', fontStyle: 'italic' }}>{t('no_reviews')}</Text>
-        ) : (
-          reviews.map((rev) => (
-            <Card key={rev._id} style={{ marginBottom: 12, backgroundColor: '#fff' }}>
-              <Card.Content>
                 <View
                   style={{
                     flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    marginTop: 10,
+                    marginBottom: 10,
                   }}
                 >
-                  <Text variant="labelLarge" style={{ color: '#D183BA' }}>
-                    {rev.usuarioAutor?.name}
+                  {favoriteAuthors.map((author, index) => (
+                    <Chip
+                      key={index}
+                      style={{ margin: 2 }}
+                      onClose={() =>
+                        setFavoriteAuthors(favoriteAuthors.filter((_, i) => i !== index))
+                      }
+                    >
+                      {author}
+                    </Chip>
+                  ))}
+                </View>
+
+                <Text variant="labelLarge" style={{ marginTop: 10, color: '#666' }}>
+                  {t('fav_books')}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TextInput
+                    value={newBook}
+                    onChangeText={setNewBook}
+                    mode="outlined"
+                    placeholder="Añadir libro..."
+                    style={[globalStyles.input, { flex: 1, marginBottom: 0, height: 40 }]}
+                  />
+                  <Button
+                    mode="contained"
+                    onPress={() => {
+                      if (newBook.trim() && favoriteBooks.length < 5) {
+                        setFavoriteBooks([...favoriteBooks, newBook.trim()]);
+                        setNewBook('');
+                      }
+                    }}
+                    disabled={favoriteBooks.length >= 5 || !newBook.trim()}
+                    style={{ marginLeft: 10 }}
+                    buttonColor="#D183BA"
+                  >
+                    +
+                  </Button>
+                </View>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    marginTop: 10,
+                    marginBottom: 10,
+                  }}
+                >
+                  {favoriteBooks.map((book, index) => (
+                    <Chip
+                      key={index}
+                      style={{ margin: 2 }}
+                      onClose={() => setFavoriteBooks(favoriteBooks.filter((_, i) => i !== index))}
+                    >
+                      {book}
+                    </Chip>
+                  ))}
+                </View>
+
+                <Text variant="labelLarge" style={{ marginTop: 10, color: '#666' }}>
+                  {t('fav_categories')}
+                </Text>
+                <Menu
+                  visible={categoryMenuVisible}
+                  onDismiss={() => setCategoryMenuVisible(false)}
+                  anchor={
+                    <Button
+                      mode="outlined"
+                      onPress={() => setCategoryMenuVisible(true)}
+                      style={{ marginTop: 5, borderColor: '#ccc' }}
+                      textColor="#333"
+                    >
+                      {t('select_categories')}
+                    </Button>
+                  }
+                >
+                  {ALL_CATEGORIES.map((cat) => (
+                    <Menu.Item
+                      key={cat}
+                      title={cat}
+                      trailingIcon={favoriteCategories.includes(cat) ? 'check' : undefined}
+                      onPress={() => {
+                        if (favoriteCategories.includes(cat)) {
+                          setFavoriteCategories(favoriteCategories.filter((c) => c !== cat));
+                        } else {
+                          setFavoriteCategories([...favoriteCategories, cat]);
+                        }
+                      }}
+                    />
+                  ))}
+                </Menu>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 }}>
+                  {favoriteCategories.map((cat) => (
+                    <Chip
+                      key={cat}
+                      style={{ margin: 2 }}
+                      onClose={() =>
+                        setFavoriteCategories(favoriteCategories.filter((c) => c !== cat))
+                      }
+                    >
+                      {cat}
+                    </Chip>
+                  ))}
+                </View>
+
+                <View style={styles.buttonRow}>
+                  <Button
+                    mode="contained"
+                    onPress={handleUpdate}
+                    loading={updating}
+                    buttonColor="#D183BA"
+                    style={{ flex: 1, marginRight: 5 }}
+                  >
+                    {t('save')}
+                  </Button>
+                  <Button
+                    mode="outlined"
+                    onPress={() => {
+                      setIsEditing(false);
+                      setName(user.name);
+                      setEmail(user.email);
+                      setDescription(user.description || '');
+                      setFavoriteAuthors(user.favoriteAuthors || []);
+                      setFavoriteBooks(user.favoriteBooks || []);
+                      setFavoriteCategories(user.favoriteCategories || []);
+                      setNewAuthor('');
+                      setNewBook('');
+                    }}
+                    textColor="#64748b"
+                    style={{ flex: 1, marginLeft: 5 }}
+                  >
+                    {t('cancel')}
+                  </Button>
+                </View>
+
+                {isMyProfile && (
+                  <Button
+                    mode="outlined"
+                    onPress={() => {
+                      setDeleteStep('menu');
+                      setDeleteModalVisible(true);
+                    }}
+                    textColor="#e53935"
+                    style={{ marginTop: 20, borderColor: '#e53935' }}
+                  >
+                    {t('delete_profile_btn')}
+                  </Button>
+                )}
+              </>
+            ) : (
+              <>
+                <View style={styles.infoRow}>
+                  <Text variant="labelLarge" style={styles.label}>
+                    {t('profile_name_label')}
                   </Text>
-                  <Text variant="labelMedium" style={{ color: '#f59e0b' }}>
-                    {'★'.repeat(Math.max(0, rev.puntuacion || 0))}
-                    {'☆'.repeat(Math.max(0, 5 - (rev.puntuacion || 0)))}
+                  <Text variant="bodyLarge">{user.name}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text variant="labelLarge" style={styles.label}>
+                    {t('profile_email_label')}
+                  </Text>
+                  <Text variant="bodyLarge">{user.email}</Text>
+                </View>
+                <View
+                  style={[styles.infoRow, { flexDirection: 'column', alignItems: 'flex-start' }]}
+                >
+                  <Text variant="labelLarge" style={[styles.label, { marginBottom: 5 }]}>
+                    {t('about_me_label')}
+                  </Text>
+                  <Text variant="bodyMedium" style={{ color: '#444' }}>
+                    {user.description || 'Sin descripción'}
                   </Text>
                 </View>
-                <Text variant="bodySmall" style={{ color: '#999', marginBottom: 5 }}>
-                  {rev.libro?.title || ''}
-                  {rev.tipoOperacion ? ` (${rev.tipoOperacion.toLowerCase()})` : ''}
-                </Text>
-                {rev.comentario ? <Text variant="bodyMedium">{rev.comentario}</Text> : null}
-                <Text
-                  variant="bodySmall"
-                  style={{ alignSelf: 'flex-end', color: '#ccc', marginTop: 5 }}
+
+                {((Array.isArray(user.favoriteAuthors) && user.favoriteAuthors.length > 0) ||
+                  (Array.isArray(user.favoriteBooks) && user.favoriteBooks.length > 0) ||
+                  (Array.isArray(user.favoriteCategories) &&
+                    user.favoriteCategories.length > 0)) && (
+                  <View style={{ marginTop: 20 }}>
+                    <Text
+                      variant="titleMedium"
+                      style={{ color: '#D183BA', fontWeight: 'bold', marginBottom: 10 }}
+                    >
+                      Favoritos
+                    </Text>
+
+                    {Array.isArray(user.favoriteAuthors) && user.favoriteAuthors.length > 0 && (
+                      <View style={{ marginBottom: 10 }}>
+                        <Text variant="labelLarge" style={styles.label}>
+                          {t('fav_authors')}
+                        </Text>
+                        <Text variant="bodyMedium">{user.favoriteAuthors.join(', ')}</Text>
+                      </View>
+                    )}
+
+                    {Array.isArray(user.favoriteBooks) && user.favoriteBooks.length > 0 && (
+                      <View style={{ marginBottom: 10 }}>
+                        <Text variant="labelLarge" style={styles.label}>
+                          {t('fav_books')}
+                        </Text>
+                        <Text variant="bodyMedium">{user.favoriteBooks.join(', ')}</Text>
+                      </View>
+                    )}
+
+                    {Array.isArray(user.favoriteCategories) &&
+                      user.favoriteCategories.length > 0 && (
+                        <View style={{ marginBottom: 10 }}>
+                          <Text variant="labelLarge" style={styles.label}>
+                            {t('fav_categories')}
+                          </Text>
+                          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 5 }}>
+                            {user.favoriteCategories.map((cat: string) => (
+                              <Chip key={cat} style={{ margin: 2 }}>
+                                {cat}
+                              </Chip>
+                            ))}
+                          </View>
+                        </View>
+                      )}
+                  </View>
+                )}
+
+                {isMyProfile ? (
+                  <View style={{ marginTop: 20 }}>
+                    <Button
+                      mode="contained"
+                      onPress={() => navigation.navigate('Retos' as never)}
+                      buttonColor="#D183BA"
+                      textColor="#fff"
+                      style={{ marginBottom: 10 }}
+                      icon={() => <Text style={{ fontSize: 16 }}>🏆</Text>}
+                    >
+                      {t('retos_title', 'Mis Retos')}
+                    </Button>
+                    <Button
+                      mode="outlined"
+                      onPress={() => navigation.navigate('Settings')}
+                      textColor="#D183BA"
+                      style={{ borderColor: '#D183BA', marginBottom: 10 }}
+                      icon={() => <Text style={{ fontSize: 16 }}>⚙️</Text>}
+                    >
+                      {t('accessibility_settings')}
+                    </Button>
+
+                    <Button
+                      mode="outlined"
+                      onPress={() => setIsEditing(true)}
+                      textColor="#D183BA"
+                      style={{ borderColor: '#D183BA', marginBottom: 10 }}
+                    >
+                      {t('profile_edit_btn')}
+                    </Button>
+
+                    <Button
+                      mode="outlined"
+                      onPress={logout}
+                      textColor="#ef4444"
+                      style={{ borderColor: '#ef4444' }}
+                      icon={() => <Text style={{ fontSize: 16 }}>🚪</Text>}
+                    >
+                      {t('logout')}
+                    </Button>
+                  </View>
+                ) : (
+                  <View style={{ marginTop: 20 }}>
+                    <Button
+                      mode={myFollowingUsers.includes(userId) ? 'outlined' : 'contained'}
+                      onPress={toggleFollow}
+                      loading={updating}
+                      buttonColor={myFollowingUsers.includes(userId) ? undefined : '#D183BA'}
+                      textColor={myFollowingUsers.includes(userId) ? '#D183BA' : '#fff'}
+                      style={{ borderColor: '#D183BA', marginBottom: 10 }}
+                    >
+                      {myFollowingUsers.includes(userId)
+                        ? t('unfollow', 'Siguiendo')
+                        : t('follow', 'Seguir')}
+                    </Button>
+
+                    {myFollowingUsers.includes(userId) ? (
+                      <Button
+                        mode={notificationsEnabled ? 'contained' : 'outlined'}
+                        onPress={toggleNotifications}
+                        loading={loadingNotifications}
+                        buttonColor={notificationsEnabled ? '#D183BA' : undefined}
+                        textColor={notificationsEnabled ? '#fff' : '#D183BA'}
+                        style={{ borderColor: '#D183BA', marginBottom: 10 }}
+                        icon={notificationsEnabled ? 'bell' : 'bell-outline'}
+                      >
+                        {notificationsEnabled
+                          ? 'Desactivar notificaciones'
+                          : 'Activar notificaciones'}
+                      </Button>
+                    ) : (
+                      <Button mode="outlined" disabled style={{ marginBottom: 10 }}>
+                        Sigue a este usuario para activar notificaciones
+                      </Button>
+                    )}
+                  </View>
+                )}
+              </>
+            )}
+          </Card.Content>
+        </Card>
+
+        {/* Reviews Section */}
+        <View style={{ paddingHorizontal: 20, paddingBottom: 40 }}>
+          <Text variant="titleLarge" style={{ marginBottom: 15, fontWeight: 'bold' }}>
+            {t('reviews_header')}
+          </Text>
+          {reviews.length === 0 ? (
+            <Text style={{ color: '#888', fontStyle: 'italic' }}>{t('no_reviews')}</Text>
+          ) : (
+            reviews.map((rev) => (
+              <Card key={rev._id} style={{ marginBottom: 12, backgroundColor: '#fff' }}>
+                <Card.Content>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text variant="labelLarge" style={{ color: '#D183BA' }}>
+                      {rev.usuarioAutor?.name}
+                    </Text>
+                    <Text variant="labelMedium" style={{ color: '#f59e0b' }}>
+                      {'★'.repeat(Math.max(0, rev.puntuacion || 0))}
+                      {'☆'.repeat(Math.max(0, 5 - (rev.puntuacion || 0)))}
+                    </Text>
+                  </View>
+                  <Text variant="bodySmall" style={{ color: '#999', marginBottom: 5 }}>
+                    {rev.libro?.title || ''}
+                    {rev.tipoOperacion ? ` (${rev.tipoOperacion.toLowerCase()})` : ''}
+                  </Text>
+                  {rev.comentario ? <Text variant="bodyMedium">{rev.comentario}</Text> : null}
+                  <Text
+                    variant="bodySmall"
+                    style={{ alignSelf: 'flex-end', color: '#ccc', marginTop: 5 }}
+                  >
+                    {new Date(rev.createdAt).toLocaleDateString()}
+                  </Text>
+                </Card.Content>
+              </Card>
+            ))
+          )}
+        </View>
+      </ScrollView>
+
+      <Portal>
+        <Modal
+          visible={deleteModalVisible}
+          onDismiss={() => !deleting && setDeleteModalVisible(false)}
+          contentContainerStyle={styles.modalContent}
+        >
+          {deleteStep === 'menu' && (
+            <>
+              <Text variant="headlineSmall" style={styles.modalTitle}>
+                {t('delete_profile_title')}
+              </Text>
+              <Text variant="bodyMedium" style={styles.modalBody}>
+                {t('delete_profile_msg')}
+              </Text>
+              <Button
+                mode="contained"
+                onPress={() => setDeleteStep('confirm_soft')}
+                buttonColor="#D183BA"
+                style={styles.modalButton}
+                textColor="#fff"
+              >
+                {t('delete_temp')}
+              </Button>
+              <Button
+                mode="outlined"
+                onPress={() => setDeleteStep('confirm_perm')}
+                textColor="#e53935"
+                style={[styles.modalButton, { borderColor: '#e53935', marginTop: 10 }]}
+              >
+                {t('delete_perm')}
+              </Button>
+              <View style={styles.modalActions}>
+                <Button onPress={() => setDeleteModalVisible(false)} textColor="#666">
+                  {t('cancel')}
+                </Button>
+              </View>
+            </>
+          )}
+
+          {deleteStep === 'confirm_soft' && (
+            <>
+              <Text variant="headlineSmall" style={styles.modalTitle}>
+                {t('delete_temp')}
+              </Text>
+              <Text variant="bodyMedium" style={styles.modalBody}>
+                {t('delete_temp_confirm')}
+              </Text>
+              <View style={styles.modalActions}>
+                <Button
+                  onPress={() => setDeleteStep('menu')}
+                  disabled={deleting}
+                  textColor="#666"
+                  style={{ marginRight: 10 }}
                 >
-                  {new Date(rev.createdAt).toLocaleDateString()}
-                </Text>
-              </Card.Content>
-            </Card>
-          ))
-        )}
-      </View>
-    </ScrollView>
+                  {t('back')}
+                </Button>
+                <Button
+                  mode="contained"
+                  onPress={executeSoftDelete}
+                  loading={deleting}
+                  disabled={deleting}
+                  buttonColor="#D183BA"
+                >
+                  {t('confirm', 'Confirmar')}
+                </Button>
+              </View>
+            </>
+          )}
+
+          {deleteStep === 'confirm_perm' && (
+            <>
+              <Text variant="headlineSmall" style={[styles.modalTitle, { color: '#e53935' }]}>
+                {t('delete_perm')}
+              </Text>
+              <Text variant="bodyMedium" style={styles.modalBody}>
+                {t('delete_perm_confirm')}
+              </Text>
+              <View style={styles.modalActions}>
+                <Button
+                  onPress={() => setDeleteStep('menu')}
+                  disabled={deleting}
+                  textColor="#666"
+                  style={{ marginRight: 10 }}
+                >
+                  {t('back')}
+                </Button>
+                <Button
+                  mode="contained"
+                  onPress={executePermanentDelete}
+                  loading={deleting}
+                  disabled={deleting}
+                  buttonColor="#e53935"
+                >
+                  {t('delete', 'Eliminar')}
+                </Button>
+              </View>
+            </>
+          )}
+        </Modal>
+      </Portal>
+    </View>
   );
 }
 
@@ -887,5 +1004,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 20,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 24,
+    margin: 20,
+    borderRadius: 16,
+  },
+  modalTitle: {
+    marginBottom: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#333',
+  },
+  modalBody: {
+    color: '#555',
+    marginBottom: 20,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalButton: {
+    width: '100%',
+    borderRadius: 8,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 16,
+    alignItems: 'center',
   },
 });
