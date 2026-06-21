@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 import { changeLanguage } from '../services/i18n';
 import { Switch, Button, Card, Divider } from 'react-native-paper';
 import { useAccessibility } from '../context/AccessibilityContext';
@@ -9,6 +10,7 @@ import { AppText as Text } from '../components/AppText';
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const { isFocusModeEnabled, toggleFocusMode } = useAccessibility();
+  const navigation = useNavigation<any>();
 
   // Helper to see which language is currently active
   const currentLanguage = i18n.language;
@@ -72,6 +74,31 @@ export default function SettingsScreen() {
               </Text>
             </View>
             <Switch value={isFocusModeEnabled} onValueChange={toggleFocusMode} color="#D183BA" />
+          </View>
+        </Card.Content>
+      </Card>
+
+      <Card style={[styles.card, { marginTop: 16 }]}>
+        <Card.Content>
+          <View style={styles.switchRow}>
+            <View style={{ flex: 1, paddingRight: 15 }}>
+              <Text variant="titleMedium" style={styles.sectionLabel}>
+                {t('onboarding_replay')}
+              </Text>
+              <Text variant="bodySmall" style={{ color: '#666' }}>
+                {t('onboarding_replay_desc', {
+                  defaultValue: 'Explica las funcionalidades principales de ViveBooks paso a paso.',
+                })}
+              </Text>
+            </View>
+            <Button
+              mode="contained"
+              buttonColor="#D183BA"
+              onPress={() => navigation.navigate('Onboarding', { isReplay: true })}
+              labelStyle={{ color: '#fff' }}
+            >
+              {t('view', { defaultValue: 'Ver' })}
+            </Button>
           </View>
         </Card.Content>
       </Card>

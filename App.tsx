@@ -19,10 +19,13 @@ import SettingsScreen from './src/screens/SettingsScreen';
 import ChatRoomScreen from './src/screens/ChatRoomScreen';
 import FavoritesScreen from './src/screens/FavoritesScreen';
 import ExploreEventsScreen from './src/screens/ExploreEventsScreen';
+import OnboardingScreen from './src/screens/OnboardingScreen';
 import { AccessibilityProvider } from './src/context/AccessibilityContext';
 import style from './styles/default.old';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { restoreSession, SessionEntryRoute, subscribeToSession } from './src/services/session';
 import api from './src/services/api';
+import { unwrapApiData } from './src/utils/apiResponse';
 import './src/config/firebase';
 import { usePushNotifications } from './src/services/notifications';
 
@@ -38,24 +41,27 @@ import MainNavigator from './src/navigation/MainNavigator';
 const Stack = createNativeStackNavigator();
 
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { ReactNativeFirebase } from '@react-native-firebase/app';
 import { Platform } from 'react-native';
 
-// Importar FCM para inicializar el handler de background
-import messaging from '@react-native-firebase/messaging';
-
-// 🔥 Inicializar el handler de mensajes en segundo plano (DEBE estar fuera de cualquier componente)
+// 🔥 Inicializar el handler de mensajes en segundo plano de forma segura
 if (Platform.OS !== 'web') {
-  messaging()
-    .getInitialNotification()
-    .then((remoteMessage) => {
-      if (remoteMessage) {
-        console.log('[FCM] App inicializada con notificación:', remoteMessage);
-      }
-    })
-    .catch((error) => {
-      console.error('[FCM] Error inicializando FCM:', error);
-    });
+  try {
+    const messaging =
+      require('@react-native-firebase/messaging').default ||
+      require('@react-native-firebase/messaging');
+    messaging()
+      .getInitialNotification()
+      .then((remoteMessage: any) => {
+        if (remoteMessage) {
+          console.log('[FCM] App inicializada con notificación:', remoteMessage);
+        }
+      })
+      .catch((error: any) => {
+        console.error('[FCM] Error inicializando FCM:', error);
+      });
+  } catch (error) {
+    console.warn('⚠️ Firebase Messaging no está disponible en este entorno (Expo Go).');
+  }
 }
 
 function NavigationWatcher({ sessionStatus, entryRoute, guestRoute }: any) {
@@ -79,6 +85,20 @@ function NavigationWatcher({ sessionStatus, entryRoute, guestRoute }: any) {
         </>
       ) : (
         <>
+          {entryRoute === 'Onboarding' && (
+            <Stack.Screen
+              name="Onboarding"
+              component={OnboardingScreen}
+              options={{ headerShown: false }}
+            />
+          )}
+          {entryRoute === 'Discover' && (
+            <Stack.Screen
+              name="Discover"
+              component={DiscoverScreen}
+              options={{ headerShown: false }}
+            />
+          )}
           <Stack.Screen name="Main" component={MainNavigator} options={{ headerShown: false }} />
           <Stack.Screen
             name="BooksForSale"
@@ -110,11 +130,20 @@ function NavigationWatcher({ sessionStatus, entryRoute, guestRoute }: any) {
             component={EventDetailScreen}
             options={{ title: 'Detalle de Evento' }}
           />
-          <Stack.Screen
-            name="Discover"
-            component={DiscoverScreen}
-            options={{ headerShown: false }}
-          />
+          {entryRoute !== 'Onboarding' && (
+            <Stack.Screen
+              name="Onboarding"
+              component={OnboardingScreen}
+              options={{ headerShown: false }}
+            />
+          )}
+          {entryRoute !== 'Discover' && (
+            <Stack.Screen
+              name="Discover"
+              component={DiscoverScreen}
+              options={{ headerShown: false }}
+            />
+          )}
           <Stack.Screen name="Retos" component={RetosScreen} options={{ title: 'Mis Retos' }} />
           <Stack.Screen
             name="Settings"
@@ -174,18 +203,27 @@ export default function App() {
         if (!mounted) return;
 
         if (session) {
+          let latestUser = session.user;
           try {
-            await api.get('/auth/profile');
+            const response = await api.get('/auth/profile');
+            const unwrapped = unwrapApiData<any>(response.data);
+            if (unwrapped) {
+              latestUser = unwrapped;
+              await AsyncStorage.setItem('user', JSON.stringify(unwrapped));
+            }
           } catch {
             // A 401/403 is handled by the interceptor. Temporary network or
             // server errors do not discard an otherwise valid local session.
           }
-        }
 
-        setSessionStatus((currentStatus) => {
-          if (currentStatus !== 'loading') return currentStatus;
-          return session ? 'authenticated' : 'guest';
-        });
+          const determinedRoute: SessionEntryRoute =
+            latestUser.hasSeenTutorial !== true ? 'Onboarding' : 'Main';
+          setEntryRoute(determinedRoute);
+          setSessionStatus('authenticated');
+        } else {
+          setGuestRoute('Login');
+          setSessionStatus('guest');
+        }
       })
       .catch(() => {
         if (!mounted) return;

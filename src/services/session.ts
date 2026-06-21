@@ -4,7 +4,7 @@ const TOKEN_KEY = 'token';
 const USER_KEY = 'user';
 const SESSION_END_REASON_KEY = 'sessionEndReason';
 
-export type SessionEntryRoute = 'Main' | 'Discover';
+export type SessionEntryRoute = 'Main' | 'Discover' | 'Onboarding';
 export type SessionEndReason = 'expired' | 'rejected' | 'logout';
 
 export type StoredSession = {
@@ -93,12 +93,15 @@ export function subscribeToSession(listener: SessionListener): () => void {
 export async function saveSession(
   token: string,
   user: Record<string, unknown>,
-  entryRoute: SessionEntryRoute = 'Main',
+  entryRoute?: SessionEntryRoute,
 ): Promise<void> {
   if (isJwtExpired(token)) {
     await clearSession('expired');
     throw new Error('The received session token is invalid or expired');
   }
+
+  const determinedRoute: SessionEntryRoute =
+    user.hasSeenTutorial !== true ? 'Onboarding' : entryRoute || 'Main';
 
   const session = { token, user };
   await AsyncStorage.multiSet([
@@ -106,7 +109,7 @@ export async function saveSession(
     [USER_KEY, JSON.stringify(user)],
   ]);
   await AsyncStorage.removeItem(SESSION_END_REASON_KEY);
-  emit({ authenticated: true, entryRoute, session });
+  emit({ authenticated: true, entryRoute: determinedRoute, session });
 }
 
 export async function restoreSession(): Promise<StoredSession | null> {

@@ -201,6 +201,29 @@ const resources = {
       enter_duration_days: 'Introduce la duración de la reserva en días:',
       favorites_title: 'Mis Favoritos',
       no_favorites: 'No tienes ningún libro en tus favoritos todavía.',
+      onboarding_welcome_title: '¡Te damos la bienvenida a ViveBooks!',
+      onboarding_welcome_desc:
+        'La red social y biblioteca comunitaria definitiva para lectores. Compra, alquila y comparte libros en tu entorno.',
+      onboarding_buy_rent_title: 'Compra y Alquila Libros',
+      onboarding_buy_rent_desc:
+        'Explora libros en venta o alquiler cerca de ti. Haz reservas rápidas y coordina entregas de manera segura.',
+      onboarding_upload_title: 'Comparte tu Biblioteca',
+      onboarding_upload_desc:
+        '¿Tienes libros acumulando polvo? Súbelos a la comunidad para venderlos o alquilarlos fácilmente configurando su precio y estado.',
+      onboarding_chats_title: 'Conéctate y Chatea',
+      onboarding_chats_desc:
+        'Habla en tiempo real con otros amantes de los libros. Haz preguntas a los vendedores y gestiona tus transacciones.',
+      onboarding_retos_title: 'Retos y Niveles',
+      onboarding_retos_desc:
+        'Gana experiencia (XP), completa desafíos de lectura y sube de nivel en tu perfil para demostrar tu pasión literaria.',
+      onboarding_accessibility_title: 'Accesibilidad para Todos',
+      onboarding_accessibility_desc:
+        'Personaliza el tamaño de letra, el idioma y activa el modo visual de lectura (mayúsculas de guía visual) para una mejor experiencia.',
+      onboarding_next: 'Siguiente',
+      onboarding_skip: 'Saltar',
+      onboarding_finish: 'Comenzar',
+      onboarding_close: 'Cerrar',
+      onboarding_replay: 'Ver tutorial guiado',
     },
   },
   ca: {
@@ -396,6 +419,29 @@ const resources = {
       enter_duration_days: 'Introdueix la durada de la reserva en dies:',
       favorites_title: 'Els Meus Preferits',
       no_favorites: 'No tens cap llibre als teus preferits encara.',
+      onboarding_welcome_title: 'Et donem la benvinguda a ViveBooks!',
+      onboarding_welcome_desc:
+        'La xarxa social i biblioteca comunitària definitiva per a lectors. Compra, lloga i comparteix llibres al teu entorn.',
+      onboarding_buy_rent_title: 'Compra i Lloga Llibres',
+      onboarding_buy_rent_desc:
+        'Explora llibres a la venda o lloguer a prop teu. Fes reserves ràpides i coordina lliuraments de manera segura.',
+      onboarding_upload_title: 'Comparteix la teva Biblioteca',
+      onboarding_upload_desc:
+        "Tens llibres acumulant pols? Penja'ls a la comunitat per vendre'ls o llogar-los fàcilment configurant el seu preu i estat.",
+      onboarding_chats_title: "Connecta't i Xateja",
+      onboarding_chats_desc:
+        'Parla en temps real amb altres amants dels llibres. Fes preguntes als venedors i gestiona les teves transaccions.',
+      onboarding_retos_title: 'Reptes i Nivells',
+      onboarding_retos_desc:
+        'Guanya experiència (XP), completa reptes de lectura i puja de nivell al teu perfil per demostrar la teva passió literària.',
+      onboarding_accessibility_title: 'Accessibilitat per a Tothom',
+      onboarding_accessibility_desc:
+        "Personalitza la mida de lletra, l'idioma i activa el mode visual de lectura (majúscules de guia visual) per a una millor experiència.",
+      onboarding_next: 'Següent',
+      onboarding_skip: 'Ometre',
+      onboarding_finish: 'Començar',
+      onboarding_close: 'Tancar',
+      onboarding_replay: 'Veure tutorial guiat',
     },
   },
   en: {
@@ -594,6 +640,29 @@ const resources = {
       enter_duration_days: 'Enter the reservation duration in days:',
       favorites_title: 'My Favorites',
       no_favorites: "You don't have any favorite books yet.",
+      onboarding_welcome_title: 'Welcome to ViveBooks!',
+      onboarding_welcome_desc:
+        'The ultimate social network and community library for readers. Buy, rent, and share books in your area.',
+      onboarding_buy_rent_title: 'Buy & Rent Books',
+      onboarding_buy_rent_desc:
+        'Explore books for sale or rent near you. Make quick reservations and coordinate safe handovers.',
+      onboarding_upload_title: 'Share Your Library',
+      onboarding_upload_desc:
+        'Have books collecting dust? Upload them to the community to sell or rent by setting price and condition.',
+      onboarding_chats_title: 'Connect & Chat',
+      onboarding_chats_desc:
+        'Talk in real time with other book lovers. Ask questions to sellers and manage your transactions easily.',
+      onboarding_retos_title: 'Challenges & Levels',
+      onboarding_retos_desc:
+        'Earn XP, complete reading challenges, and level up your profile to showcase your literary passion.',
+      onboarding_accessibility_title: 'Accessibility for All',
+      onboarding_accessibility_desc:
+        'Customize font size, language, and activate reading focus mode (uppercase visual guides) for an optimized experience.',
+      onboarding_next: 'Next',
+      onboarding_skip: 'Skip',
+      onboarding_finish: 'Get Started',
+      onboarding_close: 'Close',
+      onboarding_replay: 'Watch guided tutorial',
     },
   },
 };
