@@ -261,8 +261,7 @@ export default function BooksForRentScreen() {
     return (
       <Card style={isGridView ? styles.gridCard : styles.listCard}>
         <Card.Title title={book.title} titleVariant="displaySmall" />
-        <Card.Cover source={{ uri: book.imageUrl }} />{' '}
-        {/* Puedo utilizar este (https://oss.callstack.com/react-native-paper/docs/components/Card/) o el componente ImageFrame */}
+        <Card.Cover source={{ uri: book.imageUrl }} />
         <Card.Content style={isGridView ? styles.gridCardContent : undefined}>
           <View
             style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}

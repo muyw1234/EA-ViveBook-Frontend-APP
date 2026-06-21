@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 import { styles as globalStyles } from '../../styles/default';
 import { getPaginatedData, unwrapApiData } from '../utils/apiResponse';
+import { saveSession } from '../services/session';
 
 const ALL_CATEGORIES = [
   'Terror',
@@ -102,11 +103,18 @@ export default function DiscoverScreen() {
         favoriteAuthors,
         favoriteCategories,
         followingUsers,
+        hasSeenTutorial: true,
       };
       const response = await api.put(`/usuarios/${currentUser._id}`, payload);
       if (response.status === 200) {
         const updatedUser = unwrapApiData<Record<string, unknown>>(response.data);
-        await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+
+        const token = await AsyncStorage.getItem('token');
+        if (token) {
+          await saveSession(token, updatedUser, 'Main');
+        } else {
+          await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+        }
       }
     } catch (error) {
       console.error('Error saving discover preferences:', error);

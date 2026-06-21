@@ -24,11 +24,17 @@ if (Platform.OS === 'web') {
     webFirebaseApp = getApp();
   }
 } else {
-  // En Android/iOS inicializamos el contenedor Nativo de forma segura
-  const firebaseNativo = require('@react-native-firebase/app').default;
-  if (!firebaseNativo.apps.length) {
-    firebaseNativo.initializeApp({} as any);
-    console.log('🤖 Firebase Nativo (Android) enlazado con google-services.json');
+  try {
+    // En Android/iOS inicializamos el contenedor Nativo de forma segura si está disponible
+    const firebaseNativo = require('@react-native-firebase/app').default;
+    if (firebaseNativo && !firebaseNativo.apps.length) {
+      firebaseNativo.initializeApp({} as any);
+      console.log('🤖 Firebase Nativo (Android) enlazado con google-services.json');
+    }
+  } catch (error) {
+    console.warn(
+      '⚠️ No se pudo inicializar Firebase Nativo. Posiblemente estás ejecutando en Expo Go.',
+    );
   }
 }
 

@@ -61,6 +61,15 @@ export default function LoginScreen() {
         const { token, user } = unwrapApiData<AuthResponse>(response.data);
         console.log('Login successful. User:', JSON.stringify(user));
 
+        if (user && (user as any).hasSeenTutorial !== true) {
+          (user as any).hasSeenTutorial = true;
+          try {
+            await api.put(`/usuarios/${(user as any)._id}`, { hasSeenTutorial: true });
+          } catch (err) {
+            console.error('Error updating hasSeenTutorial on login:', err);
+          }
+        }
+
         await saveSession(token, user, 'Main');
       }
     } catch (error: any) {
@@ -111,6 +120,15 @@ export default function LoginScreen() {
 
       if (response.status === 200 || response.status === 201) {
         const { token, user } = unwrapApiData<AuthResponse>(response.data);
+
+        if (user && (user as any).hasSeenTutorial !== true) {
+          (user as any).hasSeenTutorial = true;
+          try {
+            await api.put(`/usuarios/${(user as any)._id}`, { hasSeenTutorial: true });
+          } catch (err) {
+            console.error('Error updating hasSeenTutorial on social login:', err);
+          }
+        }
 
         await saveSession(token, user, 'Main');
       }
